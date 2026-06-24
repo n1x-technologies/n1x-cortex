@@ -10,7 +10,7 @@ tools: [typst]
 
 This document explains how to maintain and version the N1X Cortex methodology document (`N1X-Cortex-v*.md` and its corresponding PDF). For any instance of Claude Code or for future use.
 
-> **Brand note:** version 1 was published under the previous name **BRAIN** (`BRAIN-Metodologia-v1.*`). As of v2.0 the methodology is called **N1X Cortex** and the attribution is **N1X Technologies**. The v1 files are kept intact as a record of evolution.
+> **Brand note:** the methodology was first published as **BRAIN** (v1); since v2.0 it is **N1X Cortex** (attribution **N1X Technologies**). Old versions live in git history, not in the tree.
 
 ---
 
@@ -19,13 +19,9 @@ This document explains how to maintain and version the N1X Cortex methodology do
 The N1X Cortex methodology document describes the AI-assisted knowledge management methodology, owned by N1X Technologies. It is an artifact independent of any project where N1X Cortex is applied.
 
 ```
-~/Documents/0. WSDC Tech/BRAIN-Metodologia/
+n1x-cortex/   (git repo — latest version only)
 ├── N1X-Cortex-v2.md             ← current source of truth (markdown)
-├── N1X-Cortex-v2.typ            ← Typst source of the current PDF
-├── N1X-Cortex-v2.pdf            ← current generated PDF
-├── BRAIN-Metodologia-v1.md      ← historical (former name: BRAIN)
-├── BRAIN-Metodologia-v1.typ     ← historical
-├── BRAIN-Metodologia-v1.pdf     ← historical
+├── N1X-Cortex-v2.typ            ← Typst source (compile to PDF; PDFs are git-ignored)
 └── UPDATE-PROCESS.md   ← this file
 ```
 
@@ -130,23 +126,9 @@ cp /tmp/N1X-Cortex-v3.pdf \
   "~/Documents/0. WSDC Tech/BRAIN-Metodologia/N1X-Cortex-v3.pdf"
 ```
 
-### 4. Keep the previous versions
+### 4. Keep only the latest version
 
-Do not delete the previous versions — they are evidence of evolution, including the v1 versions published under the historical name BRAIN. The folder accumulates versions:
-
-```
-BRAIN-Metodologia/
-├── BRAIN-Metodologia-v1.md     ← historical (former name: BRAIN)
-├── BRAIN-Metodologia-v1.typ
-├── BRAIN-Metodologia-v1.pdf
-├── N1X-Cortex-v2.md            ← current version
-├── N1X-Cortex-v2.typ
-├── N1X-Cortex-v2.pdf
-├── N1X-Cortex-v3.md            ← new version
-├── N1X-Cortex-v3.typ
-├── N1X-Cortex-v3.pdf
-└── UPDATE-PROCESS.md
-```
+The repo holds **only the current version**. Older versions are preserved in **git history** (`git log -- N1X-Cortex-*.md`), not as files cluttering the tree. When you publish vN+1, the previous vN files are replaced in the tree — git remembers them.
 
 ---
 
@@ -234,7 +216,7 @@ Copy these into any new version without modifying them:
 - [ ] Attribution: "N1X Technologies" in all 3 places (cover, footer, footer line); no personal name or email
 - [ ] PDF compiled without errors (font warnings are acceptable)
 - [ ] PDF visually reviewed in Preview: cover, pagination, tables, code blocks
-- [ ] Previous version kept in the folder (do not replace, add)
+- [ ] Old version left in git history (replaced in the tree, not accumulated)
 - [ ] Section 08 (Application case) does not reveal confidential client information
 
 ---
