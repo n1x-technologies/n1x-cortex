@@ -31,6 +31,8 @@ Se destiló una metodología (los **4 pilares**: Atomizar · Conectar · Curar �
 
 ## Reglas para trabajar en este repo
 
+> **📝 Convención N1X Cortex (aplica a TODO proyecto): el README se actualiza en cada push.** Antes de cualquier `git push`, revisa y actualiza el `README.md` del repo para que refleje el estado actual (archivos nuevos, decisiones, estructura, cronograma). Un README desactualizado es un bug. Este estándar vale para este repo y para cualquier proyecto que use la metodología N1X Cortex.
+
 1. **El markdown es la fuente de verdad.** El PDF es salida derivada — nunca se escribe a mano. Si cambia el contenido: edita el `.md` primero, luego refleja en el `.typ`, luego recompila.
 2. **Regenerar el PDF:** `typst compile N1X-Cortex-v{N}.typ N1X-Cortex-v{N}.pdf`. El procedimiento completo (versionado vN→vN+1, checklist, errores comunes de Typst) está en `PROCESO-Actualizacion-N1X-Cortex.md`.
 3. **Versionado:** no sobrescribas versiones publicadas; sube de versión (`-v3`, `-v4`…) y conserva las anteriores, incluidas las v1 con el nombre histórico BRAIN. (Excepción: un fix de confidencialidad sí limpia la versión vigente en lugar de dejarla circular.)
