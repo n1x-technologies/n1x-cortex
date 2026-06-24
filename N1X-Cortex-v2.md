@@ -121,6 +121,16 @@ N1X-Cortex/
 
 The numbered folders are indicative. They are added or removed depending on the domain. What is invariant is the separation between **sources** (`Markdown/`) and **atomized knowledge** (everything else).
 
+### Localization (language)
+
+N1X Cortex is language-agnostic: the canonical reference is shown in English, but a team works in whatever language its project uses. The notes themselves are written in your language; you may also localize the folder names, tags, and frontmatter values. What matters is **consistency within a vault**, not which language you choose. Spanish equivalents, for example:
+
+- **Folders:** `01-Concepts/`→`01-Conceptos/`, `02-Flows/`→`02-Flujos/`, `03-Rules/`→`03-Reglamentos/`, `04-Technical/`→`04-Tecnico/`, `05-Errors/`→`05-Errores/`, `06-Security/`→`06-Seguridad/`, `09-Strategy/`→`09-Estrategia/` (`00-MOC/`, `07-UX/`, `08-MVPs/` stay the same).
+- **`type:` values:** `concept / flow / rule / technical / error / security / ux / mvp / strategy` → `concepto / flujo / regla / tecnico / error / seguridad / ux / mvp / estrategia`.
+- **`status:` values:** `draft / documented / verified` → `borrador / documentado / verificado`.
+
+The generated PDFs follow the same principle: choose the document language with `lang: "en"` or `lang: "es"` in the Typst template (see `templates/typst/`).
+
 ### Standard frontmatter
 
 Each note carries minimal YAML frontmatter:

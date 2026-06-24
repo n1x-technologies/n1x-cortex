@@ -38,10 +38,21 @@ Minimal header of a document:
 #show: doc.with(
   title: "Title", subtitle: "Subtitle",
   doc-label: "Proposal", client: "Client", date: "June 2026",
+  lang: "en",   // "en" (default) or "es"
 )
 = First heading
 Content...
 ```
+
+## Language (en / es)
+
+The PDF you generate can be in your own language. The `lang` option localizes the template's **chrome** — the cover labels (`FOR`, `DOCUMENT`, `DATE`, `CLASSIFICATION`, `PREPARED BY`, `VERSION`), the `For …` header, the default classification, the `yes`/`no` helpers, and hyphenation. Your document **body** is written in whatever language you want, independently.
+
+```typst
+#show: doc.with(title: "Título", doc-label: "Propuesta", client: "Cliente", date: "Junio 2026", lang: "es")
+```
+
+Ships with **`en`** (default) and **`es`**. To **add a language**, open `template.typ` and add an entry to `labels` with the same keys (e.g. `fr: ( yes: "Oui", cover-for: "POUR", … )`), then pass `lang: "fr"`. Nothing else changes.
 
 ## Components
 
