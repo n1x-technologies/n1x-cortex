@@ -56,7 +56,7 @@ hash_file() {
   else shasum -a 256 "$1" | awk '{print $1}'; fi
 }
 # read a key=value setting from the config (first match)
-cfg() { grep -E "^$1=" "$CONFIG" | head -1 | cut -d= -f2- | xargs; }
+cfg() { grep -E "^$1=" "$CONFIG" | head -1 | cut -d= -f2- | xargs || true; }
 # stored lock hash for an id (empty if none)
 locked() { [ -f "$LOCK" ] && (grep -E "^$1=" "$LOCK" | head -1 | cut -d= -f2-) || true; }
 
@@ -66,7 +66,7 @@ REF="$(cfg ref)"; [ -n "$REF" ] || REF="main"
 
 # ── resolve the Cortex checkout (local dir or git clone) ────────────
 CLONE_TMP=""
-cleanup() { [ -n "$CLONE_TMP" ] && rm -rf "$CLONE_TMP"; }
+cleanup() { if [ -n "$CLONE_TMP" ]; then rm -rf "$CLONE_TMP"; fi; }
 trap cleanup EXIT
 if [ -d "$CORTEX_SOURCE" ]; then
   CORTEX="$(cd "$CORTEX_SOURCE" && pwd)"
@@ -137,5 +137,7 @@ else
   mv "$NEWLOCK" "$LOCK"
   echo "Summary: $updated updated · $missing new · $flagged flagged · $uptodate ok  →  $LOCK written (v$CORTEX_VER)"
 fi
-[ "$flagged" -gt 0 ] && echo "Note: '!' files are localized instances — Cortex changed upstream; merge the bits you want by hand."
+if [ "$flagged" -gt 0 ]; then
+  echo "Note: '!' files are localized instances — Cortex changed upstream; merge the bits you want by hand."
+fi
 exit 0
