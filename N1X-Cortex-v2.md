@@ -1,292 +1,292 @@
 ---
-title: "N1X Cortex — Metodología de Gestión del Conocimiento Asistida por IA"
-autor: "N1X Technologies"
+title: "N1X Cortex — AI-Assisted Knowledge Management Methodology"
+author: "N1X Technologies"
 version: "2.0"
-fecha: "2026-06-23"
-tipo: metodologia
-estado: publicado
+date: "2026-06-23"
+type: methodology
+status: published
 ---
 
 # N1X Cortex
-## Metodología de Gestión del Conocimiento Asistida por IA
+## AI-Assisted Knowledge Management Methodology
 
-**Autor:** N1X Technologies  
-**Versión:** 2.0 · Junio 2026  
-**© 2026 N1X Technologies — Todos los derechos reservados**
-
----
-
-## 1. Qué es N1X Cortex
-
-N1X Cortex es una metodología para convertir grandes corpus de documentación — técnica, normativa, estratégica, legal u operativa — en **grafos de conocimiento atómico consultables por IA**, capaces de generar respuestas precisas, verificar cumplimiento y producir código o documentos estructurados.
-
-El problema central que resuelve: **los documentos monolíticos no escalan**. Un corpus de 50,000+ líneas distribuido en decenas de archivos no puede ser consultado por ningún sistema de IA de manera efectiva. La información se fragmenta, se pierde el contexto, y los sistemas de código generativo producen salidas que ignoran las restricciones reales del dominio.
-
-N1X Cortex convierte esa masa documental en una **red de nodos atómicos** — una nota por concepto, una nota por regla, una nota por flujo — todos interconectados con enlaces semánticos y etiquetados con frontmatter estructurado. El resultado es un "segundo cerebro" que:
-
-- Responde preguntas complejas citando la fuente exacta
-- Verifica si una decisión cumple las reglas del dominio
-- Sirve como contexto preciso para que una IA genere código conforme
+**Author:** N1X Technologies  
+**Version:** 2.0 · June 2026  
+**© 2026 N1X Technologies — All rights reserved**
 
 ---
 
-## 2. Para quién aplica
+## 1. What is N1X Cortex
 
-N1X Cortex es aplicable a cualquier dominio con **alta densidad documental y requisitos de consistencia**:
+N1X Cortex is a methodology for turning large documentation corpora — technical, regulatory, strategic, legal, or operational — into **atomic knowledge graphs queryable by AI**, capable of generating precise answers, verifying compliance, and producing structured code or documents.
 
-| Dominio | Tipo de corpus | Lo que produce |
+The core problem it solves: **monolithic documents don't scale**. A corpus of 50,000+ lines spread across dozens of files cannot be queried effectively by any AI system. Information fragments, context is lost, and generative code systems produce outputs that ignore the real constraints of the domain.
+
+N1X Cortex converts that documentary mass into a **network of atomic nodes** — one note per concept, one note per rule, one note per flow — all interconnected with semantic links and tagged with structured frontmatter. The result is a "second brain" that:
+
+- Answers complex questions citing the exact source
+- Verifies whether a decision complies with the domain's rules
+- Serves as precise context for an AI to generate compliant code
+
+---
+
+## 2. Who it applies to
+
+N1X Cortex is applicable to any domain with **high documentary density and consistency requirements**:
+
+| Domain | Type of corpus | What it produces |
 |:---|:---|:---|
-| **Regulatorio / fintech** | Reglamentos, circulares, especificaciones técnicas | Cumplimiento verificable, código conforme a norma |
-| **Legal / compliance** | Contratos, políticas, marcos regulatorios | Consultas rápidas, identificación de obligaciones |
-| **Estratégico / producto** | Research, análisis de mercado, roadmaps | Decisiones informadas, documentos de producto |
-| **Técnico / ingeniería** | APIs, specs, arquitecturas, runbooks | Código generado con contexto correcto |
-| **Operativo** | Procesos, procedimientos, manuales | Consulta rápida, automatización de flujos |
+| **Regulatory / fintech** | Regulations, circulars, technical specifications | Verifiable compliance, standards-compliant code |
+| **Legal / compliance** | Contracts, policies, regulatory frameworks | Fast queries, identification of obligations |
+| **Strategic / product** | Research, market analysis, roadmaps | Informed decisions, product documents |
+| **Technical / engineering** | APIs, specs, architectures, runbooks | Code generated with the correct context |
+| **Operational** | Processes, procedures, manuals | Fast querying, flow automation |
 
-La metodología es especialmente valiosa cuando:
-- El corpus supera las 10,000 líneas y no cabe en un solo contexto de IA
-- Las reglas y los datos evolucionan con frecuencia
-- Se necesita trazabilidad: toda respuesta debe citar su fuente
-- Múltiples personas o sistemas consultan el mismo conocimiento
-
----
-
-## 3. Los 4 pilares
-
-### Pilar 1 — Atomizar
-
-Partir cada documento fuente en **unidades mínimas de conocimiento**. Una nota atómica contiene exactamente una idea: un concepto, una regla, un flujo, un mensaje, un código de error.
-
-Criterio de atomicidad: *si la nota trata dos cosas que podrían cambiar de forma independiente, debe partirse en dos.*
-
-Cada nota lleva:
-- **Frontmatter YAML** con tipo, ID, etiquetas, estado y fuente
-- **Cuerpo** con la información en lenguaje natural estructurado
-- **Sección de implicaciones para implementación** (en notas de flujo/proceso)
-- **Cita de fuente** al pie: archivo + página de origen
-
-### Pilar 2 — Conectar
-
-Enlazar cada nota con todas las notas relacionadas usando **wikilinks** (`[[nombre-de-nota]]`). Los enlaces son el tejido conectivo del grafo:
-
-- Una regla enlaza a los flujos que la aplican
-- Un flujo enlaza a los mensajes que usa, las reglas que cumple y los errores que puede generar
-- Un concepto enlaza a todos los contextos donde aparece
-
-Un enlace a una nota que aún no existe es válido — marca trabajo futuro sin romper el grafo. Esto permite construir el sistema incrementalmente.
-
-### Pilar 3 — Curar
-
-Mantener la calidad del grafo a lo largo del tiempo:
-
-- **MOC (Maps of Content):** índices temáticos que agrupan notas por dominio, generados como tablas automáticas con Dataview (Obsidian)
-- **Glosario:** una nota por término del dominio, con definición canónica y aliases para términos equivalentes
-- **Fusión de duplicados:** cuando dos notas representan el mismo concepto, se fusionan y se agregan aliases
-- **Ciclo de retroalimentación:** todo aprendizaje nuevo (de reuniones, implementaciones, cambios normativos) vuelve al cerebro como nota actualizada
-
-### Pilar 4 — Capa IA
-
-El grafo curado se convierte en el **contexto preciso** para sistemas de IA:
-
-- Consultas en lenguaje natural: la IA entra por el MOC del tema, navega los enlaces, y responde citando las notas
-- Verificación de cumplimiento: la IA sigue el árbol de enlaces desde un flujo hasta sus reglas y verifica cada una
-- Generación de código: la sección "Implicaciones para implementación" de cada nota de flujo es el checklist de requisitos que la IA usa para generar código que ya cumple las restricciones del dominio
-- Generación de documentos: las notas estratégicas se consolidan en PDFs estructurados (ver Sección 6)
+The methodology is especially valuable when:
+- The corpus exceeds 10,000 lines and does not fit in a single AI context
+- The rules and data evolve frequently
+- Traceability is needed: every answer must cite its source
+- Multiple people or systems query the same knowledge
 
 ---
 
-## 4. Estructura del vault
+## 3. The 4 pillars
 
-Un vault N1X Cortex tiene la siguiente estructura genérica, adaptable a cualquier dominio:
+### Pillar 1 — Atomize
+
+Split each source document into **minimal units of knowledge**. An atomic note contains exactly one idea: a concept, a rule, a flow, a message, an error code.
+
+Atomicity criterion: *if the note covers two things that could change independently, it must be split in two.*
+
+Each note carries:
+- **YAML frontmatter** with type, ID, tags, status, and source
+- **Body** with the information in structured natural language
+- **Implications-for-implementation section** (in flow/process notes)
+- **Source citation** at the bottom: file + page of origin
+
+### Pillar 2 — Connect
+
+Link each note to all related notes using **wikilinks** (`[[note-name]]`). Links are the connective tissue of the graph:
+
+- A rule links to the flows that apply it
+- A flow links to the messages it uses, the rules it complies with, and the errors it can generate
+- A concept links to all the contexts where it appears
+
+A link to a note that does not yet exist is valid — it marks future work without breaking the graph. This makes it possible to build the system incrementally.
+
+### Pillar 3 — Curate
+
+Maintain the quality of the graph over time:
+
+- **MOC (Maps of Content):** thematic indexes that group notes by domain, generated as automatic tables with Dataview (Obsidian)
+- **Glossary:** one note per domain term, with a canonical definition and aliases for equivalent terms
+- **Duplicate merging:** when two notes represent the same concept, they are merged and aliases are added
+- **Feedback loop:** every new learning (from meetings, implementations, regulatory changes) flows back to the brain as an updated note
+
+### Pillar 4 — AI layer
+
+The curated graph becomes the **precise context** for AI systems:
+
+- Natural-language queries: the AI enters through the topic's MOC, navigates the links, and answers citing the notes
+- Compliance verification: the AI follows the link tree from a flow to its rules and checks each one
+- Code generation: the "Implications for implementation" section of each flow note is the requirements checklist the AI uses to generate code that already complies with the domain's constraints
+- Document generation: strategic notes are consolidated into structured PDFs (see Section 6)
+
+---
+
+## 4. Vault structure
+
+An N1X Cortex vault has the following generic structure, adaptable to any domain:
 
 ```
 N1X-Cortex/
-├── README.md              ← plan maestro y estado del proyecto
-├── CLAUDE.md              ← instrucciones para Claude Code (convenciones)
-├── HOME.md                ← dashboard / punto de entrada
+├── README.md              ← master plan and project status
+├── CLAUDE.md              ← instructions for Claude Code (conventions)
+├── HOME.md                ← dashboard / entry point
 │
-├── 00-MOC/                ← Mapas de Contenido (índices por tema)
-├── 01-Conceptos/          ← glosario atómico: un concepto por nota
-├── 02-Flujos/             ← procesos y flujos: uno por nota
-├── 03-Reglamentos/        ← reglas y obligaciones: una por nota
-├── 04-Tecnico/            ← APIs, mensajes, especificaciones
-├── 05-Errores/            ← catálogo de códigos de error
-├── 06-Seguridad/          ← lineamientos de seguridad
-├── 07-UX/                 ← experiencia de usuario
-├── 08-MVPs/               ← especificaciones de implementación
-├── 09-Estrategia/         ← análisis de mercado, oportunidades, ventajas competitivas
+├── 00-MOC/                ← Maps of Content (indexes by topic)
+├── 01-Concepts/           ← atomic glossary: one concept per note
+├── 02-Flows/              ← processes and flows: one per note
+├── 03-Rules/              ← rules and obligations: one per note
+├── 04-Technical/          ← APIs, messages, specifications
+├── 05-Errors/             ← catalog of error codes
+├── 06-Security/           ← security guidelines
+├── 07-UX/                 ← user experience
+├── 08-MVPs/               ← implementation specifications
+├── 09-Strategy/           ← market analysis, opportunities, competitive advantages
 │
-├── _templates/            ← plantillas de nota (copiar al crear una nueva)
-└── Markdown/              ← fuentes originales (NO MODIFICAR — solo referencia)
+├── _templates/            ← note templates (copy when creating a new one)
+└── Markdown/              ← original sources (DO NOT MODIFY — reference only)
 ```
 
-Las carpetas numeradas son orientativas. Se agregan o eliminan según el dominio. Lo invariante es la separación entre **fuentes** (`Markdown/`) y **conocimiento atomizado** (el resto).
+The numbered folders are indicative. They are added or removed depending on the domain. What is invariant is the separation between **sources** (`Markdown/`) and **atomized knowledge** (everything else).
 
-### Frontmatter estándar
+### Standard frontmatter
 
-Cada nota lleva frontmatter YAML mínimo:
+Each note carries minimal YAML frontmatter:
 
 ```yaml
 ---
-tipo: flujo            # concepto | flujo | regla | tecnico | error | seguridad | ux | mvp | estrategia
-id: FLUJO-EJEMPLO-01
-tags: [flujo, proceso, ejemplo]
-fuente: "[[nombre-del-documento-fuente]]"
-estado: documentado    # borrador | documentado | verificado
+type: flow             # concept | flow | rule | technical | error | security | ux | mvp | strategy
+id: FLOW-EXAMPLE-01
+tags: [flow, process, example]
+source: "[[source-document-name]]"
+status: documented     # draft | documented | verified
 ---
 ```
 
-El campo `fuente` apunta a la nota de la fuente en `Markdown/`. El campo `estado` permite rastrear qué notas están completas y cuáles son borradores.
+The `source` field points to the source's note in `Markdown/`. The `status` field makes it possible to track which notes are complete and which are drafts.
 
-### Wikilinks y navegación
+### Wikilinks and navigation
 
-Los enlaces `[[nombre-nota]]` son la API del grafo. En Obsidian se renderizan como un grafo visual de conexiones. En consultas de IA se usan como instrucciones de navegación: "sigue este enlace para obtener más contexto".
-
----
-
-## 5. Lo que produce
-
-Un vault N1X Cortex bien construido produce cuatro tipos de salidas:
-
-### Respuestas citadas
-
-Cualquier pregunta sobre el dominio se responde con citas a las notas fuente:
-
-> *"¿Cuál es el límite aplicable a una operación de tipo X?"*  
-> → La IA entra por `00-MOC/MOC-Reglamentos.md`, localiza la regla aplicable, lee la nota, responde con el valor exacto y cita `[[REG-NNN-Limite-de-operacion]]` como fuente.
-
-### Verificación de cumplimiento
-
-Para cualquier flujo o proceso, la IA puede verificar si cumple todas las reglas que aplican:
-
-> *"¿Este diseño de pantalla de autenticación cumple los lineamientos?"*  
-> → La IA navega desde `07-UX/` hasta `03-Reglamentos/` siguiendo los enlaces, y produce una lista de verificación con cada regla y su estado (cumple / no cumple / pendiente).
-
-### Código conforme
-
-La sección **"Implicaciones para implementación"** en cada nota de flujo lista los requisitos técnicos que el código debe cumplir. La IA usa esa sección + los enlaces a mensajes, reglas y errores para generar código que ya cumple las especificaciones del dominio.
-
-### Documentos estructurados
-
-Las notas estratégicas y de análisis se consolidan en documentos PDF mediante el pipeline de generación descrito en la Sección 6.
+The `[[note-name]]` links are the API of the graph. In Obsidian they render as a visual graph of connections. In AI queries they are used as navigation instructions: "follow this link to obtain more context".
 
 ---
 
-## 6. Pipeline de generación de documentos
+## 5. What it produces
 
-N1X Cortex incluye un pipeline para convertir el conocimiento acumulado en **documentos PDF entregables** — con identidad visual consistente, atribución de autoría y trazabilidad a las notas fuente. Este es un método reproducible, no un diseño ad-hoc por documento.
+A well-built N1X Cortex vault produces four types of outputs:
 
-### Principio rector
+### Cited answers
 
-El **markdown es la fuente de verdad**; el PDF es una salida derivada. Nunca se escribe el PDF a mano: se compila desde un archivo de tipografía (`.typ`) que refleja el markdown. Si el contenido cambia, cambia el markdown primero, luego se regenera. Esto preserva el mismo principio de inmutabilidad y trazabilidad que rige el vault.
+Any question about the domain is answered with citations to the source notes:
+
+> *"What is the applicable limit for an operation of type X?"*  
+> → The AI enters through `00-MOC/MOC-Rules.md`, locates the applicable rule, reads the note, answers with the exact value, and cites `[[RULE-NNN-Operation-limit]]` as the source.
+
+### Compliance verification
+
+For any flow or process, the AI can verify whether it complies with all the rules that apply:
+
+> *"Does this authentication screen design comply with the guidelines?"*  
+> → The AI navigates from `07-UX/` to `03-Rules/` following the links, and produces a checklist with each rule and its status (complies / does not comply / pending).
+
+### Compliant code
+
+The **"Implications for implementation"** section in each flow note lists the technical requirements the code must meet. The AI uses that section + the links to messages, rules, and errors to generate code that already meets the domain's specifications.
+
+### Structured documents
+
+Strategic and analysis notes are consolidated into PDF documents through the generation pipeline described in Section 6.
+
+---
+
+## 6. Document generation pipeline
+
+N1X Cortex includes a pipeline for converting accumulated knowledge into **deliverable PDF documents** — with consistent visual identity, authorship attribution, and traceability to the source notes. This is a reproducible method, not an ad-hoc design per document.
+
+### Guiding principle
+
+The **markdown is the source of truth**; the PDF is a derived output. The PDF is never written by hand: it is compiled from a typography file (`.typ`) that reflects the markdown. If the content changes, change the markdown first, then regenerate. This preserves the same principle of immutability and traceability that governs the vault.
 
 ### Stack
 
-| Herramienta | Para qué | Cuándo |
+| Tool | What for | When |
 |:---|:---|:---|
-| **Typst** (0.14+) | Motor de tipografía → PDF (10× más rápido que LaTeX, sintaxis tipo CSS) | Pipeline **por defecto** |
-| **Python 3 + matplotlib** | Gráficos PNG para incrustar (paleta de marca, ≥180 DPI) | Solo si el documento lleva gráficos |
-| **HTML + Chrome headless** | Alternativa para documentos muy visuales / portadas con degradados | Cuando se prefiere maquetar con CSS |
+| **Typst** (0.14+) | Typography engine → PDF (10× faster than LaTeX, CSS-like syntax) | **Default** pipeline |
+| **Python 3 + matplotlib** | PNG charts to embed (brand palette, ≥180 DPI) | Only if the document carries charts |
+| **HTML + Chrome headless** | Alternative for very visual documents / covers with gradients | When you prefer to lay out with CSS |
 
-> El motor por defecto es **Typst** por velocidad y reproducibilidad. La vía HTML→PDF (`--headless --print-to-pdf`) es una alternativa válida cuando el diseño se apoya en CSS; produce el mismo tipo de entregable con otra herramienta.
+> The default engine is **Typst** for speed and reproducibility. The HTML→PDF path (`--headless --print-to-pdf`) is a valid alternative when the design relies on CSS; it produces the same type of deliverable with a different tool.
 
-### Flujo de 5 pasos
+### 5-step flow
 
-1. **Consolidar** — las notas atómicas de la carpeta temática (`09-Estrategia/`, `02-Flujos/`, etc.) se reúnen en un markdown estructurado, **conservando las citas de fuente**.
-2. **Graficar** (opcional) — se generan los PNG con Python/matplotlib en la paleta de marca, exportados a `/tmp/` con rutas **relativas** (Typst antepone el directorio del `.typ`).
-3. **Maquetar** — se escribe el `.typ`: tokens de color, componentes reutilizables, portada, índice, secciones, header y footer.
-4. **Compilar y verificar** — `typst compile doc.typ doc.pdf` y se **revisa visualmente en Preview** (portada, paginación, tablas, bloques de código) antes de publicar.
-5. **Publicar y versionar** — se copian `.typ` y `.pdf` al directorio final; **las versiones anteriores se conservan** (`-v1`, `-v2`, …), nunca se sobrescriben.
+1. **Consolidate** — the atomic notes from the thematic folder (`09-Strategy/`, `02-Flows/`, etc.) are gathered into a structured markdown, **preserving the source citations**.
+2. **Chart** (optional) — the PNGs are generated with Python/matplotlib in the brand palette, exported to `/tmp/` with **relative** paths (Typst prepends the directory of the `.typ`).
+3. **Lay out** — the `.typ` is written: color tokens, reusable components, cover, table of contents, sections, header, and footer.
+4. **Compile and verify** — `typst compile doc.typ doc.pdf` and it is **reviewed visually in Preview** (cover, pagination, tables, code blocks) before publishing.
+5. **Publish and version** — `.typ` and `.pdf` are copied to the final directory; **previous versions are preserved** (`-v1`, `-v2`, …), never overwritten.
 
 ```bash
-# Compilar (Typst) y revisar
+# Compile (Typst) and review
 typst compile /tmp/doc.typ /tmp/doc-v2.pdf && open /tmp/doc-v2.pdf
 
-# Alternativa HTML → PDF (Chrome headless)
+# HTML → PDF alternative (Chrome headless)
 "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
   --headless --disable-gpu --no-pdf-header-footer \
-  --print-to-pdf="doc.pdf" "file:///ruta/doc.html"
+  --print-to-pdf="doc.pdf" "file:///path/doc.html"
 ```
 
-### Anatomía del documento
+### Anatomy of the document
 
-Todo entregable N1X Cortex sigue la misma estructura: **portada** (título, versión, fecha, "ELABORADO POR") → **índice** → **secciones numeradas** con headings H1/H2/H3 de estilo consistente → **footer** con numeración automática → **pie final** de autoría. La maqueta usa A4, márgenes generosos y `page-break` entre bloques mayores.
+Every N1X Cortex deliverable follows the same structure: **cover** (title, version, date, "PREPARED BY") → **table of contents** → **numbered sections** with H1/H2/H3 headings of consistent style → **footer** with automatic numbering → **final note** of authorship. The layout uses A4, generous margins, and `page-break` between major blocks.
 
-### Tokens e identidad visual
+### Tokens and visual identity
 
-La paleta se declara como variables al inicio del `.typ`. **Regla de separación de marcas:** un entregable de la *metodología N1X Cortex* usa la paleta propia de N1X Cortex (navy/coral); un entregable de un *proyecto cliente* usa la paleta de ese cliente. **Nunca se mezclan.**
+The palette is declared as variables at the start of the `.typ`. **Brand separation rule:** a deliverable of the *N1X Cortex methodology* uses N1X Cortex's own palette (navy/coral); a deliverable of a *client project* uses that client's palette. **They are never mixed.**
 
 ```typst
-// Paleta N1X Cortex (metodología — N1X Technologies)
+// N1X Cortex palette (methodology — N1X Technologies)
 #let sd-navy  = rgb("1A1A2E")   #let sd-coral = rgb("E94560")
 #let sd-mid   = rgb("4A4A6A")   #let sd-light = rgb("F5F5F5")
 ```
 
-### Componentes reutilizables
+### Reusable components
 
-El pipeline define componentes Typst que se copian sin modificar entre documentos de la misma serie:
-- `callout()` — caja de insight con borde izquierdo de color
-- `coral-callout()` — caja de advertencia/nota importante
-- `hero-box()` — caja de highlight principal (fondo sólido, texto blanco)
-- `pillar-box()` — caja temática con borde superior de acento
-- Estilos de headings H1/H2/H3 y header/footer con numeración automática
+The pipeline defines Typst components that are copied unmodified between documents in the same series:
+- `callout()` — insight box with a colored left border
+- `coral-callout()` — warning/important-note box
+- `hero-box()` — main highlight box (solid background, white text)
+- `pillar-box()` — thematic box with an accent top border
+- H1/H2/H3 heading styles and header/footer with automatic numbering
 
-### Atribución — regla fija
+### Attribution — fixed rule
 
-Todo documento generado lleva atribución en **tres lugares**:
-1. **Portada** — campo "ELABORADO POR" con N1X Technologies
-2. **Footer de cada página** — N1X Technologies + © + año
-3. **Pie final** — nota de autoría completa con © y restricciones de distribución
+Every generated document carries attribution in **three places**:
+1. **Cover** — "PREPARED BY" field with N1X Technologies
+2. **Footer of each page** — N1X Technologies + © + year
+3. **Final note** — full authorship note with © and distribution restrictions
 
-La atribución va siempre a N1X Technologies y el © se actualiza al año en curso.
+The attribution always goes to N1X Technologies and the © is updated to the current year.
 
-### Reproducibilidad
+### Reproducibility
 
-El procedimiento operativo detallado — comandos exactos, flujo de versionado vN→vN+1, checklist previo a publicar y errores comunes de Typst con su solución — se mantiene en un documento de proceso acompañante junto al vault o al documento (p. ej. `PROCESO-Actualizacion-*.md`). Ese documento es el que garantiza que cualquier instancia de IA pueda regenerar el entregable de forma idéntica.
-
----
-
-## 7. Principios de diseño
-
-**Fidelidad sobre completitud.** Nunca inventar datos, reglas o pasos. Si la fuente no lo dice, no se afirma. Se marca como `estado: borrador` lo que requiere verificación.
-
-**Atomicidad.** Una idea por nota. Si una nota crece hasta cubrir dos conceptos que podrían cambiar independientemente, se parte en dos.
-
-**Citación obligatoria.** Toda nota cita su fuente al pie: archivo de origen y número de página. Sin fuente, la nota no está terminada.
-
-**Enlace liberal.** Se enlaza aunque la nota destino no exista aún. Un enlace huérfano es un marcador de trabajo futuro válido, no un error. El grafo crece incrementalmente.
-
-**Inmutabilidad de las fuentes.** Los archivos en `Markdown/` son sagrados — no se modifican nunca. Son la fuente de verdad inmutable. Todo el trabajo de atomización y curaduría ocurre en las carpetas numeradas.
-
-**Ciclo vivo.** El cerebro no se construye una sola vez. Cada vez que se aprende algo nuevo — en una reunión, al implementar código, al recibir una versión nueva de un documento — ese conocimiento vuelve al cerebro como nota nueva o actualización.
-
-**Escala incremental.** No es necesario atomizar todo el corpus antes de usar el sistema. Se puede empezar con el flujo o dominio más crítico y expandir on-demand, cuando se necesita consultar algo que aún no está atomizado.
+The detailed operating procedure — exact commands, the vN→vN+1 versioning flow, the pre-publish checklist, and common Typst errors with their solution — is kept in an accompanying process document alongside the vault or the document (e.g., `UPDATE-PROCESS-*.md`). That document is what guarantees that any AI instance can regenerate the deliverable identically.
 
 ---
 
-## 8. Caso de aplicación (ilustrativo)
+## 7. Design principles
 
-A modo de ejemplo **hipotético** — no corresponde a ningún cliente ni proyecto real — considérese la aplicación de N1X Cortex a un proyecto de integración en un sector regulado de alta densidad documental, cuyo corpus incluye:
+**Fidelity over completeness.** Never invent data, rules, or steps. If the source doesn't say it, it isn't asserted. Whatever requires verification is marked as `status: draft`.
 
-- Decenas de miles de líneas de documentación técnica y normativa (especificaciones de APIs, reglamentos, lineamientos de UX y ciberseguridad, catálogos de errores)
-- Una serie de talleres funcionales documentando flujos de proceso
-- Análisis estratégico de mercado con un conjunto de oportunidades identificadas
+**Atomicity.** One idea per note. If a note grows to cover two concepts that could change independently, it is split in two.
 
-El vault resultante contendría **varios cientos de notas atómicas** organizadas en carpetas temáticas, con un grafo de miles de conexiones. Permitiría responder preguntas complejas sobre cumplimiento normativo, generar código que ya cumple las especificaciones técnicas, y producir documentos estratégicos estructurados.
+**Mandatory citation.** Every note cites its source at the bottom: source file and page number. Without a source, the note is not finished.
 
-Un caso así valida la metodología en su escala más exigente: corpus multidimensional (técnico + normativo + estratégico), múltiples versiones de documentos, y necesidad de trazabilidad completa entre cada línea de código y la regla que la justifica.
+**Liberal linking.** Links are made even when the destination note does not yet exist. An orphan link is a valid marker of future work, not an error. The graph grows incrementally.
 
-La metodología es aplicable a cualquier proyecto con características similares — no es específica de ningún sector ni país.
+**Immutability of sources.** The files in `Markdown/` are sacred — they are never modified. They are the immutable source of truth. All the atomization and curation work happens in the numbered folders.
 
----
+**Living cycle.** The brain is not built only once. Every time something new is learned — in a meeting, while implementing code, when receiving a new version of a document — that knowledge flows back to the brain as a new note or an update.
 
-## 9. Autoría e IP
-
-**N1X Cortex** es una metodología original desarrollada por **N1X Technologies**.
-
-El nombre, la estructura de cuatro pilares, el pipeline de generación de documentos, los patrones de atomización y los componentes de diseño son propiedad intelectual de N1X Technologies.
-
-**Aplicaciones de la metodología** son instancias de uso — el vault generado pertenece al contexto de cada proyecto, pero la metodología en sí pertenece a su creador.
+**Incremental scale.** It is not necessary to atomize the entire corpus before using the system. You can start with the most critical flow or domain and expand on-demand, when you need to query something that is not yet atomized.
 
 ---
 
-*© 2026 N1X Technologies — Todos los derechos reservados.*
+## 8. Application case (illustrative)
+
+By way of a **hypothetical** example — corresponding to no client or real project — consider the application of N1X Cortex to an integration project in a regulated sector with high documentary density, whose corpus includes:
+
+- Tens of thousands of lines of technical and regulatory documentation (API specifications, regulations, UX and cybersecurity guidelines, error catalogs)
+- A series of functional workshops documenting process flows
+- Strategic market analysis with a set of identified opportunities
+
+The resulting vault would contain **several hundred atomic notes** organized into thematic folders, with a graph of thousands of connections. It would make it possible to answer complex questions about regulatory compliance, generate code that already meets the technical specifications, and produce structured strategic documents.
+
+A case like this validates the methodology at its most demanding scale: a multidimensional corpus (technical + regulatory + strategic), multiple versions of documents, and the need for complete traceability between each line of code and the rule that justifies it.
+
+The methodology is applicable to any project with similar characteristics — it is not specific to any sector or country.
+
+---
+
+## 9. Authorship and IP
+
+**N1X Cortex** is an original methodology developed by **N1X Technologies**.
+
+The name, the four-pillar structure, the document generation pipeline, the atomization patterns, and the design components are the intellectual property of N1X Technologies.
+
+**Applications of the methodology** are instances of use — the generated vault belongs to the context of each project, but the methodology itself belongs to its creator.
+
+---
+
+*© 2026 N1X Technologies — All rights reserved.*

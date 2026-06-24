@@ -1,71 +1,71 @@
-# Contribuir a N1X Cortex
+# Contributing to N1X Cortex
 
-N1X Cortex es open-source (MIT) y usa su propia metodología también para colaborar. Toda aportación —de mantenedores o de la comunidad— entra por **pull request**, y `main` siempre queda desplegable.
+N1X Cortex is open source (MIT), and it uses its own methodology to collaborate too. Every contribution — from maintainers or from the community — comes in through a **pull request**, and `main` always stays deployable.
 
 > [!NOTE]
-> ¿Solo quieres **usar** la metodología en tu propio proyecto (no mejorar este repo)? No necesitas esta guía: copia [`templates/colaboracion/`](templates/colaboracion/GUIA.md) a tu repo y sigue su `GUIA.md`. Este CONTRIBUTING es únicamente para mejorar **Cortex en sí**.
+> Just want to **use** the methodology in your own project (not improve this repo)? You don't need this guide: copy [`templates/collaboration/`](templates/collaboration/GUIDE.md) into your repo and follow its `GUIDE.md`. This CONTRIBUTING is only for improving **Cortex itself**.
 
-## Dos formas de contribuir
+## Two ways to contribute
 
-### 1. Comunidad / externos (sin acceso de escritura) → fork → PR
+### 1. Community / external (no write access) → fork → PR
 
 ```bash
 gh repo fork n1x-technologies/n1x-cortex --clone
 cd n1x-cortex
-bash templates/colaboracion/setup.sh          # configura tu identidad (una vez)
-git switch -c feat/tu-cambio
-# ...trabajas...
+bash templates/collaboration/setup.sh          # configures your identity (once)
+git switch -c feat/your-change
+# ...you work...
 git add -A && git commit
-git push -u origin feat/tu-cambio
+git push -u origin feat/your-change
 gh pr create --repo n1x-technologies/n1x-cortex --fill
 ```
 
-Un mantenedor revisa, sugiere cambios y mergea. ¡Gracias!
+A maintainer reviews, suggests changes, and merges. Thank you!
 
-### 2. Mantenedores / equipo (con acceso de escritura) → rama → PR
+### 2. Maintainers / team (with write access) → branch → PR
 
 ```bash
 git switch main && git pull
-bash templates/colaboracion/setup.sh          # una vez por clon
-git switch -c feat/tu-cambio
-# ...trabajas...
+bash templates/collaboration/setup.sh          # once per clone
+git switch -c feat/your-change
+# ...you work...
 git add -A && git commit
-git push -u origin feat/tu-cambio
+git push -u origin feat/your-change
 gh pr create --fill
-# otro mantenedor revisa y aprueba
+# another maintainer reviews and approves
 gh pr merge --squash --delete-branch
 ```
 
-## Mantenedores
+## Maintainers
 
-| Persona | GitHub |
+| Person | GitHub |
 |---|---|
 | Sebastian Dominguez | `wagnersebastiandc` |
 | Santiago Anticona | `otakusimao` |
 
-**El equipo puede crecer.** A un nuevo mantenedor se le da acceso al repo (org `n1x-technologies`); al clonar corre `setup.sh` —que detecta su cuenta automáticamente— y ya sigue el flujo de arriba. Nada está atado a una persona en concreto.
+**The team can grow.** A new maintainer gets access to the repo (org `n1x-technologies`); when they clone, they run `setup.sh` — which detects their account automatically — and then follow the flow above. Nothing is tied to any one person.
 
-## Configura tu identidad (una vez en tu clon)
+## Configure your identity (once per clone)
 
-**Vía rápida (recomendada):** `bash templates/colaboracion/setup.sh` — detecta tu cuenta con `gh` y configura tu identidad con tu email **noreply** de GitHub (para que tus commits se te atribuyan) + `commit.template` + un hook que bloquea push directo a `main`. Idempotente.
+**Fast path (recommended):** `bash templates/collaboration/setup.sh` — detects your account with `gh` and configures your identity with your GitHub **noreply** email (so your commits are attributed to you) + `commit.template` + a hook that blocks direct pushes to `main`. Idempotent.
 
 Manual:
 ```bash
-git config user.name  "Tu Nombre"
-git config user.email "TU_ID+TU_USUARIO@users.noreply.github.com"   # GitHub → Settings → Emails
+git config user.name  "Your Name"
+git config user.email "YOUR_ID+YOUR_USERNAME@users.noreply.github.com"   # GitHub → Settings → Emails
 git config commit.template .gitmessage
 ```
 
-## Estándares
+## Standards
 
-- **Ramas:** `feat|fix|chore|docs|refactor/descripcion-kebab`, de vida corta.
-- **Commits:** Conventional Commits — `tipo(ámbito): resumen en imperativo`.
-- **README al día en cada push** (convención N1X Cortex): si el cambio toca estructura/decisiones, actualiza el README en el mismo PR.
-- **El markdown es la fuente de verdad;** el PDF es salida derivada (ver `PROCESO-Actualizacion-N1X-Cortex.md`).
-- **🔒 Confidencialidad:** este repo es genérico y público. Nunca incluyas datos reales de ningún cliente/proyecto (ver `CLAUDE.md`).
+- **Branches:** `feat|fix|chore|docs|refactor/description-kebab`, short-lived.
+- **Commits:** Conventional Commits — `type(scope): summary in imperative`.
+- **README current on every push** (N1X Cortex convention): if the change touches structure or decisions, update the README in the same PR.
+- **Markdown is the source of truth;** the PDF is derived output (see `UPDATE-PROCESS.md`).
+- **🔒 Confidentiality:** this repo is generic and public. Never include real data from any client or project (see `CLAUDE.md`).
 
-## Revisión y co-autoría
+## Review and co-authorship
 
-Los mantenedores revisan los PRs. Cuando puedas mejorar el código de alguien, usa **"Add a suggestion"** en GitHub: si lo aceptan con **"Commit suggestion"**, GitHub te añade como co-autor automáticamente.
+Maintainers review the PRs. When you can improve someone's code, use **"Add a suggestion"** on GitHub: if they accept it with **"Commit suggestion"**, GitHub adds you as a co-author automatically.
 
-Marca `Co-authored-by:` **solo** cuando el cambio se hizo realmente entre dos personas (pairing, código compartido, o sugerencia aceptada en review) — no por pertenecer al mismo equipo. La mayoría de commits van con un solo autor.
+Add `Co-authored-by:` **only** when the change was genuinely made by two people (pairing, shared code, or a suggestion accepted in review) — not just for being on the same team. Most commits ship with a single author.

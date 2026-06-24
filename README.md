@@ -1,12 +1,12 @@
 <div align="center">
 
-# 🧠 N1X Cortex — Metodología de Gestión del Conocimiento Asistida por IA
+# 🧠 N1X Cortex — AI-Assisted Knowledge Management Methodology
 
-**Convierte grandes corpus de documentación en grafos de conocimiento atómico consultables por IA** — capaces de generar respuestas citadas, verificar cumplimiento y producir código o documentos estructurados.
+**Turn large documentation corpora into atomic knowledge graphs that AI can query** — and that can generate cited answers, verify compliance, and produce structured code or documents.
 
-![Versión](https://img.shields.io/badge/versión-2.0-1A1A2E)
-![Licencia](https://img.shields.io/badge/licencia-MIT-E94560)
-![Documentos](https://img.shields.io/badge/PDF-Typst-1A1A2E)
+![Version](https://img.shields.io/badge/version-2.0-1A1A2E)
+![License](https://img.shields.io/badge/license-MIT-E94560)
+![Documents](https://img.shields.io/badge/PDF-Typst-1A1A2E)
 ![by](https://img.shields.io/badge/by-N1X%20Technologies-E94560)
 
 </div>
@@ -14,179 +14,179 @@
 ---
 
 > [!IMPORTANT]
-> **Este repositorio es el artefacto de la metodología en sí — genérico y reutilizable.**
-> No es un proyecto de software ni el vault de un cliente: describe *cómo* convertir documentación en conocimiento consultable, de forma independiente a cualquier dominio donde se aplique. **No contiene datos de ningún cliente.**
+> **This repository is the methodology itself, captured as an artifact — generic and reusable.**
+> It is not a software project or a client vault. It describes *how* to turn documentation into queryable knowledge, independent of the domain you apply it to. **It contains no data from any client.**
 
-## 📑 Tabla de contenido
+## 📑 Table of contents
 
-- [¿Qué es N1X Cortex?](#-qué-es-n1x-cortex)
-- [Los 4 pilares](#-los-4-pilares)
-- [Cómo funciona](#-cómo-funciona)
-- [Para quién aplica](#-para-quién-aplica)
-- [Estructura del repositorio](#️-estructura-del-repositorio)
-- [Plantilla de documentos](#-plantilla-de-documentos)
-- [Cómo usar este repo](#️-cómo-usar-este-repo)
-- [Convenciones](#-convenciones)
-- [Versionado](#️-versionado)
-- [Licencia](#-licencia)
+- [What is N1X Cortex?](#-what-is-n1x-cortex)
+- [The 4 pillars](#-the-4-pillars)
+- [How it works](#-how-it-works)
+- [Who it applies to](#-who-it-applies-to)
+- [Repository structure](#️-repository-structure)
+- [Document template](#-document-template)
+- [How to use this repo](#️-how-to-use-this-repo)
+- [Conventions](#-conventions)
+- [Versioning](#️-versioning)
+- [License](#-license)
 
 ---
 
-## 🎯 ¿Qué es N1X Cortex?
+## 🎯 What is N1X Cortex?
 
-El problema central: **los documentos monolíticos no escalan.** Un corpus de 50,000+ líneas repartido en decenas de archivos no puede ser consultado por ninguna IA de forma efectiva — la información se fragmenta, se pierde el contexto, y el código o los documentos generados ignoran las restricciones reales del dominio.
+The core problem: **monolithic documents don't scale.** A corpus of 50,000+ lines spread across dozens of files can't be queried effectively by any AI — information gets fragmented, context is lost, and the code or documents it generates ignore the real constraints of the domain.
 
-N1X Cortex convierte esa masa documental en una **red de nodos atómicos** (una nota por concepto, por regla, por flujo), interconectados con enlaces semánticos y etiquetados con frontmatter estructurado. El resultado es un "segundo cerebro" que:
+N1X Cortex turns that documentary mass into a **network of atomic nodes** — one note per concept, per rule, per flow — interconnected with semantic links and tagged with structured frontmatter. The result is a "second brain" that:
 
-| Sin método (docs monolíticos) | Con N1X Cortex |
+| Without the method (monolithic docs) | With N1X Cortex |
 |---|---|
-| La IA no cabe el corpus en contexto | **Grafo de notas atómicas** consultable por partes |
-| Respuestas sin fuente, poco confiables | **Respuestas que citan la fuente exacta** |
-| Código generado que ignora las reglas | **Contexto preciso** → código conforme al dominio |
-| Cumplimiento difícil de verificar | **Verificación contra reglas atómicas** |
-| Conocimiento que se desactualiza | **Ciclo vivo:** todo aprendizaje vuelve al grafo |
+| The AI can't fit the corpus in context | **A graph of atomic notes** you can query piece by piece |
+| Unreliable answers with no sources | **Answers that cite the exact source** |
+| Generated code that ignores the rules | **Precise context** → code that complies with the domain |
+| Compliance that's hard to verify | **Verification against atomic rules** |
+| Knowledge that goes stale | **A living cycle:** every lesson learned flows back into the graph |
 
 ---
 
-## 🧩 Los 4 pilares
+## 🧩 The 4 pillars
 
 ```mermaid
 flowchart LR
-    A["1 · Atomizar<br/>una idea por nota"] --> B["2 · Conectar<br/>wikilinks [[ ]]"]
-    B --> C["3 · Curar<br/>MOCs · glosario · ciclo vivo"]
-    C --> D["4 · Capa IA<br/>consulta · cumplimiento · generación"]
+    A["1 · Atomize<br/>one idea per note"] --> B["2 · Connect<br/>wikilinks [[ ]]"]
+    B --> C["3 · Curate<br/>MOCs · glossary · living cycle"]
+    C --> D["4 · AI layer<br/>query · compliance · generation"]
     style A fill:#1A1A2E,color:#fff
     style D fill:#E94560,color:#fff
 ```
 
-1. **Atomizar** — partir cada fuente en unidades mínimas. Una nota = una idea. *Si trata dos cosas que cambian por separado, se parte en dos.*
-2. **Conectar** — enlazar notas relacionadas con wikilinks `[[ ]]`. Los enlaces son el tejido del grafo.
-3. **Curar** — mapas de contenido (MOCs), glosario, y **ciclo vivo**: todo aprendizaje nuevo vuelve al grafo.
-4. **Capa IA** — sobre el grafo: consultar, verificar cumplimiento, y generar código y documentos con el contexto correcto.
+1. **Atomize** — break each source down into its smallest units. One note = one idea. *If a note covers two things that change independently, split it in two.*
+2. **Connect** — link related notes with wikilinks `[[ ]]`. The links are the fabric of the graph.
+3. **Curate** — maps of content (MOCs), a glossary, and the **living cycle**: every new lesson flows back into the graph.
+4. **AI layer** — sits on top of the graph: query it, verify compliance, and generate code and documents with the right context.
 
-> El documento completo (9 secciones) está en **[`N1X-Cortex-v2.md`](N1X-Cortex-v2.md)** · PDF: [`N1X-Cortex-v2.pdf`](N1X-Cortex-v2.pdf).
+> The full document (9 sections) lives in **[`N1X-Cortex-v2.md`](N1X-Cortex-v2.md)** · PDF: [`N1X-Cortex-v2.pdf`](N1X-Cortex-v2.pdf).
 
 ---
 
-## 🔄 Cómo funciona
+## 🔄 How it works
 
 ```mermaid
 flowchart LR
-    SRC["📚 Corpus<br/>técnico · legal · estratégico"] --> ATOM["🧩 Notas atómicas<br/>frontmatter + cita de fuente"]
-    ATOM --> GRAPH["🕸️ Grafo<br/>wikilinks + MOCs"]
-    GRAPH --> AI["🤖 Capa IA"]
-    AI --> Q["Respuestas citadas"]
-    AI --> V["Verificación de cumplimiento"]
-    AI --> G["Código / documentos conformes"]
+    SRC["📚 Corpus<br/>technical · legal · strategic"] --> ATOM["🧩 Atomic notes<br/>frontmatter + source citation"]
+    ATOM --> GRAPH["🕸️ Graph<br/>wikilinks + MOCs"]
+    GRAPH --> AI["🤖 AI layer"]
+    AI --> Q["Cited answers"]
+    AI --> V["Compliance verification"]
+    AI --> G["Compliant code / documents"]
     style ATOM fill:#1A1A2E,color:#fff
     style AI fill:#E94560,color:#fff
 ```
 
 ---
 
-## 🌐 Para quién aplica
+## 🌐 Who it applies to
 
-Cualquier dominio con **alta densidad documental y requisitos de consistencia**:
+Any domain with **dense documentation and strict consistency requirements**:
 
-| Dominio | Corpus | Produce |
+| Domain | Corpus | Produces |
 |---|---|---|
-| **Regulatorio / fintech** | Reglamentos, circulares, specs | Cumplimiento verificable, código conforme |
-| **Legal / compliance** | Contratos, políticas, marcos | Consultas rápidas, obligaciones identificadas |
-| **Estratégico / producto** | Research, roadmaps, análisis | Decisiones informadas, documentos de producto |
-| **Técnico / ingeniería** | APIs, specs, arquitecturas | Código generado con contexto correcto |
-| **Operativo** | Procesos, manuales, runbooks | Consulta rápida, automatización de flujos |
+| **Regulatory / fintech** | Regulations, circulars, specs | Verifiable compliance, compliant code |
+| **Legal / compliance** | Contracts, policies, frameworks | Fast lookups, clearly identified obligations |
+| **Strategic / product** | Research, roadmaps, analysis | Informed decisions, product documents |
+| **Technical / engineering** | APIs, specs, architectures | Generated code with the right context |
+| **Operational** | Processes, manuals, runbooks | Fast lookups, workflow automation |
 
-Especialmente valiosa cuando el corpus supera las ~10,000 líneas, las reglas evolucionan seguido, y toda respuesta debe citar su fuente.
+It pays off most when the corpus runs past ~10,000 lines, the rules change often, and every answer has to cite its source.
 
 ---
 
-## 🗂️ Estructura del repositorio
+## 🗂️ Repository structure
 
 ```
 n1x-cortex/
-├── N1X-Cortex-v2.md          📄 La metodología (fuente de verdad vigente) — EMPIEZA AQUÍ
-├── N1X-Cortex-v2.typ         ·  Fuente Typst del PDF
-├── N1X-Cortex-v2.pdf         ·  PDF compilado (entregable)
-├── BRAIN-Metodologia-v1.*    🕰️ Versión 1 histórica (nombre anterior: BRAIN) — no se modifica
-├── PROCESO-Actualizacion-N1X-Cortex.md   ·  Cómo versionar y regenerar el PDF
+├── N1X-Cortex-v2.md          📄 The methodology (current source of truth) — START HERE
+├── N1X-Cortex-v2.typ         ·  Typst source of the PDF
+├── N1X-Cortex-v2.pdf         ·  Compiled PDF (deliverable)
+├── BRAIN-Metodologia-v1.*    🕰️ Historical version 1 (former name: BRAIN) — not modified
+├── UPDATE-PROCESS.md   ·  How to version and regenerate the PDF
 ├── templates/
-│   ├── typst/                📐 Plantilla de documentos (PDF), parametrizable por marca
-│   ├── readme/               📝 Plantilla + guía de README (el estándar de este README)
-│   └── colaboracion/         🤝 Plantilla de flujo de equipo (ramas, PR, co-autoría)
-├── CONTRIBUTING.md           ·  Cómo colaborar en este repo (instancia del estándar)
-├── .github/                  ·  Plantilla de pull request
-├── CLAUDE.md                 ·  Orientación para agentes de IA
+│   ├── typst/                📐 Document template (PDF), parameterizable by brand
+│   ├── readme/               📝 README template + guide (the standard this README follows)
+│   └── collaboration/         🤝 Team workflow template (branches, PR, co-authorship)
+├── CONTRIBUTING.md           ·  How to collaborate on this repo (an instance of the standard)
+├── .github/                  ·  Pull request template
+├── CLAUDE.md                 ·  Guidance for AI agents
 ├── LICENSE                   ·  MIT
-└── README.md                 ·  Este archivo
+└── README.md                 ·  This file
 ```
 
 ---
 
-## 📐 Plantilla de documentos
+## 📐 Document template
 
-`templates/typst/` es una **plantilla de documentos profesional, parametrizable por marca** — el 4º pilar (generar documentos) hecho herramienta. Genera PDFs de nivel consultora (propuestas, comparativos, reportes) desde Typst o desde Markdown.
+`templates/typst/` is a **professional, brand-parameterizable document template** — the 4th pillar (generating documents) turned into a working tool. It produces consulting-grade PDFs (proposals, comparisons, reports) from Typst or from Markdown.
 
-- **Re-marcable:** editas `marca.typ` (colores, logo, nombre). Sin logo → usa un wordmark tipográfico.
-- **Genérica:** no trae logos de ninguna marca. Sirve para cualquier proyecto o persona.
-- **Anti-"auto-generado":** cero emojis, jerarquía por tipografía y espacio, tablas diseñadas, portada de marca.
+- **Re-brandable:** edit `brand.typ` (colors, logo, name). No logo? It falls back to a typographic wordmark.
+- **Generic:** it ships with no brand's logos. It works for any project or person.
+- **Anti-"auto-generated":** no emojis, hierarchy through typography and whitespace, carefully designed tables, a branded cover.
 
 ```bash
 cd templates/typst
-cp ejemplo.typ mi-doc.typ      # parte del ejemplo
+cp example.typ mi-doc.typ      # start from the example
 typst compile mi-doc.typ mi-doc.pdf
 ```
 
-Guía completa en **[`templates/typst/README.md`](templates/typst/README.md)**.
+Full guide in **[`templates/typst/README.md`](templates/typst/README.md)**.
 
-**Plantilla de README:** `templates/readme/` trae la **plantilla rellenable** ([`PLANTILLA-README.md`](templates/readme/PLANTILLA-README.md)) y la **guía** ([`GUIA.md`](templates/readme/GUIA.md)) del estándar de README de N1X — el mismo formato de este archivo. Cópiala para que cualquier proyecto tenga un README al mismo nivel.
-
----
-
-## 🤝 Plantilla de colaboración
-
-`templates/colaboracion/` es el **estándar de trabajo en equipo** de N1X Cortex: `main` siempre desplegable, todo entra por **rama → pull request → revisión**, y la co-autoría sigue al trabajo real (incluida la que GitHub genera al aceptar sugerencias en review). Es genérica: cualquier equipo la adopta para *su* proyecto.
-
-- **Guía:** [`GUIA.md`](templates/colaboracion/GUIA.md) — el flujo completo y el porqué.
-- **Rellenables:** [`PLANTILLA-CONTRIBUTING.md`](templates/colaboracion/PLANTILLA-CONTRIBUTING.md), [`plantilla.gitmessage`](templates/colaboracion/plantilla.gitmessage), [`PLANTILLA-PR.md`](templates/colaboracion/PLANTILLA-PR.md).
-
-Este mismo repo la usa (dogfooding): ver [`CONTRIBUTING.md`](CONTRIBUTING.md).
+**README template:** `templates/readme/` provides the **fillable template** ([`README.template.md`](templates/readme/README.template.md)) and the **guide** ([`GUIDE.md`](templates/readme/GUIDE.md)) for the N1X README standard — the same format as this file. Copy it so any project gets a README at the same level.
 
 ---
 
-## 🛠️ Cómo usar este repo
+## 🤝 Collaboration template
 
-- **Leer la metodología:** abre [`N1X-Cortex-v2.md`](N1X-Cortex-v2.md) (o el PDF).
-- **Regenerar el PDF de la metodología:** `typst compile N1X-Cortex-v2.typ N1X-Cortex-v2.pdf` (detalle en [`PROCESO-Actualizacion-N1X-Cortex.md`](PROCESO-Actualizacion-N1X-Cortex.md)).
-- **Generar documentos de marca:** usa `templates/typst/` (arriba).
-- **Aplicar la metodología a un proyecto:** construye el vault siguiendo la estructura genérica (carpetas `00-MOC/` … `09-Estrategia/`, frontmatter estándar, wikilinks). El vault del proyecto vive en el repo de ese proyecto, **nunca aquí**.
+`templates/collaboration/` is the **teamwork standard** for N1X Cortex: `main` is always deployable, every change comes in through **branch → pull request → review**, and co-authorship tracks the work that was actually shared (including the co-author GitHub adds when you accept review suggestions). It's generic — any team can adopt it for *their* project.
 
----
+- **Guide:** [`GUIDE.md`](templates/collaboration/GUIDE.md) — the full flow and the reasoning behind it.
+- **Fillables:** [`CONTRIBUTING.template.md`](templates/collaboration/CONTRIBUTING.template.md), [`gitmessage.template`](templates/collaboration/gitmessage.template), [`PR.template.md`](templates/collaboration/PR.template.md).
 
-## 📌 Convenciones
-
-Estándares de la metodología N1X Cortex — aplican **a este repo y a todo proyecto que use Cortex**:
-
-- **📝 README al día en cada push.** El README refleja siempre el estado actual del repo. **Antes de cada `git push` se actualiza** para incluir lo que cambió (archivos nuevos, decisiones, estructura). Un README desactualizado es un bug.
-- **El markdown es la fuente de verdad.** El PDF es salida derivada — nunca se escribe a mano. Edita el `.md`, refleja en el `.typ`, recompila.
-- **Versionado, no sobrescritura.** Las versiones publicadas no se pisan; se sube de versión (`-v3`, `-v4`…) conservando las anteriores.
-- **Ciclo vivo.** Todo aprendizaje nuevo vuelve al grafo de conocimiento como nota o actualización.
+This very repo uses it (dogfooding): see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ---
 
-## 🕰️ Versionado
+## 🛠️ How to use this repo
 
-La metodología se llamaba **BRAIN** (v1). Desde la **v2.0** su nombre es **N1X Cortex**. Los archivos `BRAIN-Metodologia-v1.*` se conservan como histórico de evolución y no se modifican.
+- **Read the methodology:** open [`N1X-Cortex-v2.md`](N1X-Cortex-v2.md) (or the PDF).
+- **Regenerate the methodology PDF:** `typst compile N1X-Cortex-v2.typ N1X-Cortex-v2.pdf` (details in [`UPDATE-PROCESS.md`](UPDATE-PROCESS.md)).
+- **Generate branded documents:** use `templates/typst/` (above).
+- **Apply the methodology to a project:** build the vault following the generic structure (folders `00-MOC/` … `09-Estrategia/`, standard frontmatter, wikilinks). The project vault lives in that project's repo, **never here**.
 
 ---
 
-## 📜 Licencia
+## 📌 Conventions
 
-**[MIT](LICENSE)** © 2026 N1X Technologies. Úsala, modifícala y redistribúyela libremente. "N1X", "N1X Cortex" y "N1X Brain" son marcas de N1X Technologies; la licencia cubre el contenido y las plantillas, no las marcas.
+These are the N1X Cortex methodology standards — they apply **to this repo and to every project that uses Cortex**:
+
+- **📝 README kept current on every push.** The README always reflects the current state of the repo. **It's updated before every `git push`** to capture what changed (new files, decisions, structure). An outdated README is a bug.
+- **Markdown is the source of truth.** The PDF is derived output — never hand-written. Edit the `.md`, mirror it in the `.typ`, recompile.
+- **Version, don't overwrite.** Published versions are never overwritten; you bump the version (`-v3`, `-v4`…) and keep the earlier ones.
+- **Living cycle.** Every new lesson flows back into the knowledge graph as a note or an update.
+
+---
+
+## 🕰️ Versioning
+
+The methodology was originally called **BRAIN** (v1). As of **v2.0** its name is **N1X Cortex**. The `BRAIN-Metodologia-v1.*` files are kept as a historical record of how it evolved and are never modified.
+
+---
+
+## 📜 License
+
+**[MIT](LICENSE)** © 2026 N1X Technologies. Use it, modify it, and redistribute it freely. "N1X", "N1X Cortex", and "N1X Brain" are trademarks of N1X Technologies; the license covers the content and the templates, not the trademarks.
 
 ---
 
 <div align="center">
 
-*N1X Cortex · by N1X Technologies · © 2026 — Licencia MIT.*
+*N1X Cortex · by N1X Technologies · © 2026 — MIT License.*
 
 </div>
