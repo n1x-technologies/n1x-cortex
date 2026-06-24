@@ -1,0 +1,25 @@
+# N1X Cortex — distribution manifest
+# ───────────────────────────────────────────────────────────────────
+# Declares what Cortex publishes to consumer projects and HOW each file
+# should be adopted. A consumer's `.cortex-sync` maps these ids to local
+# paths; `cortex-sync.sh` reads both and reconciles.
+#
+# Format (pipe-delimited):  id | mode | source(relative to cortex root) | note
+#
+# Modes:
+#   overwrite = ENGINE file. Generic, no per-project content. Safe to replace
+#               on every sync. Re-branding/localization lives in SEPARATE
+#               instance files (e.g. brand.typ) that this never touches.
+#   notify    = INSTANCE file. The consumer keeps a localized/filled copy
+#               (translated comments, real names, brand). Sync NEVER overwrites
+#               it; it only flags when the upstream original changed, so you
+#               reconcile by hand.
+# ───────────────────────────────────────────────────────────────────
+
+typst-engine|overwrite|templates/typst/template.typ|Motor del template Typst. Re-marca vía brand.typ; el motor nunca se edita a mano.
+typst-converter|notify|templates/typst/convert-md.py|Conversor Markdown->Typst. Suele localizarse (comentarios); revisa el diff antes de adoptar.
+collab-setup|notify|templates/collaboration/setup.sh|Setup de colaboración. Se localiza por proyecto (idioma, mensajes).
+collab-pr|notify|templates/collaboration/PR.template.md|Plantilla de Pull Request. Instancia localizada por repo.
+collab-gitmessage|notify|templates/collaboration/gitmessage.template|Plantilla de commit. Lleva los co-autores del proyecto.
+collab-contributing|notify|templates/collaboration/CONTRIBUTING.template.md|CONTRIBUTING. Instancia localizada por repo.
+readme-standard|notify|templates/readme/README.template.md|Estándar de README. Cada repo mantiene su README como instancia.
