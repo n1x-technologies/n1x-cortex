@@ -111,7 +111,10 @@ n1x-cortex/
 ├── PROCESO-Actualizacion-N1X-Cortex.md   ·  Cómo versionar y regenerar el PDF
 ├── templates/
 │   ├── typst/                📐 Plantilla de documentos (PDF), parametrizable por marca
-│   └── readme/               📝 Plantilla + guía de README (el estándar de este README)
+│   ├── readme/               📝 Plantilla + guía de README (el estándar de este README)
+│   └── colaboracion/         🤝 Plantilla de flujo de equipo (ramas, PR, co-autoría)
+├── CONTRIBUTING.md           ·  Cómo colaborar en este repo (instancia del estándar)
+├── .github/                  ·  Plantilla de pull request
 ├── CLAUDE.md                 ·  Orientación para agentes de IA
 ├── LICENSE                   ·  MIT
 └── README.md                 ·  Este archivo
@@ -136,6 +139,17 @@ typst compile mi-doc.typ mi-doc.pdf
 Guía completa en **[`templates/typst/README.md`](templates/typst/README.md)**.
 
 **Plantilla de README:** `templates/readme/` trae la **plantilla rellenable** ([`PLANTILLA-README.md`](templates/readme/PLANTILLA-README.md)) y la **guía** ([`GUIA.md`](templates/readme/GUIA.md)) del estándar de README de N1X — el mismo formato de este archivo. Cópiala para que cualquier proyecto tenga un README al mismo nivel.
+
+---
+
+## 🤝 Plantilla de colaboración
+
+`templates/colaboracion/` es el **estándar de trabajo en equipo** de N1X Cortex: `main` siempre desplegable, todo entra por **rama → pull request → revisión**, y la co-autoría sigue al trabajo real (incluida la que GitHub genera al aceptar sugerencias en review). Es genérica: cualquier equipo la adopta para *su* proyecto.
+
+- **Guía:** [`GUIA.md`](templates/colaboracion/GUIA.md) — el flujo completo y el porqué.
+- **Rellenables:** [`PLANTILLA-CONTRIBUTING.md`](templates/colaboracion/PLANTILLA-CONTRIBUTING.md), [`plantilla.gitmessage`](templates/colaboracion/plantilla.gitmessage), [`PLANTILLA-PR.md`](templates/colaboracion/PLANTILLA-PR.md).
+
+Este mismo repo la usa (dogfooding): ver [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ---
 
