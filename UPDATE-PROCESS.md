@@ -29,6 +29,8 @@ The N1X Cortex methodology document describes the AI-assisted knowledge manageme
 └── UPDATE-PROCESS.md   ← this file
 ```
 
+> **In the git repo, PDFs are git-ignored** (generated on demand from the `.typ`, not committed). The `.md`/`.typ` are the source of truth; compile a PDF when you need to read or share one. The external archive above may keep versioned PDFs.
+
 ---
 
 ## Generation stack

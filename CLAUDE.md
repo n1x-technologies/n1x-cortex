@@ -17,10 +17,9 @@ To understand the full methodology, **read the source document first** (the high
 |---|---|
 | `N1X-Cortex-v2.md` | **Current source of truth.** The methodology content in markdown. |
 | `N1X-Cortex-v2.typ` | Typst source of the current PDF — mirrors the `.md` with layout. |
-| `N1X-Cortex-v2.pdf` | Current compiled PDF (the final deliverable). |
+| `N1X-Cortex-v2.pdf` | Compiled PDF — **git-ignored**, generated on demand (`typst compile`), not versioned. |
 | `BRAIN-Metodologia-v1.md` | **Historical** — the previous name (BRAIN). Not modified. |
 | `BRAIN-Metodologia-v1.typ` | **Historical** — Typst source of v1 (BRAIN). Not modified. |
-| `BRAIN-Metodologia-v1.pdf` | **Historical** — PDF of v1 (BRAIN). Not modified. |
 | `UPDATE-PROCESS.md` | **Operating procedure:** how to version, edit, and regenerate the PDF. Read it before changing anything. |
 | `CLAUDE.md` | This file. |
 | `README.md` | Entry point for humans. |

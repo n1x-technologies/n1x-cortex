@@ -65,7 +65,7 @@ flowchart LR
 3. **Curate** — maps of content (MOCs), a glossary, and the **living cycle**: every new lesson flows back into the graph.
 4. **AI layer** — sits on top of the graph: query it, verify compliance, and generate code and documents with the right context.
 
-> The full document (9 sections) lives in **[`N1X-Cortex-v2.md`](N1X-Cortex-v2.md)** · PDF: [`N1X-Cortex-v2.pdf`](N1X-Cortex-v2.pdf).
+> The full document (9 sections) lives in **[`N1X-Cortex-v2.md`](N1X-Cortex-v2.md)** (renders on GitHub). PDFs are git-ignored — compile the `.typ` when you need one.
 
 ---
 
@@ -106,9 +106,8 @@ It pays off most when the corpus runs past ~10,000 lines, the rules change often
 ```
 n1x-cortex/
 ├── N1X-Cortex-v2.md          📄 The methodology (current source of truth) — START HERE
-├── N1X-Cortex-v2.typ         ·  Typst source of the PDF
-├── N1X-Cortex-v2.pdf         ·  Compiled PDF (deliverable)
-├── BRAIN-Metodologia-v1.*    🕰️ Historical version 1 (former name: BRAIN) — not modified
+├── N1X-Cortex-v2.typ         ·  Typst source — compile to PDF (PDFs are git-ignored)
+├── BRAIN-Metodologia-v1.{md,typ}  🕰️ Historical v1 (former name: BRAIN) — not modified
 ├── UPDATE-PROCESS.md   ·  How to version and regenerate the PDF
 ├── templates/
 │   ├── typst/                📐 Document template (PDF), parameterizable by brand
@@ -160,7 +159,7 @@ This very repo uses it (dogfooding): see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## 🛠️ How to use this repo
 
-- **Read the methodology:** open [`N1X-Cortex-v2.md`](N1X-Cortex-v2.md) (or the PDF).
+- **Read the methodology:** open [`N1X-Cortex-v2.md`](N1X-Cortex-v2.md) (renders on GitHub), or compile the `.typ` to a PDF.
 - **Regenerate the methodology PDF:** `typst compile N1X-Cortex-v2.typ N1X-Cortex-v2.pdf` (details in [`UPDATE-PROCESS.md`](UPDATE-PROCESS.md)).
 - **Generate branded documents:** use `templates/typst/` (above).
 - **Apply the methodology to a project:** build the vault following the generic structure (folders `00-MOC/` … `09-Estrategia/`, standard frontmatter, wikilinks). The project vault lives in that project's repo, **never here**.
