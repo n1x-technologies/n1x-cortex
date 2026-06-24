@@ -106,6 +106,7 @@
   let classification-r = if classification != "" { classification } else { L.default-classification }
 
   let hl = if header-title != "" { header-title } else { brand-name }
+  let footer-name = if copyright != none { copyright } else { brand-name }
   let header-right = if client != "" { L.for-prefix + " " + client + " · " + classification-r } else { classification-r }
   let para-field   = if client != "" { client } else { "—" }
   let date-field   = if date != "" { date } else { "—" }
@@ -180,12 +181,12 @@
         #if logo-dark != none {
           grid(columns: (auto, 1fr, auto), column-gutter: 8pt,
             align(horizon)[#image(logo-dark, height: 9pt)],
-            align(left + horizon)[#brand-name · #classification-r],
+            align(left + horizon)[#footer-name · #classification-r],
             align(right + horizon)[#counter(page).display("1 / 1", both: true)],
           )
         } else {
           grid(columns: (1fr, auto),
-            align(left)[#brand-name · #classification-r],
+            align(left)[#footer-name · #classification-r],
             align(right)[#counter(page).display("1 / 1", both: true)],
           )
         }

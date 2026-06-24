@@ -13,6 +13,7 @@
 #let brand-name = "Your Company"   // appears in the footer and in "PREPARED BY"
 #let wordmark   = "YOUR BRAND"     // large text on the cover IF there is no logo
 #let eyebrow    = none             // optional sub-label under the logo, e.g. "DIVISION X" — or none
+#let copyright  = none             // optional footer copyright, e.g. "© 2026 Your Company". none → footer uses brand-name.
 
 // ── Logos (optional) ───────────────────────────────────────────────
 // Put your files in assets/ and uncomment. Leave `none` to use the wordmark.
