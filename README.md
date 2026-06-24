@@ -110,7 +110,8 @@ n1x-cortex/
 ├── BRAIN-Metodologia-v1.*    🕰️ Versión 1 histórica (nombre anterior: BRAIN) — no se modifica
 ├── PROCESO-Actualizacion-N1X-Cortex.md   ·  Cómo versionar y regenerar el PDF
 ├── templates/
-│   └── typst/                📐 Plantilla de documentos reutilizable (ver abajo)
+│   ├── typst/                📐 Plantilla de documentos (PDF), parametrizable por marca
+│   └── readme/               📝 Plantilla + guía de README (el estándar de este README)
 ├── CLAUDE.md                 ·  Orientación para agentes de IA
 ├── LICENSE                   ·  MIT
 └── README.md                 ·  Este archivo
@@ -133,6 +134,8 @@ typst compile mi-doc.typ mi-doc.pdf
 ```
 
 Guía completa en **[`templates/typst/README.md`](templates/typst/README.md)**.
+
+**Plantilla de README:** `templates/readme/` trae la **plantilla rellenable** ([`PLANTILLA-README.md`](templates/readme/PLANTILLA-README.md)) y la **guía** ([`GUIA.md`](templates/readme/GUIA.md)) del estándar de README de N1X — el mismo formato de este archivo. Cópiala para que cualquier proyecto tenga un README al mismo nivel.
 
 ---
 
