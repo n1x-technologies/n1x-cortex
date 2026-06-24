@@ -107,7 +107,6 @@ It pays off most when the corpus runs past ~10,000 lines, the rules change often
 n1x-cortex/
 ├── N1X-Cortex-v2.md          📄 The methodology (current source of truth) — START HERE
 ├── N1X-Cortex-v2.typ         ·  Typst source — compile to PDF (PDFs are git-ignored)
-├── BRAIN-Metodologia-v1.{md,typ}  🕰️ Historical v1 (former name: BRAIN) — not modified
 ├── UPDATE-PROCESS.md   ·  How to version and regenerate the PDF
 ├── templates/
 │   ├── typst/                📐 Document template (PDF), parameterizable by brand
@@ -188,14 +187,14 @@ These are the N1X Cortex methodology standards — they apply **to this repo and
 
 - **📝 README kept current on every push.** The README always reflects the current state of the repo. **It's updated before every `git push`** to capture what changed (new files, decisions, structure). An outdated README is a bug.
 - **Markdown is the source of truth.** The PDF is derived output — never hand-written. Edit the `.md`, mirror it in the `.typ`, recompile.
-- **Version, don't overwrite.** Published versions are never overwritten; you bump the version (`-v3`, `-v4`…) and keep the earlier ones.
+- **Keep only the latest.** The repo holds the current version; older versions live in **git history**, not as clutter in the tree.
 - **Living cycle.** Every new lesson flows back into the knowledge graph as a note or an update.
 
 ---
 
 ## 🕰️ Versioning
 
-The methodology was originally called **BRAIN** (v1). As of **v2.0** its name is **N1X Cortex**. The `BRAIN-Metodologia-v1.*` files are kept as a historical record of how it evolved and are never modified.
+The methodology was originally called **BRAIN**; since **v2.0** it is **N1X Cortex**. The repo keeps **only the current version** — older versions live in **git history**, not as files in the tree.
 
 ---
 

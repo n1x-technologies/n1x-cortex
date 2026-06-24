@@ -6,7 +6,7 @@ Claude Code reads this file automatically when you open the repo. It tells you w
 
 This is the **N1X Cortex methodology document** — an AI-assisted knowledge management methodology owned by **N1X Technologies**. It is NOT a software project or a client's vault: it's the **IP artifact** that describes the methodology itself, in a generic, reusable form that works across any domain.
 
-> **Brand note:** the methodology used to be called **BRAIN** (v1). Since v2.0 its name is **N1X Cortex** and the attribution is **N1X Technologies**. The `BRAIN-Metodologia-v1.*` files are kept as a historical record of how it evolved.
+> **Brand note:** the methodology used to be called **BRAIN**; since v2.0 its name is **N1X Cortex** and the attribution is **N1X Technologies**. Only the current version lives in the tree; older ones are in git history.
 
 To understand the full methodology, **read the source document first** (the highest version):
 - `N1X-Cortex-v2.md` ← **start here.** The markdown source of truth (current version).
@@ -18,8 +18,6 @@ To understand the full methodology, **read the source document first** (the high
 | `N1X-Cortex-v2.md` | **Current source of truth.** The methodology content in markdown. |
 | `N1X-Cortex-v2.typ` | Typst source of the current PDF — mirrors the `.md` with layout. |
 | `N1X-Cortex-v2.pdf` | Compiled PDF — **git-ignored**, generated on demand (`typst compile`), not versioned. |
-| `BRAIN-Metodologia-v1.md` | **Historical** — the previous name (BRAIN). Not modified. |
-| `BRAIN-Metodologia-v1.typ` | **Historical** — Typst source of v1 (BRAIN). Not modified. |
 | `UPDATE-PROCESS.md` | **Operating procedure:** how to version, edit, and regenerate the PDF. Read it before changing anything. |
 | `CLAUDE.md` | This file. |
 | `README.md` | Entry point for humans. |
@@ -34,7 +32,7 @@ A methodology was distilled — the **4 pillars**: Atomize · Connect · Curate 
 
 1. **Markdown is the source of truth.** The PDF is derived output — never hand-written. When the content changes: edit the `.md` first, then mirror it in the `.typ`, then recompile.
 2. **Regenerate the PDF:** `typst compile N1X-Cortex-v{N}.typ N1X-Cortex-v{N}.pdf`. The full procedure (versioning vN→vN+1, checklist, common Typst errors) is in `UPDATE-PROCESS.md`.
-3. **Versioning:** don't overwrite published versions; bump the version (`-v3`, `-v4`…) and keep the earlier ones, including the v1 files under the historical BRAIN name. (Exception: a confidentiality fix cleans up the current version rather than leaving it in circulation.)
+3. **Versioning:** keep **only the latest** version in the tree; bump the version (`-v3`, `-v4`…) when you publish a new one and let **git history** preserve the old. Don't accumulate old files.
 4. **Fixed attribution:** every deliverable carries the **N1X Technologies** attribution on the cover, footer, and final footer, with the current year's ©. No personal names, no contact email.
 5. **🔒 Confidentiality — hard rule:** this document is **generic and public**. **NEVER** include data from any client or real project: company names, real metrics (note counts, lines, workshops), real note IDs, proprietary flow or product names, specific countries or entities. Section 8 ("Application case") must stay **hypothetical and illustrative**. If you're asked to incorporate a real case, anonymize it completely or refuse.
 6. **Own brand palette:** N1X Cortex deliverables use their own palette (navy `1A1A2E` / coral `E94560`). Don't mix it with any client project's palette.
