@@ -77,5 +77,5 @@ git config commit.template .gitmessage
 1. Copia `PLANTILLA-CONTRIBUTING.md` a la raíz de tu repo como `CONTRIBUTING.md` y rellena los `{{...}}`.
 2. Copia `plantilla.gitmessage` como `.gitmessage` y rellena las líneas de co-autoría de tu equipo (déjalas comentadas).
 3. Copia `PLANTILLA-PR.md` a `.github/pull_request_template.md`.
-4. Cada miembro configura su identidad de git (arriba) y `commit.template`.
-5. (Recomendado) En GitHub → Settings → Branches, protege `main` para exigir PR + 1 aprobación.
+4. Copia `setup.sh` a tu repo. Cada miembro lo corre una vez (`bash setup.sh`): detecta su cuenta con `gh` y configura identidad noreply + `commit.template` + el hook que bloquea push directo a `main`. Idempotente.
+5. (Recomendado) En GitHub → Settings → Branches/Rules, protege `main` para exigir PR + 1 aprobación. **Nota:** en repos privados requiere plan Pro/Team; en repos públicos es gratis. Mientras tanto, el hook de `setup.sh` da una red de seguridad local.
