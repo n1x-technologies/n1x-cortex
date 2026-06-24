@@ -7,10 +7,10 @@
 #
 #
 # --- Co-autoría -------------------------------------------------------------
-# Descomenta la línea de la OTRA persona SOLO si aportó a ESTE cambio
-# (pairing, código compartido o sugerencia aceptada en review).
-# No por ser socios. Deja una línea en blanco arriba.
+# Si ESTE cambio se hizo entre dos personas (pairing, código compartido o
+# sugerencia aceptada en review), añádelas abajo —una línea en blanco arriba—.
+# Solo si fue trabajo real conjunto; no por estar en el mismo equipo.
+# El email noreply está en GitHub → Settings → Emails.
 #
-# Co-authored-by: Santiago Anticona <113515100+otakusimao@users.noreply.github.com>
-# Co-authored-by: Sebastian Dominguez <110055664+wagnersebastiandc@users.noreply.github.com>
+# Co-authored-by: Nombre Apellido <ID+usuario@users.noreply.github.com>
 # ---------------------------------------------------------------------------

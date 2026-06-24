@@ -1,66 +1,71 @@
 # Contribuir a N1X Cortex
 
-N1X Cortex usa su propia metodología también para colaborar: esta guía es una **instancia del estándar genérico** que vive en [`templates/colaboracion/`](templates/colaboracion/GUIA.md). Resumen: `main` siempre desplegable, todo entra por rama → pull request → revisión.
+N1X Cortex es open-source (MIT) y usa su propia metodología también para colaborar. Toda aportación —de mantenedores o de la comunidad— entra por **pull request**, y `main` siempre queda desplegable.
 
-## Equipo
+> [!NOTE]
+> ¿Solo quieres **usar** la metodología en tu propio proyecto (no mejorar este repo)? No necesitas esta guía: copia [`templates/colaboracion/`](templates/colaboracion/GUIA.md) a tu repo y sigue su `GUIA.md`. Este CONTRIBUTING es únicamente para mejorar **Cortex en sí**.
 
-| Persona | Usuario GitHub | Email noreply (para co-autoría) |
-|---|---|---|
-| Sebastian Dominguez | `wagnersebastiandc` | `110055664+wagnersebastiandc@users.noreply.github.com` |
-| Santiago Anticona | `otakusimao` | `113515100+otakusimao@users.noreply.github.com` |
+## Dos formas de contribuir
+
+### 1. Comunidad / externos (sin acceso de escritura) → fork → PR
+
+```bash
+gh repo fork n1x-technologies/n1x-cortex --clone
+cd n1x-cortex
+bash templates/colaboracion/setup.sh          # configura tu identidad (una vez)
+git switch -c feat/tu-cambio
+# ...trabajas...
+git add -A && git commit
+git push -u origin feat/tu-cambio
+gh pr create --repo n1x-technologies/n1x-cortex --fill
+```
+
+Un mantenedor revisa, sugiere cambios y mergea. ¡Gracias!
+
+### 2. Mantenedores / equipo (con acceso de escritura) → rama → PR
+
+```bash
+git switch main && git pull
+bash templates/colaboracion/setup.sh          # una vez por clon
+git switch -c feat/tu-cambio
+# ...trabajas...
+git add -A && git commit
+git push -u origin feat/tu-cambio
+gh pr create --fill
+# otro mantenedor revisa y aprueba
+gh pr merge --squash --delete-branch
+```
+
+## Mantenedores
+
+| Persona | GitHub |
+|---|---|
+| Sebastian Dominguez | `wagnersebastiandc` |
+| Santiago Anticona | `otakusimao` |
+
+**El equipo puede crecer.** A un nuevo mantenedor se le da acceso al repo (org `n1x-technologies`); al clonar corre `setup.sh` —que detecta su cuenta automáticamente— y ya sigue el flujo de arriba. Nada está atado a una persona en concreto.
 
 ## Configura tu identidad (una vez en tu clon)
 
-**Vía rápida (recomendada):** `bash templates/colaboracion/setup.sh` — detecta tu cuenta con `gh` y configura identidad noreply + `commit.template` + el hook anti-push-a-main. Idempotente.
+**Vía rápida (recomendada):** `bash templates/colaboracion/setup.sh` — detecta tu cuenta con `gh` y configura tu identidad con tu email **noreply** de GitHub (para que tus commits se te atribuyan) + `commit.template` + un hook que bloquea push directo a `main`. Idempotente.
 
-O manualmente, usando tu email **noreply** de GitHub para que tus commits se atribuyan a tu cuenta:
-
+Manual:
 ```bash
-# Sebastian
-git config user.name  "Sebastian Dominguez"
-git config user.email "110055664+wagnersebastiandc@users.noreply.github.com"
-
-# Santiago
-git config user.name  "Santiago Anticona"
-git config user.email "113515100+otakusimao@users.noreply.github.com"
-
-# ambos
+git config user.name  "Tu Nombre"
+git config user.email "TU_ID+TU_USUARIO@users.noreply.github.com"   # GitHub → Settings → Emails
 git config commit.template .gitmessage
 ```
 
-## Flujo de trabajo
-
-```bash
-git switch main && git pull
-git switch -c feat/lo-que-haces          # tipo/descripcion-kebab
-
-# ...trabajas...
-git add -A
-git commit                               # editor con .gitmessage
-
-git push -u origin feat/lo-que-haces
-gh pr create --fill
-# la otra persona revisa y aprueba
-gh pr merge --squash --delete-branch
-git switch main && git pull
-```
+## Estándares
 
 - **Ramas:** `feat|fix|chore|docs|refactor/descripcion-kebab`, de vida corta.
 - **Commits:** Conventional Commits — `tipo(ámbito): resumen en imperativo`.
 - **README al día en cada push** (convención N1X Cortex): si el cambio toca estructura/decisiones, actualiza el README en el mismo PR.
+- **El markdown es la fuente de verdad;** el PDF es salida derivada (ver `PROCESO-Actualizacion-N1X-Cortex.md`).
+- **🔒 Confidencialidad:** este repo es genérico y público. Nunca incluyas datos reales de ningún cliente/proyecto (ver `CLAUDE.md`).
 
-## Revisión
+## Revisión y co-autoría
 
-Se revisan mutuamente. Para revisar un PR:
+Los mantenedores revisan los PRs. Cuando puedas mejorar el código de alguien, usa **"Add a suggestion"** en GitHub: si lo aceptan con **"Commit suggestion"**, GitHub te añade como co-autor automáticamente.
 
-```bash
-gh pr list
-gh pr checkout <N>          # prueba la rama (opcional)
-gh pr review <N> --approve
-```
-
-Cuando puedas mejorar el código del otro, usa **"Add a suggestion"** en GitHub. Si lo acepta con **"Commit suggestion"**, GitHub te añade como co-autor automáticamente — colaboración real sin sentarse juntos.
-
-## Co-autoría
-
-Marca `Co-authored-by:` **solo** cuando el cambio se hizo de verdad entre los dos (pairing, código compartido, o sugerencia aceptada en review). No por ser socios. La mayoría de commits irán con un solo autor, y está bien. El `.gitmessage` ya trae ambas líneas comentadas: descomenta la de la otra persona cuando aplique.
+Marca `Co-authored-by:` **solo** cuando el cambio se hizo realmente entre dos personas (pairing, código compartido, o sugerencia aceptada en review) — no por pertenecer al mismo equipo. La mayoría de commits van con un solo autor.
