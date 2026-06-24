@@ -11,7 +11,9 @@ N1X Cortex usa su propia metodología también para colaborar: esta guía es una
 
 ## Configura tu identidad (una vez en tu clon)
 
-Usa tu email **noreply** de GitHub para que tus commits se atribuyan a tu cuenta:
+**Vía rápida (recomendada):** `bash templates/colaboracion/setup.sh` — detecta tu cuenta con `gh` y configura identidad noreply + `commit.template` + el hook anti-push-a-main. Idempotente.
+
+O manualmente, usando tu email **noreply** de GitHub para que tus commits se atribuyan a tu cuenta:
 
 ```bash
 # Sebastian

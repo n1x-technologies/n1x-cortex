@@ -40,6 +40,14 @@ Se destiló una metodología (los **4 pilares**: Atomizar · Conectar · Curar �
 5. **🔒 Confidencialidad — regla dura:** este documento es **genérico y público**. **NUNCA** incluyas datos de ningún cliente o proyecto real: nombres de empresa, métricas reales (conteos de notas, líneas, talleres), IDs de notas reales, nombres de flujos/productos propietarios, países o entidades específicas. La Sección 8 ("Caso de aplicación") debe permanecer **hipotética e ilustrativa**. Si te piden incorporar un caso real, anonimízalo por completo o recházalo.
 6. **Paleta de marca propia:** los entregables N1X Cortex usan su paleta propia (navy `1A1A2E` / coral `E94560`). No mezclar con la paleta de ningún proyecto cliente.
 
+## Colaboración (rama → PR) — léelo al empezar a trabajar aquí
+
+Este repo usa el estándar de colaboración N1X Cortex (detalle humano en `CONTRIBUTING.md`). Si trabajas aquí con Claude Code:
+
+1. **Onboarding (una vez por clon).** Si `git config user.email` no es un `@users.noreply.github.com`, corre `bash templates/colaboracion/setup.sh`. Detecta al usuario con `gh` y configura su identidad git (email noreply de SU cuenta, para que sus commits se le atribuyan), el `commit.template` y el hook que bloquea push directo a `main`. Es idempotente.
+2. **Nunca commitees ni pushees directo a `main`.** Todo cambio entra por: `git switch -c tipo/desc` → commit → `git push -u origin tipo/desc` → `gh pr create --fill` → la otra persona revisa → `gh pr merge --squash --delete-branch`.
+3. **Co-autoría solo cuando el trabajo fue real entre dos.** No por ser del mismo equipo. La vía natural sin pairing: aceptar *suggestions* en la review (GitHub añade el co-autor automáticamente). El `.gitmessage` trae las líneas listas para descomentar cuando aplique.
+
 ## Si te piden aplicar la metodología a un proyecto nuevo
 
 Este repo **describe** la metodología pero no es un vault operativo. Para construir un vault N1X Cortex en un proyecto nuevo, sigue la estructura genérica de la **Sección 4** del documento (carpetas `00-MOC/` … `09-Estrategia/`, frontmatter estándar, wikilinks) y los principios de la **Sección 7**. El vault del proyecto vive en el repo de ese proyecto, **nunca aquí**.
