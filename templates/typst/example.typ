@@ -14,6 +14,7 @@
   date: "June 2026",
   version: "v1.0",
   header-title: "Example document",
+  lang: "en",   // "en" (default) or "es" — localizes the cover/header/footer labels
 )
 
 = First heading (H1 — banner, starts a page)
