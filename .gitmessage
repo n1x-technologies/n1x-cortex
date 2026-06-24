@@ -1,16 +1,16 @@
-# <tipo>(<ámbito>): <resumen en imperativo, máx ~50 chars>
+# <type>(<scope>): <summary in imperative, max ~50 chars>
 #
-# Tipos: feat | fix | chore | docs | refactor | test | style
-# Ejemplo:  feat(metodologia): capítulo de colaboración
+# Types: feat | fix | chore | docs | refactor | test | style
+# Example:  feat(methodology): collaboration chapter
 #
-# Cuerpo (opcional): explica el PORQUÉ del cambio, no el qué (~72 chars).
+# Body (optional): explain the WHY of the change, not the what (~72 chars).
 #
 #
-# --- Co-autoría -------------------------------------------------------------
-# Si ESTE cambio se hizo entre dos personas (pairing, código compartido o
-# sugerencia aceptada en review), añádelas abajo —una línea en blanco arriba—.
-# Solo si fue trabajo real conjunto; no por estar en el mismo equipo.
-# El email noreply está en GitHub → Settings → Emails.
+# --- Co-authorship ----------------------------------------------------------
+# If THIS change was made by two people (pairing, shared code, or a
+# suggestion accepted in review), add them below —with a blank line above—.
+# Only if it was real joint work; not just for being on the same team.
+# The noreply email is on GitHub → Settings → Emails.
 #
-# Co-authored-by: Nombre Apellido <ID+usuario@users.noreply.github.com>
+# Co-authored-by: First Last <ID+user@users.noreply.github.com>
 # ---------------------------------------------------------------------------

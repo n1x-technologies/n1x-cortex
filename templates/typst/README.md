@@ -1,79 +1,79 @@
-# Plantilla de documentos (Typst) — parametrizable por marca
+# Document template (Typst) — parameterizable by brand
 
-Genera **PDFs de nivel consultora** (propuestas, comparativos, reportes) desde Typst o desde Markdown. **Genérico:** cualquiera lo re-marca con sus colores y su logo. No trae logos de ninguna marca.
+Generates **consultancy-grade PDFs** (proposals, comparatives, reports) from Typst or from Markdown. **Generic:** anyone re-brands it with their own colors and logo. It ships no logos for any brand.
 
-> **Filosofía (evita el look "auto-generado"):** cero emojis · jerarquía por tipografía, peso y espacio (no por color) · tablas diseñadas · portada de marca.
+> **Philosophy (avoid the "auto-generated" look):** zero emojis · hierarchy through typography, weight and space (not color) · designed tables · a branded cover.
 
-## Archivos
+## Files
 
-| Archivo | Qué es |
+| File | What it is |
 |---|---|
-| `marca.typ` | **Lo único que editas para re-marcar:** colores, logo, nombre, wordmark. |
-| `plantilla.typ` | El motor (estilos, componentes, portada). No se edita para re-marcar. |
-| `ejemplo.typ` | Documento de muestra con todos los componentes. |
-| `convertir-md.py` | Convierte un Markdown existente a este look (vía pandoc). |
-| `assets/` | Aquí pones tu logo (opcional). Ver `assets/LEEME.md`. |
+| `brand.typ` | **The only thing you edit to re-brand:** colors, logo, name, wordmark. |
+| `template.typ` | The engine (styles, components, cover). Not edited when re-branding. |
+| `example.typ` | Sample document showing every component. |
+| `convert-md.py` | Converts existing Markdown to this look (via pandoc). |
+| `assets/` | Where you put your logo (optional). See `assets/README.md`. |
 
-## Requisitos
+## Requirements
 
-- **Typst** (`typst --version`) — render del PDF.
-- **pandoc** — solo si conviertes desde Markdown.
-- Fuentes: macOS trae Helvetica Neue. En Linux instala una alternativa métrica (p. ej. Liberation Sans).
+- **Typst** (`typst --version`) — PDF rendering.
+- **pandoc** — only if you convert from Markdown.
+- Fonts: macOS ships Helvetica Neue. On Linux, install a metric-compatible alternative (e.g. Liberation Sans).
 
-## Empezar en 3 pasos
+## Get started in 3 steps
 
-1. **Copia esta carpeta** a tu proyecto.
-2. **Edita `marca.typ`** — pon tus colores, tu nombre y (opcional) tu logo en `assets/`.
-3. **Escribe y compila:**
+1. **Copy this folder** into your project.
+2. **Edit `brand.typ`** — set your colors, your name and (optionally) your logo in `assets/`.
+3. **Write and compile:**
 
 ```bash
-cp ejemplo.typ mi-doc.typ        # parte del ejemplo
-typst compile mi-doc.typ mi-doc.pdf
+cp example.typ my-doc.typ        # start from the example
+typst compile my-doc.typ my-doc.pdf
 ```
 
-Cabecera mínima de un documento:
+Minimal header of a document:
 
 ```typst
-#import "plantilla.typ": *
+#import "template.typ": *
 #show: doc.with(
-  title: "Título", subtitle: "Subtítulo",
-  doc-label: "Propuesta", client: "Cliente", date: "Junio 2026",
+  title: "Title", subtitle: "Subtitle",
+  doc-label: "Proposal", client: "Client", date: "June 2026",
 )
-= Primer encabezado
-Contenido...
+= First heading
+Content...
 ```
 
-## Componentes
+## Components
 
-`callout[..]` (nota) · `dark-callout[..]` (mensaje clave) · `metric(valor, label)` (en un `grid`) · `chk` (checkbox) · `yes` / `no`. Encabezados: `=` H1 (banner) · `==` H2 (barra) · `===` H3.
+`callout[..]` (note) · `dark-callout[..]` (key message) · `metric(value, label)` (in a `grid`) · `chk` (checkbox) · `yes` / `no`. Headings: `=` H1 (banner) · `==` H2 (bar) · `===` H3.
 
-## Re-marcar (marca.typ)
+## Re-brand (brand.typ)
 
 ```typst
-#let brand-name = "Mi Empresa"
-#let wordmark   = "MI MARCA"            // portada si no hay logo
-#let logo-light = "assets/logo-blanco.png"   // o none
-#let logo-dark  = "assets/logo-negro.png"    // o none
-#let primary    = rgb("292929")         // tu color oscuro
-#let secondary  = rgb("E5E5E5")         // tu claro
-#let accent     = primary               // o un color de acento
+#let brand-name = "My Company"
+#let wordmark   = "MY BRAND"            // cover if there is no logo
+#let logo-light = "assets/logo-white.png"   // or none
+#let logo-dark  = "assets/logo-black.png"    // or none
+#let primary    = rgb("292929")         // your dark color
+#let secondary  = rgb("E5E5E5")         // your light one
+#let accent     = primary               // or an accent color
 ```
 
-Sin logo → usa el wordmark. Con logo → ponlo en `assets/` (ver `assets/LEEME.md`).
+No logo → it uses the wordmark. With a logo → drop it in `assets/` (see `assets/README.md`).
 
-## Convertir un Markdown existente
+## Convert existing Markdown
 
-Para docs largos ya escritos en `.md`, usa `convertir-md.py` (edita el `__main__`). Hace: quita el título (lo pone la portada) · `> blockquotes` → callouts · desenvuelve tablas para que **partan entre páginas** · limpia emojis (`⬜` → checkbox). Luego `typst compile`.
+For long docs already written in `.md`, use `convert-md.py` (edit its `__main__`). It does the following: removes the title (the cover supplies it) · `> blockquotes` → callouts · unwraps tables so they **break across pages** · cleans out emojis (`⬜` → checkbox). Then `typst compile`.
 
-## Verificar sin abrir el PDF
+## Check without opening the PDF
 
 ```bash
-typst compile --pages 1 --ppi 110 mi-doc.typ portada.png   # portada
-typst compile --pages 5 --ppi 100 mi-doc.typ interior.png  # una página interior
+typst compile --pages 1 --ppi 110 my-doc.typ cover.png      # cover
+typst compile --pages 5 --ppi 100 my-doc.typ interior.png   # an inner page
 ```
 
-## Trucos (no repetir errores)
+## Tips (don't repeat these mistakes)
 
-- **Tablas que no parten / encabezado huérfano con página vacía:** pandoc envuelve tablas en `#figure` que no se parte; el script las desenvuelve. A mano, usa `#table` directo.
-- **Guionado feo** (`pun-ta`, `conductor--vehículo`): la plantilla ya desactiva `hyphenate` y el justificado dentro de tablas y métricas.
-- **Columna desproporcionada:** fuerza `columns:` explícitas en esa tabla.
+- **Tables that don't break / an orphan header on an empty page:** pandoc wraps tables in `#figure`, which doesn't break; the script unwraps them. By hand, use `#table` directly.
+- **Ugly hyphenation** (`exam-ple`, `data--driven`): the template already disables `hyphenate` and justification inside tables and metrics.
+- **Disproportionate column:** force explicit `columns:` on that table.
