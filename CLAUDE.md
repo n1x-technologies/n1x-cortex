@@ -1,53 +1,53 @@
-# CLAUDE.md — Repositorio de la metodología N1X Cortex
+# CLAUDE.md — N1X Cortex methodology repository
 
-Este archivo lo lee Claude Code automáticamente al abrir el repo. Te orienta para que **entiendas qué es este repositorio y cómo trabajar con él** sin necesidad de explicación adicional.
+Claude Code reads this file automatically when you open the repo. It tells you what this repository is and how to work with it, so you don't need any further explanation.
 
-## Qué es este repositorio
+## What this repository is
 
-Es el **documento de la metodología N1X Cortex** — una metodología de gestión del conocimiento asistida por IA, propiedad de **N1X Technologies**. NO es un proyecto de software ni el vault de un cliente: es el **artefacto de IP** que describe la metodología en sí, de forma genérica y reutilizable en cualquier dominio.
+This is the **N1X Cortex methodology document** — an AI-assisted knowledge management methodology owned by **N1X Technologies**. It is NOT a software project or a client's vault: it's the **IP artifact** that describes the methodology itself, in a generic, reusable form that works across any domain.
 
-> **Nota de marca:** la metodología se llamaba antes **BRAIN** (v1). Desde la v2.0 su nombre es **N1X Cortex** y la atribución es **N1X Technologies**. Los archivos `BRAIN-Metodologia-v1.*` se conservan como histórico de evolución.
+> **Brand note:** the methodology used to be called **BRAIN** (v1). Since v2.0 its name is **N1X Cortex** and the attribution is **N1X Technologies**. The `BRAIN-Metodologia-v1.*` files are kept as a historical record of how it evolved.
 
-Para entender la metodología completa, **lee primero el documento fuente** (la versión más alta):
-- `N1X-Cortex-v2.md` ← **empieza por aquí.** Fuente de verdad en markdown (versión vigente).
+To understand the full methodology, **read the source document first** (the highest version):
+- `N1X-Cortex-v2.md` ← **start here.** The markdown source of truth (current version).
 
-## Inventario de archivos
+## File inventory
 
-| Archivo | Qué es |
+| File | What it is |
 |---|---|
-| `N1X-Cortex-v2.md` | **Fuente de verdad vigente.** El contenido de la metodología en markdown. |
-| `N1X-Cortex-v2.typ` | Fuente Typst del PDF vigente — refleja el `.md` con maquetación. |
-| `N1X-Cortex-v2.pdf` | PDF compilado vigente (el entregable final). |
-| `BRAIN-Metodologia-v1.md` | **Histórico** — era el nombre anterior (BRAIN). No se modifica. |
-| `BRAIN-Metodologia-v1.typ` | **Histórico** — fuente Typst de la v1 (BRAIN). No se modifica. |
-| `BRAIN-Metodologia-v1.pdf` | **Histórico** — PDF de la v1 (BRAIN). No se modifica. |
-| `PROCESO-Actualizacion-N1X-Cortex.md` | **Procedimiento operativo:** cómo versionar, editar y regenerar el PDF. Léelo antes de modificar nada. |
-| `CLAUDE.md` | Este archivo. |
-| `README.md` | Entrada para humanos. |
+| `N1X-Cortex-v2.md` | **Current source of truth.** The methodology content in markdown. |
+| `N1X-Cortex-v2.typ` | Typst source of the current PDF — mirrors the `.md` with layout. |
+| `N1X-Cortex-v2.pdf` | Current compiled PDF (the final deliverable). |
+| `BRAIN-Metodologia-v1.md` | **Historical** — the previous name (BRAIN). Not modified. |
+| `BRAIN-Metodologia-v1.typ` | **Historical** — Typst source of v1 (BRAIN). Not modified. |
+| `BRAIN-Metodologia-v1.pdf` | **Historical** — PDF of v1 (BRAIN). Not modified. |
+| `UPDATE-PROCESS.md` | **Operating procedure:** how to version, edit, and regenerate the PDF. Read it before changing anything. |
+| `CLAUDE.md` | This file. |
+| `README.md` | Entry point for humans. |
 
-## Qué se hizo aquí (resumen)
+## What was done here (summary)
 
-Se destiló una metodología (los **4 pilares**: Atomizar · Conectar · Curar · Capa IA) en un documento estructurado de 9 secciones, y se construyó un **pipeline de generación de PDF** con Typst (ver Sección 6 del documento y el `PROCESO`). El documento es independiente de cualquier proyecto donde se aplique la metodología.
+A methodology was distilled — the **4 pillars**: Atomize · Connect · Curate · AI Layer — into a structured 9-section document, and a **PDF generation pipeline** was built with Typst (see Section 6 of the document and the `PROCESO`). The document stands on its own, independent of any project the methodology is applied to.
 
-## Reglas para trabajar en este repo
+## Rules for working in this repo
 
-> **📝 Convención N1X Cortex (aplica a TODO proyecto): el README se actualiza en cada push.** Antes de cualquier `git push`, revisa y actualiza el `README.md` del repo para que refleje el estado actual (archivos nuevos, decisiones, estructura, cronograma). Un README desactualizado es un bug. Este estándar vale para este repo y para cualquier proyecto que use la metodología N1X Cortex.
+> **📝 N1X Cortex convention (applies to EVERY project): the README is updated on every push.** Before any `git push`, review and update the repo's `README.md` so it reflects the current state (new files, decisions, structure, schedule). An outdated README is a bug. This standard applies to this repo and to any project that uses the N1X Cortex methodology.
 
-1. **El markdown es la fuente de verdad.** El PDF es salida derivada — nunca se escribe a mano. Si cambia el contenido: edita el `.md` primero, luego refleja en el `.typ`, luego recompila.
-2. **Regenerar el PDF:** `typst compile N1X-Cortex-v{N}.typ N1X-Cortex-v{N}.pdf`. El procedimiento completo (versionado vN→vN+1, checklist, errores comunes de Typst) está en `PROCESO-Actualizacion-N1X-Cortex.md`.
-3. **Versionado:** no sobrescribas versiones publicadas; sube de versión (`-v3`, `-v4`…) y conserva las anteriores, incluidas las v1 con el nombre histórico BRAIN. (Excepción: un fix de confidencialidad sí limpia la versión vigente en lugar de dejarla circular.)
-4. **Atribución fija:** todo entregable lleva la atribución **N1X Technologies** en portada, footer y pie final, con © del año en curso. Sin nombres personales y sin email de contacto.
-5. **🔒 Confidencialidad — regla dura:** este documento es **genérico y público**. **NUNCA** incluyas datos de ningún cliente o proyecto real: nombres de empresa, métricas reales (conteos de notas, líneas, talleres), IDs de notas reales, nombres de flujos/productos propietarios, países o entidades específicas. La Sección 8 ("Caso de aplicación") debe permanecer **hipotética e ilustrativa**. Si te piden incorporar un caso real, anonimízalo por completo o recházalo.
-6. **Paleta de marca propia:** los entregables N1X Cortex usan su paleta propia (navy `1A1A2E` / coral `E94560`). No mezclar con la paleta de ningún proyecto cliente.
+1. **Markdown is the source of truth.** The PDF is derived output — never hand-written. When the content changes: edit the `.md` first, then mirror it in the `.typ`, then recompile.
+2. **Regenerate the PDF:** `typst compile N1X-Cortex-v{N}.typ N1X-Cortex-v{N}.pdf`. The full procedure (versioning vN→vN+1, checklist, common Typst errors) is in `UPDATE-PROCESS.md`.
+3. **Versioning:** don't overwrite published versions; bump the version (`-v3`, `-v4`…) and keep the earlier ones, including the v1 files under the historical BRAIN name. (Exception: a confidentiality fix cleans up the current version rather than leaving it in circulation.)
+4. **Fixed attribution:** every deliverable carries the **N1X Technologies** attribution on the cover, footer, and final footer, with the current year's ©. No personal names, no contact email.
+5. **🔒 Confidentiality — hard rule:** this document is **generic and public**. **NEVER** include data from any client or real project: company names, real metrics (note counts, lines, workshops), real note IDs, proprietary flow or product names, specific countries or entities. Section 8 ("Application case") must stay **hypothetical and illustrative**. If you're asked to incorporate a real case, anonymize it completely or refuse.
+6. **Own brand palette:** N1X Cortex deliverables use their own palette (navy `1A1A2E` / coral `E94560`). Don't mix it with any client project's palette.
 
-## Colaboración (rama → PR) — léelo al empezar a trabajar aquí
+## Collaboration (branch → PR) — read this before you start working here
 
-Este repo usa el estándar de colaboración N1X Cortex (detalle humano en `CONTRIBUTING.md`). Si trabajas aquí con Claude Code:
+This repo follows the N1X Cortex collaboration standard (the human-facing detail is in `CONTRIBUTING.md`). If you're working here with Claude Code:
 
-1. **Onboarding (una vez por clon).** Si `git config user.email` no es un `@users.noreply.github.com`, corre `bash templates/colaboracion/setup.sh`. Detecta al usuario con `gh` y configura su identidad git (email noreply de SU cuenta, para que sus commits se le atribuyan), el `commit.template` y el hook que bloquea push directo a `main`. Es idempotente.
-2. **Nunca commitees ni pushees directo a `main`.** Todo cambio entra por: `git switch -c tipo/desc` → commit → `git push -u origin tipo/desc` → `gh pr create --fill` → la otra persona revisa → `gh pr merge --squash --delete-branch`.
-3. **Co-autoría solo cuando el trabajo fue real entre dos.** No por ser del mismo equipo. La vía natural sin pairing: aceptar *suggestions* en la review (GitHub añade el co-autor automáticamente). El `.gitmessage` trae las líneas listas para descomentar cuando aplique.
+1. **Onboarding (once per clone).** If `git config user.email` isn't a `@users.noreply.github.com` address, run `bash templates/collaboration/setup.sh`. It detects the user with `gh` and configures their git identity (their account's noreply email, so their commits are attributed to them), the `commit.template`, and the hook that blocks direct pushes to `main`. It's idempotent.
+2. **Never commit or push directly to `main`.** Every change comes in through: `git switch -c type/desc` → commit → `git push -u origin type/desc` → `gh pr create --fill` → the other person reviews → `gh pr merge --squash --delete-branch`.
+3. **Co-authorship only when the work was genuinely done by two people** — not just because you're on the same team. The natural path without pairing: accept *suggestions* in review (GitHub adds the co-author automatically). The `.gitmessage` ships with the lines ready to uncomment when they apply.
 
-## Si te piden aplicar la metodología a un proyecto nuevo
+## If you're asked to apply the methodology to a new project
 
-Este repo **describe** la metodología pero no es un vault operativo. Para construir un vault N1X Cortex en un proyecto nuevo, sigue la estructura genérica de la **Sección 4** del documento (carpetas `00-MOC/` … `09-Estrategia/`, frontmatter estándar, wikilinks) y los principios de la **Sección 7**. El vault del proyecto vive en el repo de ese proyecto, **nunca aquí**.
+This repo **describes** the methodology but isn't an operational vault. To build an N1X Cortex vault in a new project, follow the generic structure in **Section 4** of the document (folders `00-MOC/` … `09-Estrategia/`, standard frontmatter, wikilinks) and the principles in **Section 7**. The project's vault lives in that project's repo, **never here**.
