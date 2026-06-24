@@ -127,6 +127,7 @@ n1x-cortex/
 `templates/typst/` is a **professional, brand-parameterizable document template** — the 4th pillar (generating documents) turned into a working tool. It produces consulting-grade PDFs (proposals, comparisons, reports) from Typst or from Markdown.
 
 - **Re-brandable:** edit `brand.typ` (colors, logo, name). No logo? It falls back to a typographic wordmark.
+- **Multilingual:** the `lang` option (`en` default · `es`) localizes the template chrome (cover/header/footer labels, `yes`/`no` helpers, hyphenation) while your document body stays in whatever language you write. Add a language with one entry in `labels`.
 - **Generic:** it ships with no brand's logos. It works for any project or person.
 - **Anti-"auto-generated":** no emojis, hierarchy through typography and whitespace, carefully designed tables, a branded cover.
 
