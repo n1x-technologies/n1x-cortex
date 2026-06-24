@@ -4,7 +4,7 @@
 
 **Turn large documentation corpora into atomic knowledge graphs that AI can query** — and that can generate cited answers, verify compliance, and produce structured code or documents.
 
-![Version](https://img.shields.io/badge/version-2.0-1A1A2E)
+![Version](https://img.shields.io/badge/version-2.1-1A1A2E)
 ![License](https://img.shields.io/badge/license-MIT-E94560)
 ![Documents](https://img.shields.io/badge/PDF-Typst-1A1A2E)
 ![by](https://img.shields.io/badge/by-N1X%20Technologies-E94560)
@@ -26,6 +26,7 @@
 - [Repository structure](#️-repository-structure)
 - [Document template](#-document-template)
 - [How to use this repo](#️-how-to-use-this-repo)
+- [Staying in sync](#-staying-in-sync)
 - [Conventions](#-conventions)
 - [Versioning](#️-versioning)
 - [License](#-license)
@@ -113,7 +114,10 @@ n1x-cortex/
 │   ├── typst/                📐 Document template (PDF), parameterizable by brand
 │   ├── readme/               📝 README template + guide (the standard this README follows)
 │   └── collaboration/         🤝 Team workflow template (branches, PR, co-authorship)
+├── sync/                     🔄 Cross-project sync (manifest + cortex-sync.sh)
+├── VERSION                   ·  Cortex version (read by the sync tool)
 ├── CONTRIBUTING.md           ·  How to collaborate on this repo (an instance of the standard)
+├── .gitmessage               ·  Commit message template (instance of the standard)
 ├── .github/                  ·  Pull request template
 ├── CLAUDE.md                 ·  Guidance for AI agents
 ├── LICENSE                   ·  MIT
@@ -160,6 +164,22 @@ This very repo uses it (dogfooding): see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 - **Regenerate the methodology PDF:** `typst compile N1X-Cortex-v2.typ N1X-Cortex-v2.pdf` (details in [`UPDATE-PROCESS.md`](UPDATE-PROCESS.md)).
 - **Generate branded documents:** use `templates/typst/` (above).
 - **Apply the methodology to a project:** build the vault following the generic structure (folders `00-MOC/` … `09-Estrategia/`, standard frontmatter, wikilinks). The project vault lives in that project's repo, **never here**.
+
+---
+
+## 🔄 Staying in sync
+
+Cortex is the source of truth for the shared templates; consumer projects (e.g. `n1x-transport`) **pull updates with one command** instead of re-doing upgrades by hand. The trick is the **engine vs instance** split:
+
+- **engine** files (generic, e.g. the Typst `template.typ`) are **overwritten** on sync — safe, because branding lives elsewhere.
+- **instance** files (your `brand.typ`, your localized `CONTRIBUTING.md`) are **never touched**; sync only **flags** when the upstream original changed.
+
+```bash
+# from a consumer repo that has a .cortex-sync file:
+bash <(curl -fsSL https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/sync/cortex-sync.sh) --check
+```
+
+Full guide and onboarding in [`sync/README.md`](sync/README.md). What Cortex publishes: [`sync/manifest`](sync/manifest).
 
 ---
 
