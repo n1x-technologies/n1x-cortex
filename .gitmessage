@@ -1,0 +1,16 @@
+# <tipo>(<ámbito>): <resumen en imperativo, máx ~50 chars>
+#
+# Tipos: feat | fix | chore | docs | refactor | test | style
+# Ejemplo:  feat(metodologia): capítulo de colaboración
+#
+# Cuerpo (opcional): explica el PORQUÉ del cambio, no el qué (~72 chars).
+#
+#
+# --- Co-autoría -------------------------------------------------------------
+# Descomenta la línea de la OTRA persona SOLO si aportó a ESTE cambio
+# (pairing, código compartido o sugerencia aceptada en review).
+# No por ser socios. Deja una línea en blanco arriba.
+#
+# Co-authored-by: Santiago Anticona <113515100+otakusimao@users.noreply.github.com>
+# Co-authored-by: Sebastian Dominguez <110055664+wagnersebastiandc@users.noreply.github.com>
+# ---------------------------------------------------------------------------
