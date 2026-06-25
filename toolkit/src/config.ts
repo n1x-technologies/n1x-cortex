@@ -36,7 +36,12 @@ export function loadConfig(vaultDir: string, sampleKeys: string[] = []): CortexC
   const file = join(vaultDir, '.cortex.json');
   if (!existsSync(file)) return defaults;
 
-  const override = JSON.parse(readFileSync(file, 'utf8')) as Partial<CortexConfig>;
+  let override: Partial<CortexConfig>;
+  try {
+    override = JSON.parse(readFileSync(file, 'utf8')) as Partial<CortexConfig>;
+  } catch (e) {
+    throw new Error(`Invalid .cortex.json in ${vaultDir}: ${(e as Error).message}`);
+  }
   return {
     ...defaults,
     ...override,
