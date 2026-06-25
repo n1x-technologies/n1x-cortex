@@ -3,3 +3,8 @@ _img/
 
 # PDFs are derived from .typ — generated on demand, not versioned (coherente con consumers)
 *.pdf
+
+# Scratch / tooling working dirs (not part of the repo)
+.design/
+.playwright-mcp/
+__pycache__/
