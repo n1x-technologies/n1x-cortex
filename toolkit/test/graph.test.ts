@@ -19,4 +19,20 @@ describe('buildGraph', () => {
     expect(g.nodes.get('Ghost')?.exists).toBe(false);
     expect(g.nodes.get('A')?.exists).toBe(true);
   });
+
+  it('resolves links by title and basename, with id taking precedence', () => {
+    const notes = [
+      note({ path: 'p.md', id: 'P1', title: 'Alpha', links: [] }),
+      note({ path: 'q.md', id: 'Q1', title: 'Qx', links: [{ target: 'Alpha', heading: null }] }),
+      note({ path: 'BaseName.md', id: 'R1', title: 'Rx', links: [] }),
+      note({ path: 's.md', id: 'S1', title: 'Sx', links: [{ target: 'BaseName', heading: null }] }),
+      note({ path: 'm.md', id: 'Dup', title: 'Mx', links: [] }),
+      note({ path: 'n.md', id: 'N1', title: 'Dup', links: [] }),
+      note({ path: 'z.md', id: 'Z1', title: 'Zx', links: [{ target: 'Dup', heading: null }] }),
+    ];
+    const g = buildGraph(notes);
+    expect(g.edges).toContainEqual({ from: 'Q1', to: 'P1', heading: null }); // by title
+    expect(g.edges).toContainEqual({ from: 'S1', to: 'R1', heading: null }); // by basename
+    expect(g.edges).toContainEqual({ from: 'Z1', to: 'Dup', heading: null }); // id beats title 'Dup'
+  });
 });
