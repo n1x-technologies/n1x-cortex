@@ -4,7 +4,7 @@ Claude Code reads this file automatically when you open the repo. It tells you w
 
 ## What this repository is
 
-This is the **N1X Cortex methodology document** — an AI-assisted knowledge management methodology owned by **N1X Technologies**. It is NOT a software project or a client's vault: it's the **IP artifact** that describes the methodology itself, in a generic, reusable form that works across any domain.
+This is the **N1X Cortex methodology** owned by **N1X Technologies** — the **IP artifact** that describes the method in a generic, reusable form, **plus its open-source engine** (`toolkit/`) that implements it. It is NOT a client's vault and contains no client data. The methodology document is the source of truth; the toolkit is the method turned into a working local tool.
 
 > **Brand note:** the methodology used to be called **BRAIN**; since v2.0 its name is **N1X Cortex** and the attribution is **N1X Technologies**. Only the current version lives in the tree; older ones are in git history.
 
@@ -19,6 +19,8 @@ To understand the full methodology, **read the source document first** (the high
 | `N1X-Cortex-v2.typ` | Typst source of the current PDF — mirrors the `.md` with layout. |
 | `N1X-Cortex-v2.pdf` | Compiled PDF — **git-ignored**, generated on demand (`typst compile`), not versioned. |
 | `UPDATE-PROCESS.md` | **Operating procedure:** how to version, edit, and regenerate the PDF. Read it before changing anything. |
+| `toolkit/` | **The Cortex engine** (Node/TS): reads any markdown vault into a note graph; CLI `init`/`status`/`orphans` (Phase 0, read-only). |
+| `docs/superpowers/` | Design spec (`specs/`) and implementation plans (`plans/`) for the toolkit. |
 | `CLAUDE.md` | This file. |
 | `README.md` | Entry point for humans. |
 
@@ -47,4 +49,4 @@ This repo follows the N1X Cortex collaboration standard (the human-facing detail
 
 ## If you're asked to apply the methodology to a new project
 
-This repo **describes** the methodology but isn't an operational vault. To build an N1X Cortex vault in a new project, follow the generic structure in **Section 4** of the document (folders `00-MOC/` … `09-Estrategia/`, standard frontmatter, wikilinks) and the principles in **Section 7**. The project's vault lives in that project's repo, **never here**.
+This repo **describes** the methodology but isn't an operational vault. To build an N1X Cortex vault in a new project, follow the generic structure in **Section 4** of the document (folders `00-MOC/` … `09-Strategy/`, standard frontmatter, wikilinks) and the principles in **Section 7**. The project's vault lives in that project's repo, **never here**.
