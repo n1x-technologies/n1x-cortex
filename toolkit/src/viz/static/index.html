@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cortex Viewer</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="vendor/cytoscape.min.js"></script>
+</head>
+<body>
+  <header id="bar">
+    <span class="brand">N1X&nbsp;Cortex</span>
+    <span id="stats" class="stats">loading…</span>
+    <span class="spacer"></span>
+    <label class="colorby">Color by
+      <select id="colorby">
+        <option value="type">Type</option>
+        <option value="status">Status</option>
+        <option value="freshness">Freshness</option>
+      </select>
+    </label>
+    <input id="search" type="search" placeholder="Search notes…" />
+  </header>
+  <main>
+    <div id="cy"></div>
+    <aside id="panel" class="hidden">
+      <button id="panel-close" aria-label="Close">×</button>
+      <h2 id="p-title"></h2>
+      <dl id="p-meta"></dl>
+      <div id="p-links"></div>
+    </aside>
+    <div id="legend"></div>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
