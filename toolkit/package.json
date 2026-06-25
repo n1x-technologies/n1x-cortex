@@ -1,0 +1,13 @@
+{
+  "name": "@n1x/cortex",
+  "version": "0.0.0",
+  "type": "module",
+  "bin": { "cortex": "./dist/cli.js" },
+  "scripts": {
+    "test": "vitest run",
+    "build": "tsc",
+    "cli": "tsx src/cli.ts"
+  },
+  "dependencies": { "gray-matter": "^4.0.3" },
+  "devDependencies": { "typescript": "^5.4.0", "vitest": "^1.6.0", "tsx": "^4.7.0", "@types/node": "^20.0.0" }
+}
