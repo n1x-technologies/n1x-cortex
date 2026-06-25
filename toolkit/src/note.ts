@@ -30,7 +30,7 @@ export function buildNote(relPath: string, content: string, fields: CortexFields
   const meta: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(data)) if (!mapped.has(k)) meta[k] = v;
 
-  const source = asString(data[fields.source]) ?? null;
+  const source = asString(data[fields.source])?.replace(/^\[\[|\]\]$/g, '') ?? null;
 
   return {
     path: relPath,
