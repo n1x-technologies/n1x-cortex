@@ -29,12 +29,17 @@ export async function main(argv: string[]): Promise<number> {
       return 0;
     }
     case 'viz': {
-      const { url } = await runViz(cwd);
-      console.log(`Cortex viewer running at ${url}`);
-      console.log('Press Ctrl+C to stop.');
-      openBrowser(url);
-      await new Promise(() => {}); // keep the process alive while the server runs
-      return 0;
+      try {
+        const { url } = await runViz(cwd);
+        console.log(`Cortex viewer running at ${url}`);
+        console.log('Press Ctrl+C to stop.');
+        openBrowser(url);
+        await new Promise(() => {});
+        return 0;
+      } catch (e) {
+        console.error(`Could not start the viewer: ${(e as Error).message}`);
+        return 1;
+      }
     }
     default:
       console.log('Usage: cortex <init|status|orphans|viz>');

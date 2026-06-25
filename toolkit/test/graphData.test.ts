@@ -41,4 +41,15 @@ describe('buildGraphData', () => {
     expect(data.stats.draftsPending).toBe(1);
     expect(typeof data.generatedAt).toBe('number');
   });
+
+  it('dedupes parallel edges (same source linked to the same target twice)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cortex-viz-dup-'));
+    mkdirSync(join(dir, '01-Conceptos'));
+    writeFileSync(join(dir, '01-Conceptos', 'a.md'), '---\nid: A\ntipo: concepto\n---\n# A\n[[B]] and again [[B]]');
+    writeFileSync(join(dir, '01-Conceptos', 'b.md'), '---\nid: B\ntipo: concepto\n---\n# B');
+    const cfg = loadConfig(dir, ['tipo']);
+    const data = buildGraphData(dir, cfg);
+    expect(data.edges.filter(e => e.source === 'A' && e.target === 'B')).toHaveLength(1);
+    expect(data.nodes.find(n => n.id === 'B')?.degree).toBe(1);
+  });
 });

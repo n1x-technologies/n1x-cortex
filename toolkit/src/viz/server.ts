@@ -46,9 +46,11 @@ export function createServer(vaultDir: string): Server {
 }
 
 export function startViz(vaultDir: string, port = 4317): Promise<{ server: Server; port: number; url: string }> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const server = createServer(vaultDir);
+    server.once('error', reject);
     server.listen(port, '127.0.0.1', () => {
+      server.removeListener('error', reject);
       const addr = server.address();
       const p = typeof addr === 'object' && addr ? addr.port : port;
       resolve({ server, port: p, url: `http://localhost:${p}/` });
