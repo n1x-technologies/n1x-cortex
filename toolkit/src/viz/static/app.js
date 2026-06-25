@@ -33,12 +33,13 @@ function buildLegend() {
 
 let cy;
 function render() {
+  const nodeIds = new Set(state.data.nodes.map(n => n.id));
   const elements = [];
   for (const n of state.data.nodes) {
     elements.push({ data: { id: n.id, label: n.title, ...n } });
   }
   for (const e of state.data.edges) {
-    if (!cyHas(e.source) || !cyHas(e.target)) continue;
+    if (!nodeIds.has(e.source) || !nodeIds.has(e.target)) continue;
     elements.push({ data: { id: `${e.source}->${e.target}`, source: e.source, target: e.target, dangling: e.dangling } });
   }
   cy = cytoscape({
@@ -61,13 +62,9 @@ function render() {
       { selector: 'edge[?dangling]', style: { 'line-color': '#5a5a70', 'line-style': 'dashed' } },
     ],
   });
-  const nodeIds = new Set(state.data.nodes.map(n => n.id));
-  function cyHasInner(id) { return nodeIds.has(id); }
   cy.on('tap', 'node', (ev) => showPanel(ev.target.data()));
   cy.on('tap', (ev) => { if (ev.target === cy) hidePanel(); });
 }
-// edge guard needs the node set before cy exists; recompute simply:
-function cyHas(id) { return state.data.nodes.some(n => n.id === id); }
 
 function recolor() {
   if (!cy) return;
@@ -96,6 +93,7 @@ function applySearch(q) {
   if (!cy) return;
   const term = q.trim().toLowerCase();
   cy.batch(() => cy.nodes().forEach(n => {
+    if (n.selected()) { n.style('opacity', 1); n.style('text-opacity', 1); return; }
     const hit = !term || (n.data('label') || '').toLowerCase().includes(term) || n.id.toLowerCase().includes(term);
     n.style('opacity', hit ? 1 : 0.12);
     n.style('text-opacity', hit && term ? 1 : 0);
@@ -103,8 +101,15 @@ function applySearch(q) {
 }
 
 async function main() {
-  const res = await fetch('api/graph');
-  state.data = await res.json();
+  let res;
+  try {
+    res = await fetch('api/graph');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    state.data = await res.json();
+  } catch (err) {
+    document.getElementById('stats').textContent = 'Error loading graph: ' + err.message;
+    return;
+  }
   const types = Object.keys(state.data.stats.byType);
   const statuses = Object.keys(state.data.stats.byStatus);
   state.typeColors = assignColors(types, TYPE_PALETTE);
