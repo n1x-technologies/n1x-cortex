@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { scanVault } from '../vault.js';
 import { buildGraph } from '../graph.js';
 import { computeFreshness } from './freshness.js';
-import type { CortexConfig, Note, ViewerData, VizNode, VizEdge } from '../types.js';
+import type { CortexConfig, ViewerData, VizNode, VizEdge } from '../types.js';
 
 function mtime(path: string): number | null {
   try { return statSync(path).mtimeMs; } catch { return null; }
@@ -24,19 +24,22 @@ export function buildGraphData(vaultDir: string, config: CortexConfig): ViewerDa
   const draftStatus = config.statusLifecycle[0] ?? null;
   const verifiedStatus = config.statusLifecycle[config.statusLifecycle.length - 1] ?? null;
 
-  // index notes by id for note lookup, and a basename map over the sources dir for stale detection
-  const byId = new Map<string, Note>();
-  for (const n of notes) byId.set(n.id, n);
-
   // map of source-file basenames → their vault-relative path (sources live under sourcesDir)
   const sourcesBase = new Map<string, string>();
   // (sources are excluded from scanVault, so we re-walk lightly is overkill; instead, accept that a
   //  source note inside the graph counts too — match any note id to its path)
   for (const n of notes) sourcesBase.set(n.id, n.path);
 
-  // degree per node id
+  // Dedupe parallel edges (a note may link the same target more than once);
+  // compute degree from the deduped set so node sizing isn't inflated.
+  const seenEdge = new Set<string>();
+  const edges: VizEdge[] = [];
   const degree = new Map<string, number>();
   for (const e of graph.edges) {
+    const key = `${e.from} ${e.to}`;
+    if (seenEdge.has(key)) continue;
+    seenEdge.add(key);
+    edges.push({ source: e.from, target: e.to, context: e.heading, dangling: graph.nodes.get(e.to)?.exists === false });
     degree.set(e.from, (degree.get(e.from) ?? 0) + 1);
     degree.set(e.to, (degree.get(e.to) ?? 0) + 1);
   }
@@ -61,13 +64,6 @@ export function buildGraphData(vaultDir: string, config: CortexConfig): ViewerDa
       freshness: computeFreshness({ exists: gn.exists, stale, status: note ? note.status : null, draftStatus, verifiedStatus }),
     });
   }
-
-  const edges: VizEdge[] = graph.edges.map(e => ({
-    source: e.from,
-    target: e.to,
-    context: e.heading,
-    dangling: graph.nodes.get(e.to)?.exists === false,
-  }));
 
   const byType: Record<string, number> = {};
   const byStatus: Record<string, number> = {};
