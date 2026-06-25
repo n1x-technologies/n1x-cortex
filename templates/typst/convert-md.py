@@ -14,7 +14,7 @@ Usage: edit the __main__ section with your document, or import build().
 import re, subprocess, tempfile, os
 
 def build(md_path, out_typ, *, title, subtitle, doc_label="Document",
-          client="", date="", version="v1.0", header_title="",
+          client="", date="", version="v1.0", header_title="", lang="en",
           mermaid_repl=None):
     md = open(md_path, encoding="utf-8").read()
 
@@ -68,6 +68,7 @@ def build(md_path, out_typ, *, title, subtitle, doc_label="Document",
   date: "{date}",
   version: "{version}",
   header-title: "{header_title}",
+  lang: "{lang}",
 )
 
 '''
@@ -80,4 +81,4 @@ if __name__ == "__main__":
     build("my-document.md", "my-document.typ",
           title="Title", subtitle="Subtitle",
           doc_label="Proposal", client="Client", date="June 2026",
-          header_title="My document")
+          header_title="My document", lang="en")  # "en" (default) or "es"

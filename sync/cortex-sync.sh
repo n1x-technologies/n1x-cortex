@@ -43,7 +43,7 @@ if [ ! -f "$CONFIG" ]; then
   cortex_source=../n1x-cortex          # local path OR git URL
   ref=main
   # adopted artifacts:  <id> = <destination path in this repo>
-  typst-engine=cortex/_templates/typst/template.typ
+  typst-engine=cortex/templates/typst/template.typ
 
 Available ids: see cortex/sync/manifest. Then re-run this script.
 EOF

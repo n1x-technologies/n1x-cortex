@@ -7,6 +7,7 @@
 ![Version](https://img.shields.io/badge/version-2.1-1A1A2E)
 ![License](https://img.shields.io/badge/license-MIT-E94560)
 ![Documents](https://img.shields.io/badge/PDF-Typst-1A1A2E)
+![Toolkit](https://img.shields.io/badge/toolkit-Node%2FTS-1A1A2E)
 ![by](https://img.shields.io/badge/by-N1X%20Technologies-E94560)
 
 </div>
@@ -14,8 +15,8 @@
 ---
 
 > [!IMPORTANT]
-> **This repository is the methodology itself, captured as an artifact — generic and reusable.**
-> It is not a software project or a client vault. It describes *how* to turn documentation into queryable knowledge, independent of the domain you apply it to. **It contains no data from any client.**
+> **This repository is the methodology itself, captured as an artifact — plus its open-source engine.**
+> It pairs the methodology document with the **Cortex Toolkit** (`toolkit/`) that puts the method to work. It is generic and reusable, not a client vault — **it contains no data from any client.**
 
 ## 📑 Table of contents
 
@@ -25,6 +26,8 @@
 - [Who it applies to](#-who-it-applies-to)
 - [Repository structure](#️-repository-structure)
 - [Document template](#-document-template)
+- [Collaboration template](#-collaboration-template)
+- [Cortex Toolkit (engine)](#️-cortex-toolkit-engine--phase-0)
 - [How to use this repo](#️-how-to-use-this-repo)
 - [Staying in sync](#-staying-in-sync)
 - [Conventions](#-conventions)
@@ -108,6 +111,8 @@ n1x-cortex/
 ├── N1X-Cortex-v2.md          📄 The methodology (current source of truth) — START HERE
 ├── N1X-Cortex-v2.typ         ·  Typst source — compile to PDF (PDFs are git-ignored)
 ├── UPDATE-PROCESS.md   ·  How to version and regenerate the PDF
+├── toolkit/                  🛠️ The Cortex engine (Node/TS) — CLI over any vault
+├── docs/design/         ·  Design spec + implementation plans for the toolkit
 ├── templates/
 │   ├── typst/                📐 Document template (PDF), parameterizable by brand
 │   ├── readme/               📝 README template + guide (the standard this README follows)
@@ -156,12 +161,32 @@ This very repo uses it (dogfooding): see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ---
 
+## 🛠️ Cortex Toolkit (engine — Phase 0)
+
+`toolkit/` is the **open-source engine** that turns the methodology into a working tool: it reads *any* markdown vault into a note graph and reports its structure — locally, read-only, dependency-light (Node ≥ 20 / TypeScript, one runtime dependency).
+
+**Phase 0 — shipping now: the read-only engine + CLI.**
+
+```bash
+cd toolkit && npm install && npm run build
+# then, from any vault directory:
+node /path/to/toolkit/dist/cli.js status     # notes by type/status + orphan count
+node /path/to/toolkit/dist/cli.js orphans    # dangling links ranked by inbound refs = "atomize next"
+node /path/to/toolkit/dist/cli.js init       # write a .cortex.json (infers your conventions)
+```
+
+- **Schema- & locale-agnostic:** it *discovers* your vault's conventions (`tipo`/`type`, `estado`/`status`, folder names) — works in any language, on any schema, with no config required.
+- **`.md` is the only source of truth:** the engine never writes to your notes (only `init` writes a `.cortex.json`); everything else is derived and rebuildable.
+- **Roadmap:** Phase 1 — local web viewer (graph + search) · Phase 2 — cited query · Phase 3 — assisted atomization · Phase 4 — autonomy hooks. The full design lives in [`docs/design/specs/`](docs/design/specs/) and the build plan in [`docs/design/plans/`](docs/design/plans/).
+
+---
+
 ## 🛠️ How to use this repo
 
 - **Read the methodology:** open [`N1X-Cortex-v2.md`](N1X-Cortex-v2.md) (renders on GitHub), or compile the `.typ` to a PDF.
 - **Regenerate the methodology PDF:** `typst compile N1X-Cortex-v2.typ N1X-Cortex-v2.pdf` (details in [`UPDATE-PROCESS.md`](UPDATE-PROCESS.md)).
 - **Generate branded documents:** use `templates/typst/` (above).
-- **Apply the methodology to a project:** build the vault following the generic structure (folders `00-MOC/` … `09-Estrategia/`, standard frontmatter, wikilinks). The project vault lives in that project's repo, **never here**.
+- **Apply the methodology to a project:** build the vault following the generic structure (folders `00-MOC/` … `09-Strategy/`, standard frontmatter, wikilinks). The project vault lives in that project's repo, **never here**.
 
 ---
 

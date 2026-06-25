@@ -16,10 +16,10 @@
 #               reconcile by hand.
 # ───────────────────────────────────────────────────────────────────
 
-typst-engine|overwrite|templates/typst/template.typ|Motor del template Typst. Re-marca vía brand.typ; el motor nunca se edita a mano.
-typst-converter|notify|templates/typst/convert-md.py|Conversor Markdown->Typst. Suele localizarse (comentarios); revisa el diff antes de adoptar.
-collab-setup|notify|templates/collaboration/setup.sh|Setup de colaboración. Se localiza por proyecto (idioma, mensajes).
-collab-pr|notify|templates/collaboration/PR.template.md|Plantilla de Pull Request. Instancia localizada por repo.
-collab-gitmessage|notify|templates/collaboration/gitmessage.template|Plantilla de commit. Lleva los co-autores del proyecto.
-collab-contributing|notify|templates/collaboration/CONTRIBUTING.template.md|CONTRIBUTING. Instancia localizada por repo.
-readme-standard|notify|templates/readme/README.template.md|Estándar de README. Cada repo mantiene su README como instancia.
+typst-engine|overwrite|templates/typst/template.typ|Typst template engine. Re-brand via brand.typ; the engine is never edited by hand.
+typst-converter|notify|templates/typst/convert-md.py|Markdown->Typst converter. Usually localized (comments); review the diff before adopting.
+collab-setup|notify|templates/collaboration/setup.sh|Collaboration setup. Localized per project (language, messages).
+collab-pr|notify|templates/collaboration/PR.template.md|Pull Request template. Localized instance per repo.
+collab-gitmessage|notify|templates/collaboration/gitmessage.template|Commit template. Carries the project's co-authors.
+collab-contributing|notify|templates/collaboration/CONTRIBUTING.template.md|CONTRIBUTING. Localized instance per repo.
+readme-standard|notify|templates/readme/README.template.md|README standard. Each repo keeps its README as an instance.

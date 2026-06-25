@@ -1,8 +1,8 @@
 ---
 title: "N1X Cortex — AI-Assisted Knowledge Management Methodology"
 author: "N1X Technologies"
-version: "2.0"
-date: "2026-06-23"
+version: "2.1"
+date: "2026-06-25"
 type: methodology
 status: published
 ---
@@ -11,7 +11,7 @@ status: published
 ## AI-Assisted Knowledge Management Methodology
 
 **Author:** N1X Technologies  
-**Version:** 2.0 · June 2026  
+**Version:** 2.1 · June 2026  
 **© 2026 N1X Technologies — All rights reserved**
 
 ---

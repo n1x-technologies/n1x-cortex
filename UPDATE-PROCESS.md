@@ -91,44 +91,37 @@ Update the document when:
 
 ---
 
-## Flow to create a new version (vN → vN+1)
+## Flow to publish a new version
+
+All work happens **in the repo**, on a branch (never directly on `main` — see `CONTRIBUTING.md`).
+
+> **Two version levels.** The **filename** carries the *major* version (`N1X-Cortex-v2.*`). The **`version:` field** carries the full number (`2.1`). A minor bump (`2.0` → `2.1`) keeps the same filename and only updates the `version:`/`.typ` strings; a major rewrite bumps the filename (`-v2` → `-v3`) and the major number.
 
 ### 1. Update the source markdown
 
-```bash
-# The markdown is the source of truth — edit it first
-nano "~/Documents/0. WSDC Tech/BRAIN-Metodologia/N1X-Cortex-v2.md"
-```
-
-Update the `version:` field in the frontmatter and the date.
+The markdown is the source of truth — edit it first. Bump the `version:` field in the frontmatter, the `date:`, and the `**Version:**` line in the body of `N1X-Cortex-v2.md`.
 
 ### 2. Update the Typst file
 
-The `.typ` mirrors the `.md` but with Typst markup. Update both in parallel:
-- The version in the header: `N1X Technologies · v2.0 · June 2026` → new version/date
-- The version on the cover: `#text(size: 10.5pt, fill: sd-navy)[2.0 · June 2026]`
-- The final footer: `N1X Cortex v2.0 · June 2026` → new version
-- Any content that has changed
+The `.typ` mirrors the `.md` but with Typst markup. Update both in parallel — the version appears in three places in `N1X-Cortex-v2.typ`:
+- The running header: `N1X Technologies · v2.1 · June 2026`
+- The cover VERSION field: `#text(size: 10.5pt, fill: sd-navy)[2.1 · June 2026]`
+- The final footer: `N1X Cortex v2.1 · June 2026`
+- Plus any content that changed
 
-### 3. Compile
+### 3. Compile and review
 
 ```bash
-# Compile (the .typ can be in /tmp/ or the final folder)
-typst compile /tmp/N1X-Cortex.typ /tmp/N1X-Cortex-v3.pdf
+# Compile in-repo (PDFs are git-ignored — generated on demand, never committed)
+typst compile N1X-Cortex-v2.typ N1X-Cortex-v2.pdf
 
 # Review in Preview
-open /tmp/N1X-Cortex-v3.pdf
-
-# Copy to the final directory
-cp /tmp/N1X-Cortex.typ \
-  "~/Documents/0. WSDC Tech/BRAIN-Metodologia/N1X-Cortex-v3.typ"
-cp /tmp/N1X-Cortex-v3.pdf \
-  "~/Documents/0. WSDC Tech/BRAIN-Metodologia/N1X-Cortex-v3.pdf"
+open N1X-Cortex-v2.pdf
 ```
 
-### 4. Keep only the latest version
+### 4. Bump VERSION and keep only the latest
 
-The repo holds **only the current version**. Older versions are preserved in **git history** (`git log -- N1X-Cortex-*.md`), not as files cluttering the tree. When you publish vN+1, the previous vN files are replaced in the tree — git remembers them.
+Update the `VERSION` file so the sync tool advertises the new number to consumers. The repo holds **only the current version**; older versions are preserved in **git history** (`git log -- N1X-Cortex-*.md`), not as files cluttering the tree. On a major rewrite that renames the file (`-v2` → `-v3`), the previous file is replaced in the tree — git remembers it.
 
 ---
 
@@ -149,7 +142,7 @@ The N1X Cortex document always carries N1X Technologies attribution in three pla
 
 ### 3. Final footer of the document
 ```typst
-Prepared by *N1X Technologies* · N1X Cortex v2.0 · June 2026 \
+Prepared by *N1X Technologies* · N1X Cortex v2.1 · June 2026 \
 © 2026 N1X Technologies — All rights reserved
 ```
 
