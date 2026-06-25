@@ -74,7 +74,7 @@ No logo → it uses the wordmark. With a logo → drop it in `assets/` (see `ass
 
 ## Convert existing Markdown
 
-For long docs already written in `.md`, use `convert-md.py` (edit its `__main__`). It does the following: removes the title (the cover supplies it) · `> blockquotes` → callouts · unwraps tables so they **break across pages** · cleans out emojis (`⬜` → checkbox). Then `typst compile`.
+For long docs already written in `.md`, use `convert-md.py` (edit its `__main__`). It does the following: removes the title (the cover supplies it) · `> blockquotes` → callouts · unwraps tables so they **break across pages** · cleans out emojis (`⬜` → checkbox). Pass `lang="es"` to localize the cover/header chrome (same option as the template). Then `typst compile`.
 
 ## Check without opening the PDF
 

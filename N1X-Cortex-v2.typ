@@ -106,7 +106,7 @@
     #grid(columns: (1fr, auto))[
       #text(fill: sd-navy, weight: "bold")[N1X Cortex — Knowledge Management Methodology]
     ][
-      #text(fill: sd-mid)[N1X Technologies · v2.0 · June 2026]
+      #text(fill: sd-mid)[N1X Technologies · v2.1 · June 2026]
     ]
     #v(-4pt)
     #line(length: 100%, stroke: 1.2pt + sd-navy)
@@ -161,7 +161,7 @@
       #text(size: 10.5pt, fill: sd-navy)[N1X Technologies]
     ][
       #text(size: 8pt, fill: sd-mid, weight: "bold")[VERSION]\
-      #text(size: 10.5pt, fill: sd-navy)[2.0 · June 2026]
+      #text(size: 10.5pt, fill: sd-navy)[2.1 · June 2026]
     ][
       #text(size: 8pt, fill: sd-mid, weight: "bold")[STATUS]\
       #text(size: 10.5pt, fill: ok-green, weight: "bold")[Published]
@@ -595,7 +595,7 @@ The *applications of the methodology* are instances of use — the generated vau
 
 #align(center)[
   #text(size: 9.5pt, fill: sd-mid)[
-    Prepared by *N1X Technologies* · N1X Cortex v2.0 · June 2026 \
+    Prepared by *N1X Technologies* · N1X Cortex v2.1 · June 2026 \
     © 2026 N1X Technologies — All rights reserved
   ]
 ]

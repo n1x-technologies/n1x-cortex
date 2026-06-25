@@ -25,7 +25,7 @@ See [`manifest`](manifest) — each line is `id | mode | source | note`. `mode` 
    cortex_source=https://github.com/n1x-technologies/n1x-cortex.git   # or a local path, e.g. ../n1x-cortex
    ref=main
    # <id from manifest> = <destination path in THIS repo>
-   typst-engine=cortex/_templates/typst/template.typ
+   typst-engine=cortex/templates/typst/template.typ
    collab-pr=.github/pull_request_template.md
    ```
 
