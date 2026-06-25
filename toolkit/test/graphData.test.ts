@@ -8,8 +8,8 @@ import { join } from 'node:path';
 function fixture(): string {
   const dir = mkdtempSync(join(tmpdir(), 'cortex-viz-'));
   mkdirSync(join(dir, '01-Conceptos'));
-  writeFileSync(join(dir, '01-Conceptos', 'a.md'), '---\ntipo: concepto\nestado: documentado\n---\n# A\n[[B]] [[Ghost]]');
-  writeFileSync(join(dir, '01-Conceptos', 'b.md'), '---\ntipo: concepto\nestado: borrador\n---\n# B');
+  writeFileSync(join(dir, '01-Conceptos', 'a.md'), '---\nid: A\ntipo: concepto\nestado: documentado\n---\n# A\n[[B]] [[Ghost]]');
+  writeFileSync(join(dir, '01-Conceptos', 'b.md'), '---\nid: B\ntipo: concepto\nestado: borrador\n---\n# B');
   writeFileSync(join(dir, '.cortex.json'), JSON.stringify({
     fields: { type: 'tipo', status: 'estado', id: 'id', source: 'source' },
     statusLifecycle: ['borrador', 'documentado', 'verificado'],
@@ -33,8 +33,8 @@ describe('buildGraphData', () => {
     expect(ghost?.exists).toBe(false);
     expect(ghost?.freshness).toBe('gap');
 
-    expect(data.edges).toContainEqual({ source: 'A', target: 'B', context: null, dangling: false });
-    expect(data.edges).toContainEqual({ source: 'A', target: 'Ghost', context: null, dangling: true });
+    expect(data.edges).toContainEqual({ source: 'A', target: 'B', context: 'A', dangling: false });
+    expect(data.edges).toContainEqual({ source: 'A', target: 'Ghost', context: 'A', dangling: true });
 
     expect(data.stats.total).toBe(2);
     expect(data.stats.orphans).toBe(1);
