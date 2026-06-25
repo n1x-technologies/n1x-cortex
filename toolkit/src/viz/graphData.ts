@@ -50,10 +50,9 @@ export function buildGraphData(vaultDir: string, config: CortexConfig): ViewerDa
       const nm = mtime(join(vaultDir, note.path));
       stale = sm != null && nm != null && sm > nm;
     }
-    const title = note ? note.title : gn.key;
     nodes.push({
-      id: title,
-      title,
+      id: gn.key,
+      title: note ? note.title : gn.key,
       type: note ? note.type : null,
       status: note ? note.status : null,
       folder: note ? note.folder : '',
@@ -63,17 +62,10 @@ export function buildGraphData(vaultDir: string, config: CortexConfig): ViewerDa
     });
   }
 
-  // Build a map from graph node key to viz node id (title) for edge references
-  const keyToVizId = new Map<string, string>();
-  for (const gn of graph.nodes.values()) {
-    const title = gn.note ? gn.note.title : gn.key;
-    keyToVizId.set(gn.key, title);
-  }
-
   const edges: VizEdge[] = graph.edges.map(e => ({
-    source: keyToVizId.get(e.from) ?? e.from,
-    target: keyToVizId.get(e.to) ?? e.to,
-    context: null,
+    source: e.from,
+    target: e.to,
+    context: e.heading,
     dangling: graph.nodes.get(e.to)?.exists === false,
   }));
 
