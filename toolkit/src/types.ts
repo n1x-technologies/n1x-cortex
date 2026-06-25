@@ -39,3 +39,41 @@ export interface Graph {
   edges: GraphEdge[];
   orphans: string[];              // link targets with no matching note
 }
+
+// ── Viewer (Phase 1) ───────────────────────────────────────────────
+export type Freshness = 'gap' | 'stale' | 'draft' | 'verified' | 'fresh';
+
+export interface VizNode {
+  id: string;
+  title: string;
+  type: string | null;
+  status: string | null;
+  folder: string;
+  freshness: Freshness;
+  exists: boolean;
+  degree: number;
+}
+
+export interface VizEdge {
+  source: string;
+  target: string;
+  context: string | null;
+  dangling: boolean;
+}
+
+export interface VizStats {
+  total: number;
+  byType: Record<string, number>;
+  byStatus: Record<string, number>;
+  orphans: number;
+  draftsPending: number;
+  missingCitations: number;
+}
+
+export interface ViewerData {
+  nodes: VizNode[];
+  edges: VizEdge[];
+  stats: VizStats;
+  lang: string | null;
+  generatedAt: number;
+}
