@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { runInit } from './commands/init.js';
 import { runStatus } from './commands/status.js';
 import { runOrphans } from './commands/orphans.js';
@@ -32,7 +33,7 @@ export async function main(argv: string[]): Promise<number> {
   }
 }
 
-const isMain = import.meta.url === `file://${process.argv[1]}`;
+const isMain = process.argv[1] === fileURLToPath(import.meta.url);
 if (isMain) {
   main(process.argv.slice(2)).then(code => process.exit(code));
 }
