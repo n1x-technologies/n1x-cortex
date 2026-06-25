@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url';
 import { runInit } from './commands/init.js';
 import { runStatus } from './commands/status.js';
 import { runOrphans } from './commands/orphans.js';
+import { runViz, openBrowser } from './commands/viz.js';
 
 export async function main(argv: string[]): Promise<number> {
   const [cmd] = argv;
@@ -27,8 +28,16 @@ export async function main(argv: string[]): Promise<number> {
       for (const { target, refs } of out.slice(0, 30)) console.log(`  ${String(refs).padStart(3)}  ${target}`);
       return 0;
     }
+    case 'viz': {
+      const { url } = await runViz(cwd);
+      console.log(`Cortex viewer running at ${url}`);
+      console.log('Press Ctrl+C to stop.');
+      openBrowser(url);
+      await new Promise(() => {}); // keep the process alive while the server runs
+      return 0;
+    }
     default:
-      console.log('Usage: cortex <init|status|orphans>');
+      console.log('Usage: cortex <init|status|orphans|viz>');
       return cmd ? 1 : 0;
   }
 }

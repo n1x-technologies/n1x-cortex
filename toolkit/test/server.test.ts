@@ -34,3 +34,15 @@ describe('startViz', () => {
     expect(data.stats.total).toBe(1);
   });
 });
+
+import { runViz } from '../src/commands/viz.js';
+
+describe('runViz', () => {
+  it('starts the viewer and returns a localhost url', async () => {
+    const out = await runViz(fixture(), 0);
+    server = out.server;
+    expect(out.url).toMatch(/^http:\/\/localhost:\d+\/$/);
+    const r = await fetch(out.url + 'api/health');
+    expect(r.status).toBe(200);
+  });
+});
