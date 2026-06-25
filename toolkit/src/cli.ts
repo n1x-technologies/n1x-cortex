@@ -17,4 +17,7 @@ export async function main(argv: string[]): Promise<number> {
   }
 }
 
-main(process.argv.slice(2)).then(code => process.exit(code));
+const isMain = import.meta.url === `file://${process.argv[1]}`;
+if (isMain) {
+  main(process.argv.slice(2)).then(code => process.exit(code));
+}
