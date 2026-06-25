@@ -1,0 +1,32 @@
+:root {
+  --navy: #1A1A2E; --coral: #E94560; --bg: #11111b; --panel: #1c1c2b;
+  --ink: #e8e8f2; --muted: #9a9ab5; --line: #2a2a40;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+#bar { display: flex; align-items: center; gap: 14px; padding: 10px 16px;
+  background: var(--navy); border-bottom: 1px solid var(--line); }
+.brand { font-weight: 700; letter-spacing: .3px; }
+.stats { color: var(--muted); font-size: 12px; }
+.spacer { flex: 1; }
+#bar select, #bar input { background: #2a2a40; color: var(--ink); border: 1px solid var(--line);
+  border-radius: 6px; padding: 5px 8px; font-size: 13px; }
+.colorby { color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 6px; }
+main { position: relative; height: calc(100% - 49px); }
+#cy { position: absolute; inset: 0; }
+#panel { position: absolute; top: 12px; right: 12px; width: 320px; max-height: calc(100% - 24px);
+  overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 14px 16px; box-shadow: 0 8px 30px rgba(0,0,0,.4); }
+#panel.hidden { display: none; }
+#panel h2 { margin: 0 28px 8px 0; font-size: 16px; }
+#panel dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; margin: 0 0 10px; font-size: 12px; }
+#panel dt { color: var(--muted); }
+#panel a { color: #7db4ff; text-decoration: none; display: block; }
+#panel-close { position: absolute; top: 8px; right: 10px; background: none; border: none;
+  color: var(--muted); font-size: 20px; cursor: pointer; }
+#legend { position: absolute; bottom: 12px; left: 12px; background: rgba(28,28,43,.85);
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 11px;
+  color: var(--ink); display: flex; flex-wrap: wrap; gap: 4px 12px; max-width: 60%; }
+#legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+  vertical-align: middle; margin-right: 5px; }
