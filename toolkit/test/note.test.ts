@@ -15,7 +15,7 @@ describe('buildNote', () => {
     expect(note.type).toBe('regla');
     expect(note.status).toBe('documentado');
     expect(note.id).toBe('RULE-01');
-    expect(note.source).toBe('[[FUENTE-x]]');
+    expect(note.source).toBe('FUENTE-x');
     expect(note.title).toBe('Rule One');
     expect(note.folder).toBe('03-Reglamentos');
     expect(note.tags).toEqual(['a', 'b']);
