@@ -96,3 +96,31 @@ export interface QueryResult {
   hits: QueryHit[];
   sources: string[];
 }
+
+// ── Atomize (Phase 3) ──────────────────────────────────────────────
+export interface NoteSpec {
+  id: string;
+  title: string;
+  type: string | null;
+  body: string;
+  source: string;
+  status: string;
+  folder: string | null;
+}
+export type AtomizeAction = 'create' | 'update' | 'skip';
+export interface AtomizePlanItem {
+  spec: NoteSpec;
+  action: AtomizeAction;
+  matchPath: string | null;
+  destPath: string;
+}
+export interface AtomizePlan {
+  source: string;
+  items: AtomizePlanItem[];
+  dryRun: boolean;
+}
+export interface Segment {
+  heading: string;
+  level: number;
+  body: string;
+}
