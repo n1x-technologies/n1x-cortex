@@ -1,6 +1,6 @@
 // toolkit/test/hook-handlers.test.ts
 import { describe, it, expect } from 'vitest';
-import { onSessionStart, onStop, onPostToolUse } from '../src/hooks/handlers.js';
+import { onSessionStart, onStop, onPostToolUse, onUserPromptSubmit, looksLikeDomainQuestion } from '../src/hooks/handlers.js';
 import { freshState } from '../src/hooks/state.js';
 import { loadConfig } from '../src/config.js';
 import { mkdtempSync, mkdirSync, writeFileSync, readdirSync } from 'node:fs';
@@ -65,5 +65,28 @@ describe('onPostToolUse', () => {
     const payload = { tool_input: { file_path: join(dir, '01-Notes', 'n.md') } };
     const { state } = onPostToolUse(payload, dir, cfg, freshState());
     expect(state.dirty).toEqual([]);
+  });
+});
+
+describe('onUserPromptSubmit', () => {
+  it('detects domain-like questions', () => {
+    expect(looksLikeDomainQuestion('What is the refund rule?')).toBe(true);
+    expect(looksLikeDomainQuestion('ok thanks')).toBe(false);
+  });
+  it('injects grounding for a question and nothing for chatter', () => {
+    const dir = vault();
+    const cfg = loadConfig(dir, []);
+    const q = onUserPromptSubmit({ prompt: 'What does note n say?' }, dir, cfg, freshState());
+    expect(q.response.hookSpecificOutput?.additionalContext).toBeTypeOf('string');
+    expect(q.state.session.injectedTokens).toBeGreaterThan(0);
+    const chat = onUserPromptSubmit({ prompt: 'ok' }, dir, cfg, freshState());
+    expect(chat.response).toEqual({});
+  });
+  it('injects nothing once the token cap is exceeded', () => {
+    const dir = vault();
+    const cfg = loadConfig(dir, []);
+    const capped = { ...freshState(), session: { injectedTokens: 99999 } };
+    const r = onUserPromptSubmit({ prompt: 'What is X?' }, dir, cfg, capped);
+    expect(r.response).toEqual({});
   });
 });

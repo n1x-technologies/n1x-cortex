@@ -2,12 +2,13 @@
 import { loadConfig } from '../config.js';
 import { collectFrontmatterKeys } from '../vault.js';
 import { loadState, saveState } from './state.js';
-import { onSessionStart, onStop, onPostToolUse, type Handler } from './handlers.js';
+import { onSessionStart, onStop, onPostToolUse, onUserPromptSubmit, type Handler } from './handlers.js';
 
 const HANDLERS: Record<string, Handler> = {
   SessionStart: onSessionStart,
   Stop: onStop,
   PostToolUse: onPostToolUse,
+  UserPromptSubmit: onUserPromptSubmit,
 };
 
 export function runHook(vaultDir: string, event: string, stdinJson: string): string {

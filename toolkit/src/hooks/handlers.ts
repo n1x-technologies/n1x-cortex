@@ -2,6 +2,7 @@
 import { relative, sep } from 'node:path';
 import { scanVault } from '../vault.js';
 import { snapshotSources, reconcile, clearDirty, markDirty, type HookState } from './state.js';
+import { runQuery, formatQuery } from '../commands/query.js';
 import type { CortexConfig } from '../types.js';
 
 export interface HookResponse {
@@ -48,4 +49,29 @@ export const onPostToolUse: Handler = (payload, vaultDir, config, state) => {
   if (!gate(state, config)) return { state, response: {} };
   const rel = sourceRelPath(payload, vaultDir, config);
   return { state: rel ? markDirty(state, rel) : state, response: {} };
+};
+
+const GROUNDING_TOKEN_CAP = 4000;
+const QUESTION_WORDS = /^(what|why|how|where|when|who|which|qué|por qué|cómo|dónde|cuándo|quién|cuál)\b/i;
+
+export function looksLikeDomainQuestion(prompt: string): boolean {
+  const p = prompt.trim();
+  if (p.length < 8) return false;
+  return p.endsWith('?') || QUESTION_WORDS.test(p);
+}
+
+export const onUserPromptSubmit: Handler = (payload, vaultDir, config, state) => {
+  if (!gate(state, config)) return { state, response: {} };
+  const prompt = typeof payload.prompt === 'string' ? payload.prompt : '';
+  if (!looksLikeDomainQuestion(prompt)) return { state, response: {} };
+  if (state.session.injectedTokens >= GROUNDING_TOKEN_CAP) return { state, response: {} };
+
+  const grounding = formatQuery(runQuery(vaultDir, prompt));
+  if (!grounding.trim()) return { state, response: {} };
+  const estTokens = Math.ceil(grounding.length / 4);
+  const next: HookState = { ...state, session: { injectedTokens: state.session.injectedTokens + estTokens } };
+  return {
+    state: next,
+    response: { hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: grounding } },
+  };
 };
