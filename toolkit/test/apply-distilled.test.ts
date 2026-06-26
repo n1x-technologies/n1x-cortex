@@ -178,6 +178,26 @@ describe('applyDistilled — update action', () => {
     expect(existsSync(join(dir, '..', 'escape.md'))).toBe(false);
   });
 
+  it('defaults to dryRun:true when no opts are passed', () => {
+    const dir = updVault();
+    const r = applyDistilled(dir, specs(dir, upd), loadConfig(dir, []));
+    expect(r.updated).toEqual([]);
+    expect(existsSync(join(dir, '.cortex'))).toBe(false);
+  });
+
+  it('absolute targetPath pointing into Markdown/ is blocked as source-immutable', () => {
+    const dir = updVault();
+    const absTarget = join(dir, 'Markdown', 'src.md');
+    const absInput: DistilledInput = { source: 'rules', notes: [
+      { title: 'X', action: 'update', targetPath: absTarget,
+        body: '# X\n\nlots of new text here that is definitely long enough to pass the shrink guard check' },
+    ]};
+    const r = applyDistilled(dir, specs(dir, absInput), loadConfig(dir, []), { dryRun: false, runId: 'RUN-ABS' });
+    expect(r.updated).toEqual([]);
+    expect(r.skipped).toEqual([{ target: absTarget, reason: 'source-immutable' }]);
+    expect(readFileSync(join(dir, 'Markdown', 'src.md'), 'utf8')).toBe('# ignored');
+  });
+
   it('shrink guard skips a destructive update unless forced', () => {
     const dir = updVault();
     const tiny: DistilledInput = { source: 'rules', notes: [

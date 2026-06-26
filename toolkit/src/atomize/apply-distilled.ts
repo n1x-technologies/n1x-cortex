@@ -1,5 +1,5 @@
 // toolkit/src/atomize/apply-distilled.ts
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, realpathSync } from 'node:fs';
 import { resolve, join, sep } from 'node:path';
 import { slug } from './propose.js';
 import { reconcile } from './reconcile.js';
@@ -64,8 +64,14 @@ export function applyDistilled(
     const abs = resolve(vaultDir, target);
     const inVault = abs === vaultAbs || abs.startsWith(vaultAbs + sep);
     if (!target || !inVault) { skipped.push({ target, reason: 'outside-vault' }); continue; }
-    if (target === sourcesDir || target.startsWith(`${sourcesDir}/`)) { skipped.push({ target, reason: 'source-immutable' }); continue; }
     if (!existsSync(abs)) { skipped.push({ target, reason: 'not-found' }); continue; }
+    // canonicalize to close absolute-path / case-insensitive / symlink bypasses of the source guard
+    const realTarget = realpathSync(abs);
+    const sourcesAbs = resolve(vaultDir, sourcesDir);
+    const realSources = existsSync(sourcesAbs) ? realpathSync(sourcesAbs) : sourcesAbs;
+    if (realTarget === realSources || realTarget.startsWith(realSources + sep)) {
+      skipped.push({ target, reason: 'source-immutable' }); continue;
+    }
 
     const existingContent = readFileSync(abs, 'utf8');
     const existingBody = parseFrontmatter(existingContent).body.trim();
