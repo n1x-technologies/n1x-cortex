@@ -1,21 +1,27 @@
-# CLAUDE.md — N1X Cortex methodology repository
+# CLAUDE.md — N1X Cortex repository
 
 Claude Code reads this file automatically when you open the repo. It tells you what this repository is and how to work with it, so you don't need any further explanation.
 
 ## What this repository is
 
-This is the **N1X Cortex methodology** owned by **N1X Technologies** — the **IP artifact** that describes the method in a generic, reusable form, **plus its open-source engine** (`toolkit/`) that implements it. It is NOT a client's vault and contains no client data. The methodology document is the source of truth; the toolkit is the method turned into a working local tool.
+This is **N1X Cortex**, owned by **N1X Technologies** — an open-source **product**, not just a document. Two things live here, and they belong together:
 
-> **Brand note:** the methodology used to be called **BRAIN**; since v2.0 its name is **N1X Cortex** and the attribution is **N1X Technologies**. Only the current version lives in the tree; older ones are in git history.
+- **The product** (`toolkit/`) — the Cortex **engine + AI agent** that turns any markdown vault into an AI-queryable knowledge graph (CLI, local web viewer, cited query, AI atomization). This is the thing you actually run.
+- **The spec** (`N1X-Cortex-v2.md`) — the method behind the product, written up as a generic, reusable IP artifact. For this document, the **markdown is the source of truth** (the PDF is derived).
 
-To understand the full methodology, **read the source document first** (the highest version):
-- `N1X-Cortex-v2.md` ← **start here.** The markdown source of truth (current version).
+It is generic and reusable, NOT a client's vault, and contains **no client data**.
+
+> **Brand note:** the product used to be called **BRAIN**; since v2.0 its name is **N1X Cortex** and the attribution is **N1X Technologies**. Only the current version lives in the tree; older ones are in git history.
+
+Where to start, by intent:
+- **To work on the product** → `toolkit/` and `docs/design/` (design specs + implementation plans).
+- **To understand the conceptual model** → read the spec `N1X-Cortex-v2.md`.
 
 ## File inventory
 
 | File | What it is |
 |---|---|
-| `N1X-Cortex-v2.md` | **Current source of truth.** The methodology content in markdown. |
+| `N1X-Cortex-v2.md` | **The spec** — the method behind the product, in markdown (source of truth for this doc; the PDF is derived). |
 | `N1X-Cortex-v2.typ` | Typst source of the current PDF — mirrors the `.md` with layout. |
 | `N1X-Cortex-v2.pdf` | Compiled PDF — **git-ignored**, generated on demand (`typst compile`), not versioned. |
 | `UPDATE-PROCESS.md` | **Operating procedure:** how to version, edit, and regenerate the PDF. Read it before changing anything. |
@@ -26,7 +32,7 @@ To understand the full methodology, **read the source document first** (the high
 
 ## What was done here (summary)
 
-A methodology was distilled — the **4 pillars**: Atomize · Connect · Curate · AI Layer — into a structured 9-section document, and a **PDF generation pipeline** was built with Typst (see Section 6 of the document and the `PROCESO`). The document stands on its own, independent of any project the methodology is applied to.
+Two tracks: **(1)** the method — the **4 pillars** (Atomize · Connect · Curate · AI Layer) — was distilled into a structured 9-section spec with a Typst **PDF generation pipeline** (see Section 6 and the `PROCESO`); the spec stands on its own, independent of any project it's applied to. **(2)** the **product** was built in `toolkit/` — the Cortex engine + AI agent (Phases 0–3.1: engine, viewer, cited query, AI-distilled atomization) — turning the method into a working local tool.
 
 ## Rules for working in this repo
 
