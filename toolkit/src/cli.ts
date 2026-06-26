@@ -12,6 +12,7 @@ import { runGaps, formatGaps } from './commands/gaps.js';
 import { runDupes, formatDupes } from './commands/dupes.js';
 import { runVerify, formatVerify } from './commands/verify.js';
 import { runMoc, formatMoc } from './commands/moc.js';
+import { runDoc, formatDoc } from './commands/doc.js';
 
 export async function main(argv: string[]): Promise<number> {
   const [cmd] = argv;
@@ -147,8 +148,16 @@ export async function main(argv: string[]): Promise<number> {
       console.log(formatMoc(runMoc(cwd, topic, { write })));
       return 0;
     }
+    case 'doc': {
+      const rest = argv.slice(1);
+      const pdf = rest.includes('--pdf');
+      const topic = rest.filter(a => !a.startsWith('--'))[0];
+      if (!topic) { console.log('Usage: cortex doc <topic> [--pdf]'); return 1; }
+      console.log(formatDoc(runDoc(cwd, topic, { pdf })));
+      return 0;
+    }
     default:
-      console.log('Usage: cortex <init|status|orphans|viz|query|atomize|promote|undo|set-status|hook|pause|resume>');
+      console.log('Usage: cortex <init|status|orphans|viz|query|atomize|promote|undo|set-status|hook|pause|resume|gaps|dupes|verify|moc|doc>');
       return cmd ? 1 : 0;
   }
 }
