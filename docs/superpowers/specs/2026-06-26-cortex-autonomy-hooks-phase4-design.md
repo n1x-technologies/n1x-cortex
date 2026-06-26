@@ -1,6 +1,6 @@
 # Cortex Phase 4 — Autonomy & hooks: detect-and-suggest lifecycle wiring — design
 
-> **Status:** approved design, pending implementation plan.
+> **Status:** implemented (Phase 4, two waves).
 > **Builds on:** Phases 0–3.3 — shipped on `main`. Reuses the engine (`vault`, `graph`, `query/retrieve`), the `autonomy` config field, and the `.cortex/` reversibility model.
 > **Branch:** `feat/cortex-autonomy-hooks-phase4`.
 
