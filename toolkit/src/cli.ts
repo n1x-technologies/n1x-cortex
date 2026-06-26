@@ -10,6 +10,7 @@ import { runHookCommand } from './commands/hook.js';
 import { runPause, runResume } from './commands/pause.js';
 import { runGaps, formatGaps } from './commands/gaps.js';
 import { runDupes, formatDupes } from './commands/dupes.js';
+import { runVerify, formatVerify } from './commands/verify.js';
 
 export async function main(argv: string[]): Promise<number> {
   const [cmd] = argv;
@@ -126,6 +127,15 @@ export async function main(argv: string[]): Promise<number> {
       const ti = argv.indexOf('--threshold');
       const threshold = ti >= 0 ? Number(argv[ti + 1]) : undefined;
       console.log(formatDupes(runDupes(cwd, { threshold })));
+      return 0;
+    }
+    case 'verify': {
+      const rest = argv.slice(1);
+      const hi = rest.indexOf('--hops');
+      const hops = hi >= 0 ? Number(rest[hi + 1]) : undefined;
+      const note = rest.filter(a => !a.startsWith('--') && a !== String(hops))[0];
+      if (!note) { console.log('Usage: cortex verify <note.md> [--hops N]'); return 1; }
+      console.log(formatVerify(runVerify(cwd, note, { hops })));
       return 0;
     }
     default:
