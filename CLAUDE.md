@@ -19,7 +19,7 @@ To understand the full methodology, **read the source document first** (the high
 | `N1X-Cortex-v2.typ` | Typst source of the current PDF — mirrors the `.md` with layout. |
 | `N1X-Cortex-v2.pdf` | Compiled PDF — **git-ignored**, generated on demand (`typst compile`), not versioned. |
 | `UPDATE-PROCESS.md` | **Operating procedure:** how to version, edit, and regenerate the PDF. Read it before changing anything. |
-| `toolkit/` | **The Cortex engine + viewer** (Node/TS): reads any markdown vault into a note graph; CLI `init`/`status`/`orphans`/`viz` (the `viz` command serves a local web graph viewer). Read-only; Phases 0–1. |
+| `toolkit/` | **The Cortex engine + viewer + query** (Node/TS): reads any markdown vault into a note graph; CLI `init`/`status`/`orphans`/`viz`/`query` (`viz` = local web graph viewer; `query` = mechanical cited retrieval). Read-only; Phases 0–2. |
 | `docs/design/` | Design spec (`specs/`) and implementation plans (`plans/`) for the toolkit. |
 | `CLAUDE.md` | This file. |
 | `README.md` | Entry point for humans. |
