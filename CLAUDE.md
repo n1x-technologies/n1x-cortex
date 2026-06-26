@@ -25,7 +25,7 @@ Where to start, by intent:
 | `N1X-Cortex-v2.typ` | Typst source of the current PDF — mirrors the `.md` with layout. |
 | `N1X-Cortex-v2.pdf` | Compiled PDF — **git-ignored**, generated on demand (`typst compile`), not versioned. |
 | `UPDATE-PROCESS.md` | **Operating procedure:** how to version, edit, and regenerate the PDF. Read it before changing anything. |
-| `toolkit/` | **The Cortex engine + viewer + query + atomize** (Node/TS): reads any markdown vault into a note graph; CLI `init`/`status`/`orphans`/`viz`/`query`/`atomize`. `atomize` is **dry-run by default** and writes `status: draft` notes only into `_inbox/` (never edits existing notes or sources). Phase 3.1 adds AI distillation: `atomize --emit-json` (plan as data) + `atomize --apply <specs.json>` (write distilled notes), driven by the `toolkit/skills/atomize/` `/atomize` skill (the AI layer). Phases 0–3.1. |
+| `toolkit/` | **The Cortex engine + agent** (Node/TS): reads any markdown vault into a note graph; CLI `init`/`status`/`orphans`/`viz`/`query`/`atomize`. `atomize` is **dry-run by default**; it creates `status: draft` notes in `_inbox/` and (Phase 3.2) **merges AI-distilled updates into existing notes in place** — each edited note is backed up to `.cortex/backups/` first and is reversible with `atomize --undo`; `Markdown/` sources are never modified. AI distillation runs through `toolkit/skills/atomize/` (the `/atomize` skill). Phases 0–3.2. |
 | `docs/superpowers/` | Design spec (`specs/`) and implementation plans (`plans/`) for the toolkit. |
 | `CLAUDE.md` | This file. |
 | `README.md` | Entry point for humans. |

@@ -23,13 +23,14 @@ You are the **AI layer** of the N1X Cortex atomize pipeline. The `cortex` toolki
    - **Never write *illustrative* wikilinks in a body.** The engine parses **every** `[[...]]` as a real link, so example syntax like `[[note-name]]` or `[[example]]` becomes a phantom orphan in the graph. Only link to notes that exist or that you are genuinely creating; to *describe* link syntax, write it in prose or as inline code (`` `[[note-name]]` ``), never as a bare `[[note-name]]`.
    - **Tags + language:** add `tags`; write in the vault's `lang`.
    - **No duplicates:** if a strong match already exists in `existing`, drop that note (the toolkit will also skip it).
+   - **Update vs create vs skip.** For a segment that matches a note in `existing` *and adds information*: **read that note** (its `path`), produce a **conservative merged body** — integrate the new info, preserve ALL existing content, links, and human edits, keep every source citation and add the new one, and keep the note's `# Heading` — then emit it as `{ "action": "update", "targetPath": "<existing path>", "title", "body": "<full merged body incl. heading>" }`. If the existing note already covers the segment, leave it `skip` (don't churn). Only `create` (new) notes omit `action`/`targetPath`.
 
 4. **Write the distilled specs** to a temp file `distilled.json`:
    `{ "source": "<emit.source>", "notes": [ { "title", "type", "folder", "tags": [...], "body", "fromHeading" }, ... ] }`.
 
-5. **Dry-run and preview.** Run `node <cli> atomize --apply distilled.json` (no `--write`). Show the user the plan summary: note count, each title `[type → folder]`, splits, any skips or newly-seeded types. **Stop and ask: apply these to _inbox/?**
+5. **Apply autonomously.** Write `distilled.json`, then run `node <cli> atomize --apply distilled.json --write`. The toolkit creates new drafts under `_inbox/` and merges `update` notes in place. Print a compact summary (creates, updates with their targets, any skips) — this is information, not a checkpoint.
 
-6. **Apply on approval.** On "go," run `node <cli> atomize --apply distilled.json --write`. Report what landed under `_inbox/<folder>/`. The notes are `status: draft` in the `_inbox/` staging area — the user reviews and promotes them into the curated folders.
+6. **Reassure + reversibility.** Tell the user what changed and that **every edited note was backed up** — any update is undoable with `cortex atomize --undo` (or via git). Updates skipped by the shrink guard are reported; re-run with `--force` only if the shrink is intended.
 
 ## Safety (enforced by the toolkit, but respect them)
 
