@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { runAtomize, formatPlan } from '../src/commands/atomize.js';
+import { runEmit, runApply, formatDistilledPlan } from '../src/commands/atomize.js';
 import { mkdtempSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -25,5 +26,37 @@ describe('runAtomize', () => {
     const r = runAtomize(dir, join(dir, 'Markdown', 'rules.md'), { write: true });
     expect(r.written.length).toBeGreaterThan(0);
     expect(existsSync(join(dir, '_inbox', 'operation-limit.md'))).toBe(true);
+  });
+});
+
+describe('runEmit / runApply (atomize 3.1)', () => {
+  it('runEmit prints valid JSON with segments and discovered context', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cortex-emit-cmd-'));
+    mkdirSync(join(dir, 'Markdown'));
+    mkdirSync(join(dir, '03-Rules'));
+    writeFileSync(join(dir, '03-Rules', 'r.md'), '---\ntype: rule\n---\n# Existing rule');
+    writeFileSync(join(dir, 'Markdown', 'src.md'), '# Src\n\n## Topic A\n\nBody A.');
+    const json = JSON.parse(runEmit(dir, join(dir, 'Markdown', 'src.md')));
+    expect(json.source).toBe('src');
+    expect(json.knownTypes).toContain('rule');
+    expect(json.knownFolders).toContain('03-Rules');
+    expect(json.segments.map((s: { heading: string }) => s.heading)).toContain('Topic A');
+  });
+
+  it('runApply dry-runs by default (writes nothing) and writes with --write', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cortex-apply-cmd-'));
+    mkdirSync(join(dir, 'Markdown'));
+    writeFileSync(join(dir, 'Markdown', 'src.md'), '# ignored');
+    const specs = join(dir, 'd.json');
+    writeFileSync(specs, JSON.stringify({ source: 'src', notes: [{ title: 'Operation limit', type: 'rule', folder: '03-Rules', body: 'B.' }] }));
+
+    const dry = runApply(dir, specs, {});
+    expect(dry.written).toEqual([]);
+    expect(existsSync(join(dir, '_inbox'))).toBe(false);
+    expect(formatDistilledPlan(dry)).toMatch(/dry-run|create/i);
+
+    const wet = runApply(dir, specs, { write: true });
+    expect(wet.written).toContain('_inbox/03-Rules/operation-limit.md');
+    expect(existsSync(join(dir, '_inbox/03-Rules/operation-limit.md'))).toBe(true);
   });
 });
