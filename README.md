@@ -1,13 +1,13 @@
 <div align="center">
 
-# 🧠 N1X Cortex — AI-Assisted Knowledge Management Methodology
+# 🧠 N1X Cortex — an autonomous knowledge cortex for your documentation
 
-**Turn large documentation corpora into atomic knowledge graphs that AI can query** — and that can generate cited answers, verify compliance, and produce structured code or documents.
+**An AI agent that turns a sprawling documentation corpus into a living second brain** — it reads your sources, atomizes them into a linked knowledge graph, and answers from it with citations. Open-source, runs locally over any markdown vault.
 
-![Version](https://img.shields.io/badge/version-2.1-1A1A2E)
+![Toolkit](https://img.shields.io/badge/toolkit-Phases%200–3.1-E94560)
+![Engine](https://img.shields.io/badge/engine-Node%2FTS-1A1A2E)
+![Local](https://img.shields.io/badge/runs-local%20%26%20offline-1A1A2E)
 ![License](https://img.shields.io/badge/license-MIT-E94560)
-![Documents](https://img.shields.io/badge/PDF-Typst-1A1A2E)
-![Toolkit](https://img.shields.io/badge/toolkit-Node%2FTS-1A1A2E)
 ![by](https://img.shields.io/badge/by-N1X%20Technologies-E94560)
 
 </div>
@@ -15,20 +15,21 @@
 ---
 
 > [!IMPORTANT]
-> **This repository is the methodology itself, captured as an artifact — plus its open-source engine.**
-> It pairs the methodology document with the **Cortex Toolkit** (`toolkit/`) that puts the method to work. It is generic and reusable, not a client vault — **it contains no data from any client.**
+> **N1X Cortex is a product you run, not a document you read.**
+> It's an open-source system — an engine, a local web graph viewer, cited query, and an AI atomization agent — that turns any markdown vault into an AI-queryable knowledge graph. It runs entirely on your machine, is generic and reusable, and **contains no data from any client.** *(The thinking behind it is written up as a spec in [`N1X-Cortex-v2.md`](N1X-Cortex-v2.md) — but you don't need to read it to use the product.)*
 
 ## 📑 Table of contents
 
 - [What is N1X Cortex?](#-what-is-n1x-cortex)
-- [The 4 pillars](#-the-4-pillars)
+- [What it does today](#-what-it-does-today)
+- [How the cortex thinks — the 4 pillars](#-how-the-cortex-thinks--the-4-pillars)
 - [How it works](#-how-it-works)
-- [Who it applies to](#-who-it-applies-to)
+- [Who it's for](#-who-its-for)
 - [Repository structure](#️-repository-structure)
-- [Document template](#-document-template)
+- [Document generation](#-document-generation)
 - [Collaboration template](#-collaboration-template)
-- [Cortex Toolkit (engine + viewer)](#️-cortex-toolkit-engine--viewer)
-- [How to use this repo](#️-how-to-use-this-repo)
+- [The Cortex engine (toolkit)](#️-the-cortex-engine-toolkit)
+- [How to use it](#️-how-to-use-it)
 - [Staying in sync](#-staying-in-sync)
 - [Conventions](#-conventions)
 - [Versioning](#️-versioning)
@@ -40,9 +41,9 @@
 
 The core problem: **monolithic documents don't scale.** A corpus of 50,000+ lines spread across dozens of files can't be queried effectively by any AI — information gets fragmented, context is lost, and the code or documents it generates ignore the real constraints of the domain.
 
-N1X Cortex turns that documentary mass into a **network of atomic nodes** — one note per concept, per rule, per flow — interconnected with semantic links and tagged with structured frontmatter. The result is a "second brain" that:
+N1X Cortex is the system that fixes that. It's an **AI agent with a memory**: point it at your documents and it atomizes them into a **network of atomic nodes** — one note per concept, per rule, per flow — interconnected with semantic links and tagged with structured frontmatter. That graph becomes a **second brain** the agent reasons over: it answers questions, cites the exact source, verifies compliance against the rules, and folds every new lesson back in through a living cycle.
 
-| Without the method (monolithic docs) | With N1X Cortex |
+| Without Cortex (monolithic docs) | With N1X Cortex |
 |---|---|
 | The AI can't fit the corpus in context | **A graph of atomic notes** you can query piece by piece |
 | Unreliable answers with no sources | **Answers that cite the exact source** |
@@ -52,7 +53,25 @@ N1X Cortex turns that documentary mass into a **network of atomic nodes** — on
 
 ---
 
-## 🧩 The 4 pillars
+## 📦 What it does today
+
+N1X Cortex runs as a local CLI (and a Claude Code skill) over any markdown vault. Everything is **read-first** — it never touches your notes except atomization, which only stages new `status: draft` notes in `_inbox/`.
+
+| Capability | Command | What you get |
+|---|---|---|
+| **Inspect** | `status` · `orphans` | your vault at a glance: notes by type/status, and the gaps to atomize next |
+| **Visualize** | `viz` | an interactive local web graph — nodes, ghost nodes for gaps, search, color-by type/status/freshness |
+| **Query (cited)** | `query "…"` | mechanical cited retrieval: the relevant notes, excerpts, and their sources |
+| **Atomize (AI)** | `atomize <src>` + the `/atomize` skill | an AI agent reads a source doc, splits it into one-idea-per-note drafts, infers type, routes a folder, adds tags + wikilinks — **dry-run by default** |
+| **Configure** | `init` | infers your vault's conventions into a `.cortex.json` (schema- & language-agnostic) |
+
+→ Full usage in **[The Cortex engine (toolkit)](#️-the-cortex-engine-toolkit)** below. Where it's headed next: **Phase 4 — autonomy hooks** (the agent driving its own atomization and upkeep).
+
+---
+
+## 🧩 How the cortex thinks — the 4 pillars
+
+Four moves take raw documents to an AI-ready brain. The engine automates the mechanical parts; the agent does the judgment.
 
 ```mermaid
 flowchart LR
@@ -68,7 +87,7 @@ flowchart LR
 3. **Curate** — maps of content (MOCs), a glossary, and the **living cycle**: every new lesson flows back into the graph.
 4. **AI layer** — sits on top of the graph: query it, verify compliance, and generate code and documents with the right context.
 
-> The full document (9 sections) lives in **[`N1X-Cortex-v2.md`](N1X-Cortex-v2.md)** (renders on GitHub). PDFs are git-ignored — compile the `.typ` when you need one.
+> Want the full reasoning, written up as a spec? It lives in **[`N1X-Cortex-v2.md`](N1X-Cortex-v2.md)** (9 sections, renders on GitHub) — but you don't need it to use the product.
 
 ---
 
@@ -88,7 +107,7 @@ flowchart LR
 
 ---
 
-## 🌐 Who it applies to
+## 🌐 Who it's for
 
 Any domain with **dense documentation and strict consistency requirements**:
 
@@ -108,11 +127,11 @@ It pays off most when the corpus runs past ~10,000 lines, the rules change often
 
 ```
 n1x-cortex/
-├── N1X-Cortex-v2.md          📄 The methodology (current source of truth) — START HERE
-├── N1X-Cortex-v2.typ         ·  Typst source — compile to PDF (PDFs are git-ignored)
-├── UPDATE-PROCESS.md   ·  How to version and regenerate the PDF
-├── toolkit/                  🛠️ The Cortex engine (Node/TS) — CLI over any vault
-├── docs/superpowers/         ·  Design spec + implementation plans for the toolkit
+├── toolkit/                  🛠️ The Cortex engine + agent (Node/TS) — RUN THIS over any vault
+├── docs/superpowers/         ·  Design specs + implementation plans for the toolkit
+├── N1X-Cortex-v2.md          📄 The spec — the reasoning behind the product
+├── N1X-Cortex-v2.typ         ·  Typst source — compile the spec to PDF (PDFs are git-ignored)
+├── UPDATE-PROCESS.md   ·  How to version and regenerate the spec PDF
 ├── templates/
 │   ├── typst/                📐 Document template (PDF), parameterizable by brand
 │   ├── readme/               📝 README template + guide (the standard this README follows)
@@ -129,9 +148,9 @@ n1x-cortex/
 
 ---
 
-## 📐 Document template
+## 📐 Document generation
 
-`templates/typst/` is a **professional, brand-parameterizable document template** — the 4th pillar (generating documents) turned into a working tool. It produces consulting-grade PDFs (proposals, comparisons, reports) from Typst or from Markdown.
+The 4th pillar made concrete: `templates/typst/` is a **professional, brand-parameterizable document template** that turns curated knowledge into consulting-grade PDFs (proposals, comparisons, reports) from Typst or from Markdown.
 
 - **Re-brandable:** edit `brand.typ` (colors, logo, name). No logo? It falls back to a typographic wordmark.
 - **Multilingual:** the `lang` option (`en` default · `es`) localizes the template chrome (cover/header/footer labels, `yes`/`no` helpers, hyphenation) while your document body stays in whatever language you write. Add a language with one entry in `labels`.
@@ -161,11 +180,11 @@ This very repo uses it (dogfooding): see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ---
 
-## 🛠️ Cortex Toolkit (engine + viewer)
+## 🛠️ The Cortex engine (toolkit)
 
-`toolkit/` is the **open-source engine** that turns the methodology into a working tool: it reads *any* markdown vault into a note graph, reports its structure, and renders it in a local web viewer — locally, read-only, dependency-light (Node ≥ 20 / TypeScript).
+`toolkit/` is the **open-source engine + agent** at the heart of the product: it reads *any* markdown vault into a note graph, reports its structure, renders it in a local web viewer, answers cited queries, and atomizes new sources with AI — locally, read-first, dependency-light (Node ≥ 20 / TypeScript).
 
-**Phases 0–3 — shipping now: the read-only engine, the CLI, the graph viewer, cited query, and assisted atomization (dry-run by default).**
+**Shipping now (Phases 0–3.1): the engine, the CLI, the graph viewer, cited query, and AI-distilled atomization (dry-run by default).**
 
 ```bash
 cd toolkit && npm install && npm run build
@@ -190,12 +209,12 @@ The **viewer** (`viz`) runs a local server (like claude-mem) and opens your vaul
 
 ---
 
-## 🛠️ How to use this repo
+## 🛠️ How to use it
 
-- **Read the methodology:** open [`N1X-Cortex-v2.md`](N1X-Cortex-v2.md) (renders on GitHub), or compile the `.typ` to a PDF.
-- **Regenerate the methodology PDF:** `typst compile N1X-Cortex-v2.typ N1X-Cortex-v2.pdf` (details in [`UPDATE-PROCESS.md`](UPDATE-PROCESS.md)).
-- **Generate branded documents:** use `templates/typst/` (above).
-- **Apply the methodology to a project:** build the vault following the generic structure (folders `00-MOC/` … `09-Strategy/`, standard frontmatter, wikilinks). The project vault lives in that project's repo, **never here**.
+- **Run it on your vault:** `cd toolkit && npm install && npm run build`, then point the CLI at any markdown vault (`status`, `viz`, `query`, `atomize`) — see [The Cortex engine](#️-the-cortex-engine-toolkit) above.
+- **Start a vault from scratch:** use the generic structure (folders `00-MOC/` … `09-Strategy/`, standard frontmatter, wikilinks) and let `atomize` populate it. Your vault lives in your own project's repo, **never here**.
+- **Generate branded documents:** use `templates/typst/` to turn curated notes into PDFs.
+- **Go deeper on the model:** the spec ([`N1X-Cortex-v2.md`](N1X-Cortex-v2.md)) explains the reasoning; regenerate its PDF with `typst compile N1X-Cortex-v2.typ N1X-Cortex-v2.pdf` (see [`UPDATE-PROCESS.md`](UPDATE-PROCESS.md)).
 
 ---
 
@@ -217,7 +236,7 @@ Full guide and onboarding in [`sync/README.md`](sync/README.md). What Cortex pub
 
 ## 📌 Conventions
 
-These are the N1X Cortex methodology standards — they apply **to this repo and to every project that uses Cortex**:
+These N1X Cortex standards apply **to this repo and to every project that uses Cortex**:
 
 - **📝 README kept current on every push.** The README always reflects the current state of the repo. **It's updated before every `git push`** to capture what changed (new files, decisions, structure). An outdated README is a bug.
 - **Markdown is the source of truth.** The PDF is derived output — never hand-written. Edit the `.md`, mirror it in the `.typ`, recompile.
@@ -228,7 +247,7 @@ These are the N1X Cortex methodology standards — they apply **to this repo and
 
 ## 🕰️ Versioning
 
-The methodology was originally called **BRAIN**; since **v2.0** it is **N1X Cortex**. The repo keeps **only the current version** — older versions live in **git history**, not as files in the tree.
+N1X Cortex was originally called **BRAIN**; the name became **N1X Cortex** at **v2.0**. The repo keeps **only the current version** of the spec — older versions live in **git history**, not as files in the tree.
 
 ---
 
