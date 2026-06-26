@@ -1,12 +1,13 @@
 import { buildIndex, searchIndex } from '../search/index.js';
 import { excerpt } from './excerpt.js';
+import { rrfOrder } from '../semantic/fuse.js';
 import type { Note, Graph, QueryResult, QueryHit } from '../types.js';
 
 export function retrieve(
   notes: Note[],
   graph: Graph,
   question: string,
-  opts: { maxAnchors?: number; hops?: number; maxHits?: number } = {},
+  opts: { maxAnchors?: number; hops?: number; maxHits?: number; semanticRanking?: string[]; rrfK?: number } = {},
 ): QueryResult {
   const maxAnchors = opts.maxAnchors ?? 5;
   const hops = opts.hops ?? 2;
@@ -20,7 +21,11 @@ export function retrieve(
   const ftsById = new Map<string, number>();
   ranked.forEach(r => ftsById.set(notes[r.index].id, r.score));
 
-  const anchorIds = ranked.slice(0, maxAnchors).map(r => notes[r.index].id);
+  const lexicalIds = ranked.map(r => notes[r.index].id);
+  const order = opts.semanticRanking && opts.semanticRanking.length
+    ? rrfOrder([lexicalIds, opts.semanticRanking], opts.rrfK ?? 60)
+    : lexicalIds;
+  const anchorIds = order.filter(id => byId.has(id)).slice(0, maxAnchors);
   const anchorSet = new Set(anchorIds);
 
   // adjacency (both directions) over the graph's edges

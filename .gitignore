@@ -5,6 +5,8 @@ _img/
 *.pdf
 
 .cortex/out/
+.cortex/embeddings/
+.cortex/models/
 
 # Scratch / tooling working dirs (not part of the repo)
 .superpowers/
