@@ -1,7 +1,7 @@
 // toolkit/test/backup.test.ts
 import { describe, it, expect } from 'vitest';
 import { backupNote, restoreLatestBackup } from '../src/atomize/backup.js';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -24,6 +24,20 @@ describe('backupNote / restoreLatestBackup', () => {
     writeFileSync(join(dir, rel), 'EDITED');
     const { restored } = restoreLatestBackup(dir);
     expect(restored).toEqual(['01-Concepts/n.md']);
+    expect(readFileSync(join(dir, rel), 'utf8')).toBe('original content');
+  });
+
+  it('recreates missing parent directory during restore', () => {
+    const dir = vault();
+    const rel = '01-Concepts/n.md';
+    backupNote(dir, rel, '2026-01-01T00-00-00');
+    // delete the parent directory entirely — simulates a folder removed between backup and restore
+    rmSync(join(dir, '01-Concepts'), { recursive: true, force: true });
+    expect(existsSync(join(dir, '01-Concepts'))).toBe(false);
+    // restore must recreate the directory and write the file without throwing
+    const { restored } = restoreLatestBackup(dir);
+    expect(restored).toEqual(['01-Concepts/n.md']);
+    expect(existsSync(join(dir, rel))).toBe(true);
     expect(readFileSync(join(dir, rel), 'utf8')).toBe('original content');
   });
 
