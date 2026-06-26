@@ -29,6 +29,9 @@ export interface CortexConfig {
   statusLifecycle: string[];
   immutableStatus: string | null;
   autonomy: 'off' | 'suggest' | 'auto-draft' | 'full';
+  mocDir: string;
+  dupeThreshold: number;
+  outDir: string;
   viz: { port: number };
 }
 
