@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { fileURLToPath } from 'node:url';
 import { runInit } from './commands/init.js';
 import { runStatus } from './commands/status.js';
