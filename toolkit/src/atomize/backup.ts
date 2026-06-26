@@ -29,7 +29,9 @@ export function restoreLatestBackup(vaultDir: string): { restored: string[] } {
   const restored: string[] = [];
   for (const file of walk(latest)) {
     const rel = relative(latest, file).split(sep).join('/');
-    writeFileSync(join(vaultDir, rel), readFileSync(file));
+    const dest = join(vaultDir, rel);
+    mkdirSync(dirname(dest), { recursive: true });
+    writeFileSync(dest, readFileSync(file));
     restored.push(rel);
   }
   return { restored: restored.sort() };
