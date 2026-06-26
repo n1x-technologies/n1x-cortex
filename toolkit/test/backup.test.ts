@@ -85,4 +85,37 @@ describe('undoLatestRun', () => {
     const dir = mkdtempSync(join(tmpdir(), 'cortex-undo0-'));
     expect(undoLatestRun(dir)).toEqual({ restored: [], reverted: [] });
   });
+
+  it('walks back across two backup runs (symmetric consumption)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cortex-walkback-'));
+    mkdirSync(join(dir, '01-Concepts'));
+    const rel = '01-Concepts/note.md';
+
+    // run A: backs up 'original'
+    writeFileSync(join(dir, rel), 'original');
+    backupNote(dir, rel, '2026-01-01T00-00-00');
+    // mutate to 'after-A'
+    writeFileSync(join(dir, rel), 'after-A');
+
+    // run B: backs up 'after-A'
+    backupNote(dir, rel, '2026-02-02T00-00-00');
+    // mutate to 'after-B'
+    writeFileSync(join(dir, rel), 'after-B');
+
+    // first undo: consumes B, restores 'after-A'
+    const r1 = undoLatestRun(dir);
+    expect(r1.restored).toEqual(['01-Concepts/note.md']);
+    expect(r1.reverted).toEqual([]);
+    expect(readFileSync(join(dir, rel), 'utf8')).toBe('after-A');
+
+    // second undo: consumes A, restores 'original'
+    const r2 = undoLatestRun(dir);
+    expect(r2.restored).toEqual(['01-Concepts/note.md']);
+    expect(r2.reverted).toEqual([]);
+    expect(readFileSync(join(dir, rel), 'utf8')).toBe('original');
+
+    // third undo: nothing left
+    const r3 = undoLatestRun(dir);
+    expect(r3).toEqual({ restored: [], reverted: [] });
+  });
 });

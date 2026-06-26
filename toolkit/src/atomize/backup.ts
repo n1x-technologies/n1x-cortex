@@ -59,7 +59,11 @@ export function undoLatestRun(vaultDir: string): { restored: string[]; reverted:
   const all = [...backupRuns, ...promoRuns].sort((a, b) => a.id.localeCompare(b.id));
   if (all.length === 0) return { restored: [], reverted: [] };
   const latest = all[all.length - 1];
-  if (latest.kind === 'backup') return { restored: restoreLatestBackup(vaultDir).restored, reverted: [] };
+  if (latest.kind === 'backup') {
+    const { restored } = restoreLatestBackup(vaultDir);
+    rmSync(join(vaultDir, '.cortex/backups', latest.id), { recursive: true, force: true });
+    return { restored, reverted: [] };
+  }
 
   const journalPath = join(promosRoot, `${latest.id}.json`);
   const { moves } = JSON.parse(readFileSync(journalPath, 'utf8')) as { moves: { from: string; to: string }[] };
