@@ -75,3 +75,14 @@ export const onUserPromptSubmit: Handler = (payload, vaultDir, config, state) =>
     response: { hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: grounding } },
   };
 };
+
+export const onSessionEnd: Handler = (_payload, vaultDir, config, state) => {
+  if (!gate(state, config)) return { state, response: {} };
+  const reconciled = reconcile(state, snapshotSources(vaultDir, config));
+  const next: HookState = { ...reconciled, session: { injectedTokens: 0 } };
+  if (reconciled.dirty.length === 0) return { state: next, response: {} };
+  return {
+    state: next,
+    response: { systemMessage: `Cortex: ${reconciled.dirty.length} source(s) still need atomizing` },
+  };
+};

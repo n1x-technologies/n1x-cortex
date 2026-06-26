@@ -1,6 +1,6 @@
 // toolkit/test/hook-handlers.test.ts
 import { describe, it, expect } from 'vitest';
-import { onSessionStart, onStop, onPostToolUse, onUserPromptSubmit, looksLikeDomainQuestion } from '../src/hooks/handlers.js';
+import { onSessionStart, onStop, onPostToolUse, onUserPromptSubmit, looksLikeDomainQuestion, onSessionEnd } from '../src/hooks/handlers.js';
 import { freshState } from '../src/hooks/state.js';
 import { loadConfig } from '../src/config.js';
 import { mkdtempSync, mkdirSync, writeFileSync, readdirSync } from 'node:fs';
@@ -88,5 +88,16 @@ describe('onUserPromptSubmit', () => {
     const capped = { ...freshState(), session: { injectedTokens: 99999 } };
     const r = onUserPromptSubmit({ prompt: 'What is X?' }, dir, cfg, capped);
     expect(r.response).toEqual({});
+  });
+});
+
+describe('onSessionEnd', () => {
+  it('digests outstanding dirty sources and resets the token budget', () => {
+    const dir = vault();
+    const cfg = loadConfig(dir, []);
+    const seeded = { ...freshState(), session: { injectedTokens: 1234 } };  // empty snapshot → a.md is dirty
+    const { state, response } = onSessionEnd({}, dir, cfg, seeded);
+    expect(response.systemMessage).toMatch(/still need atomizing/);
+    expect(state.session.injectedTokens).toBe(0);
   });
 });
