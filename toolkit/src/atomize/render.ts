@@ -5,6 +5,7 @@ export function renderNote(spec: NoteSpec, config: CortexConfig): string {
   const fm: string[] = ['---'];
   fm.push(`${f.id}: ${spec.id}`);
   if (spec.type) fm.push(`${f.type}: ${spec.type}`);
+  if (spec.tags && spec.tags.length) fm.push(`tags: [${spec.tags.join(', ')}]`);
   fm.push(`${f.status}: "${spec.status}"`);
   const safeSource = spec.source.replace(/"/g, '\\"');
   fm.push(`${f.source}: "[[${safeSource}]]"`);
