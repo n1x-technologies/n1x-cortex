@@ -3,7 +3,7 @@ import { collectFrontmatterKeys } from '../vault.js';
 import { planAtomize, applyAtomize } from '../atomize/plan.js';
 import { emitPlan } from '../atomize/emit.js';
 import { applyDistilled } from '../atomize/apply-distilled.js';
-import { restoreLatestBackup } from '../atomize/backup.js';
+import { undoLatestRun } from '../atomize/backup.js';
 import type { AtomizePlan, DistilledApplyResult } from '../types.js';
 
 export function runAtomize(vaultDir: string, sourcePath: string, opts: { write?: boolean }): { plan: AtomizePlan; written: string[] } {
@@ -36,8 +36,8 @@ export function runApply(vaultDir: string, specsPath: string, opts: { write?: bo
   return applyDistilled(vaultDir, specsPath, config, { dryRun: !opts.write, force: opts.force });
 }
 
-export function runUndo(vaultDir: string): { restored: string[] } {
-  return restoreLatestBackup(vaultDir);
+export function runUndo(vaultDir: string): { restored: string[]; reverted: string[] } {
+  return undoLatestRun(vaultDir);
 }
 
 export function formatDistilledPlan(r: DistilledApplyResult): string {
