@@ -25,14 +25,14 @@ Where to start, by intent:
 | `N1X-Cortex-v2.typ` | Typst source of the current PDF — mirrors the `.md` with layout. |
 | `N1X-Cortex-v2.pdf` | Compiled PDF — **git-ignored**, generated on demand (`typst compile`), not versioned. |
 | `UPDATE-PROCESS.md` | **Operating procedure:** how to version, edit, and regenerate the PDF. Read it before changing anything. |
-| `toolkit/` | **The Cortex engine + agent** (Node/TS): reads any markdown vault into a note graph; CLI `init`/`status`/`orphans`/`viz`/`query`/`atomize`. `atomize` is **dry-run by default**; it creates `status: draft` notes in `_inbox/` and (Phase 3.2) **merges AI-distilled updates into existing notes in place** — each edited note is backed up to `.cortex/backups/` first and is reversible with `atomize --undo`; `Markdown/` sources are never modified. AI distillation runs through `toolkit/skills/atomize/` (the `/atomize` skill). Phases 0–3.2. |
+| `toolkit/` | **The Cortex engine + agent** (Node/TS): reads any markdown vault into a note graph; CLI `init`/`status`/`orphans`/`viz`/`query`/`atomize`/`promote`/`set-status`/`undo`. `atomize` is **dry-run by default**: it creates `status: draft` notes in `_inbox/`, merges AI-distilled updates into existing notes in place (3.2), and (3.3) `promote` graduates status-advanced drafts out of `_inbox/` into curated folders. Every write is reversible (`.cortex/backups/` + `.cortex/promotions/`, `cortex undo`); `Markdown/` sources are never modified. AI distillation runs through `toolkit/skills/atomize/` (the `/atomize` skill). Phases 0–3.3. |
 | `docs/design/` | Design spec (`specs/`) and implementation plans (`plans/`) for the toolkit. |
 | `CLAUDE.md` | This file. |
 | `README.md` | Entry point for humans. |
 
 ## What was done here (summary)
 
-Two tracks: **(1)** the method — the **4 pillars** (Atomize · Connect · Curate · AI Layer) — was distilled into a structured 9-section spec with a Typst **PDF generation pipeline** (see Section 6 and the `PROCESO`); the spec stands on its own, independent of any project it's applied to. **(2)** the **product** was built in `toolkit/` — the Cortex engine + AI agent (Phases 0–3.2: engine, viewer, cited query, AI-distilled atomization, autonomous update/merge) — turning the method into a working local tool.
+Two tracks: **(1)** the method — the **4 pillars** (Atomize · Connect · Curate · AI Layer) — was distilled into a structured 9-section spec with a Typst **PDF generation pipeline** (see Section 6 and the `PROCESO`); the spec stands on its own, independent of any project it's applied to. **(2)** the **product** was built in `toolkit/` — the Cortex engine + AI agent (Phases 0–3.3: engine, viewer, cited query, AI-distilled atomization, autonomous update/merge, status-gated promote) — turning the method into a working local tool.
 
 ## Rules for working in this repo
 
