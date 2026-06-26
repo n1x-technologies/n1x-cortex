@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { runAtomize, formatPlan } from '../src/commands/atomize.js';
-import { runEmit, runApply, formatDistilledPlan } from '../src/commands/atomize.js';
-import { mkdtempSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
+import { runEmit, runApply, formatDistilledPlan, runUndo } from '../src/commands/atomize.js';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -58,5 +58,28 @@ describe('runEmit / runApply (atomize 3.1)', () => {
     const wet = runApply(dir, specs, { write: true });
     expect(wet.written).toContain('_inbox/03-Rules/operation-limit.md');
     expect(existsSync(join(dir, '_inbox/03-Rules/operation-limit.md'))).toBe(true);
+  });
+});
+
+describe('runApply update + runUndo', () => {
+  it('applies an update with --write and undoes it', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cortex-updcmd-'));
+    mkdirSync(join(dir, '01-Concepts'));
+    const note = join(dir, '01-Concepts', 'n.md');
+    writeFileSync(note, '---\ntype: concept\nid: n\n---\n# N\n\norig body long enough\n');
+    const specs = join(dir, 'd.json');
+    writeFileSync(specs, JSON.stringify({ source: 'src', notes: [
+      { title: 'N', action: 'update', targetPath: '01-Concepts/n.md', body: '# N\n\norig body long enough, plus new info added' },
+    ]}));
+
+    const r = runApply(dir, specs, { write: true });
+    expect(r.updated).toEqual(['01-Concepts/n.md']);
+    expect(readFileSync(note, 'utf8')).toContain('plus new info added');
+    expect(formatDistilledPlan(r)).toMatch(/update →/);
+
+    const undo = runUndo(dir);
+    expect(undo.restored).toEqual(['01-Concepts/n.md']);
+    expect(readFileSync(note, 'utf8')).toContain('orig body long enough');
+    expect(readFileSync(note, 'utf8')).not.toContain('plus new info added');
   });
 });
