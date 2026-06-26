@@ -4,7 +4,7 @@ import { runStatus } from './commands/status.js';
 import { runOrphans } from './commands/orphans.js';
 import { runViz, openBrowser } from './commands/viz.js';
 import { runQuery, formatQuery } from './commands/query.js';
-import { runAtomize, formatPlan, runEmit, runApply, formatDistilledPlan } from './commands/atomize.js';
+import { runAtomize, formatPlan, runEmit, runApply, formatDistilledPlan, runUndo } from './commands/atomize.js';
 
 export async function main(argv: string[]): Promise<number> {
   const [cmd] = argv;
@@ -53,13 +53,20 @@ export async function main(argv: string[]): Promise<number> {
     case 'atomize': {
       const rest = argv.slice(1);
       const write = rest.includes('--write');
+      const force = rest.includes('--force');
       const emit = rest.includes('--emit-json');
       const apply = rest.includes('--apply');
+      const undo = rest.includes('--undo');
       const positional = rest.filter(a => !a.startsWith('--'));
+      if (undo) {
+        const { restored } = runUndo(cwd);
+        console.log(restored.length ? `Restored ${restored.length} note(s):\n  ${restored.join('\n  ')}` : 'No backups to restore.');
+        return 0;
+      }
       if (apply) {
         const specs = positional[0];
-        if (!specs) { console.log('Usage: cortex atomize --apply <specs.json> [--write]'); return 1; }
-        console.log(formatDistilledPlan(runApply(cwd, specs, { write })));
+        if (!specs) { console.log('Usage: cortex atomize --apply <specs.json> [--write] [--force]'); return 1; }
+        console.log(formatDistilledPlan(runApply(cwd, specs, { write, force })));
         return 0;
       }
       const source = positional[0];
