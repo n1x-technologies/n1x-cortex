@@ -29,6 +29,13 @@ describe('renderNote', () => {
     expect(md).toMatch(/The limit is 5\./);
     expect(md).toMatch(/\[\[FUENTE-rules\]\]/);
   });
+  it('emits a tags line when the spec carries tags, and omits it otherwise', () => {
+    const cfg = loadConfig(mkdtempSync(join(tmpdir(), 'c-')), []);
+    const withTags = renderNote({ ...spec, tags: ['rule', 'limit'] }, cfg);
+    expect(withTags).toMatch(/tags: \[rule, limit\]/);
+    const noTags = renderNote(spec, cfg);
+    expect(noTags).not.toMatch(/tags:/);
+  });
 });
 
 describe('planAtomize / applyAtomize', () => {

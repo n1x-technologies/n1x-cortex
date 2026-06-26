@@ -106,6 +106,7 @@ export interface NoteSpec {
   source: string;
   status: string;
   folder: string | null;
+  tags?: string[];
 }
 export type AtomizeAction = 'create' | 'update' | 'skip';
 export interface AtomizePlanItem {
@@ -123,4 +124,36 @@ export interface Segment {
   heading: string;
   level: number;
   body: string;
+}
+
+// ── Atomize 3.1 (AI-distilled) ─────────────────────────────────────
+export interface EmitExistingNote {
+  id: string;
+  title: string;
+  path: string;
+  type: string | null;
+  folder: string;
+}
+export interface AtomizeEmitPlan {
+  source: string;
+  sourcePath: string;
+  lang: string | null;
+  fields: CortexFields;
+  statusFirst: string;
+  knownTypes: string[];
+  knownFolders: string[];
+  existing: EmitExistingNote[];
+  segments: Segment[];
+}
+export interface DistilledNote {
+  title: string;
+  type?: string | null;
+  folder?: string | null;
+  tags?: string[];
+  body: string;
+  fromHeading?: string;
+}
+export interface DistilledInput {
+  source: string;
+  notes: DistilledNote[];
 }
