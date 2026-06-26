@@ -124,3 +124,89 @@ describe('applyDistilled', () => {
     expect(existsSync(join(dir, '../../evil'))).toBe(false);
   });
 });
+
+function updVault(): string {
+  const dir = mkdtempSync(join(tmpdir(), 'cortex-upd-'));
+  mkdirSync(join(dir, 'Markdown'));
+  mkdirSync(join(dir, '01-Concepts'));
+  writeFileSync(join(dir, '01-Concepts', 'limit.md'),
+    '---\ntype: concept\nid: limit\n---\n# Operation limit\n\nThe limit is 5.\n\n*Source: [[old]]*\n');
+  writeFileSync(join(dir, 'Markdown', 'src.md'), '# ignored');
+  return dir;
+}
+function specs(dir: string, input: DistilledInput): string {
+  const p = join(dir, 'd.json'); writeFileSync(p, JSON.stringify(input)); return p;
+}
+const upd: DistilledInput = { source: 'rules', notes: [
+  { title: 'Operation limit', action: 'update', targetPath: '01-Concepts/limit.md',
+    body: '# Operation limit\n\nThe limit is 5, raised to 8 in 2026.\n\n*Source: [[old]]*' },
+]};
+
+describe('applyDistilled — update action', () => {
+  it('dry-runs by default: no write, no backup', () => {
+    const dir = updVault();
+    const r = applyDistilled(dir, specs(dir, upd), loadConfig(dir, []), { dryRun: true });
+    expect(r.updated).toEqual([]);
+    expect(r.backups).toEqual([]);
+    expect(existsSync(join(dir, '.cortex'))).toBe(false);
+    expect(readFileSync(join(dir, '01-Concepts', 'limit.md'), 'utf8')).toContain('The limit is 5.');
+  });
+
+  it('with --write: backs up then merges in place (frontmatter preserved)', () => {
+    const dir = updVault();
+    const r = applyDistilled(dir, specs(dir, upd), loadConfig(dir, []), { dryRun: false, runId: 'RUN1' });
+    expect(r.updated).toEqual(['01-Concepts/limit.md']);
+    expect(r.backups).toEqual(['.cortex/backups/RUN1/01-Concepts/limit.md']);
+    const after = readFileSync(join(dir, '01-Concepts', 'limit.md'), 'utf8');
+    expect(after).toMatch(/^---\ntype: concept\nid: limit\n---/); // frontmatter verbatim
+    expect(after).toContain('raised to 8 in 2026');
+    // backup holds the original
+    expect(readFileSync(join(dir, '.cortex/backups/RUN1/01-Concepts/limit.md'), 'utf8')).toContain('The limit is 5.\n');
+  });
+
+  it('hard-blocks a Markdown/ target, a missing target, and a traversal target', () => {
+    const dir = updVault();
+    const bad: DistilledInput = { source: 'rules', notes: [
+      { title: 'X', action: 'update', targetPath: 'Markdown/src.md', body: '# X\n\nlots of new text here to pass shrink' },
+      { title: 'Y', action: 'update', targetPath: '01-Concepts/missing.md', body: '# Y\n\nnew' },
+      { title: 'Z', action: 'update', targetPath: '../escape.md', body: '# Z\n\nnew' },
+    ]};
+    const r = applyDistilled(dir, specs(dir, bad), loadConfig(dir, []), { dryRun: false, runId: 'RUN2' });
+    expect(r.updated).toEqual([]);
+    expect(r.skipped.map(s => s.reason).sort()).toEqual(['not-found', 'outside-vault', 'source-immutable']);
+    expect(readFileSync(join(dir, 'Markdown', 'src.md'), 'utf8')).toBe('# ignored'); // source untouched
+    expect(existsSync(join(dir, '..', 'escape.md'))).toBe(false);
+  });
+
+  it('defaults to dryRun:true when no opts are passed', () => {
+    const dir = updVault();
+    const r = applyDistilled(dir, specs(dir, upd), loadConfig(dir, []));
+    expect(r.updated).toEqual([]);
+    expect(existsSync(join(dir, '.cortex'))).toBe(false);
+  });
+
+  it('absolute targetPath pointing into Markdown/ is blocked as source-immutable', () => {
+    const dir = updVault();
+    const absTarget = join(dir, 'Markdown', 'src.md');
+    const absInput: DistilledInput = { source: 'rules', notes: [
+      { title: 'X', action: 'update', targetPath: absTarget,
+        body: '# X\n\nlots of new text here that is definitely long enough to pass the shrink guard check' },
+    ]};
+    const r = applyDistilled(dir, specs(dir, absInput), loadConfig(dir, []), { dryRun: false, runId: 'RUN-ABS' });
+    expect(r.updated).toEqual([]);
+    expect(r.skipped).toEqual([{ target: absTarget, reason: 'source-immutable' }]);
+    expect(readFileSync(join(dir, 'Markdown', 'src.md'), 'utf8')).toBe('# ignored');
+  });
+
+  it('shrink guard skips a destructive update unless forced', () => {
+    const dir = updVault();
+    const tiny: DistilledInput = { source: 'rules', notes: [
+      { title: 'Operation limit', action: 'update', targetPath: '01-Concepts/limit.md', body: '# x' },
+    ]};
+    const guarded = applyDistilled(dir, specs(dir, tiny), loadConfig(dir, []), { dryRun: false, runId: 'RUN3' });
+    expect(guarded.updated).toEqual([]);
+    expect(guarded.skipped).toEqual([{ target: '01-Concepts/limit.md', reason: 'shrink-guard' }]);
+    const forced = applyDistilled(dir, specs(dir, tiny), loadConfig(dir, []), { dryRun: false, force: true, runId: 'RUN4' });
+    expect(forced.updated).toEqual(['01-Concepts/limit.md']);
+  });
+});

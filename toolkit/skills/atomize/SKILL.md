@@ -23,17 +23,27 @@ You are the **AI layer** of the N1X Cortex atomize pipeline. The `cortex` toolki
    - **Never write *illustrative* wikilinks in a body.** The engine parses **every** `[[...]]` as a real link, so example syntax like `[[note-name]]` or `[[example]]` becomes a phantom orphan in the graph. Only link to notes that exist or that you are genuinely creating; to *describe* link syntax, write it in prose or as inline code (`` `[[note-name]]` ``), never as a bare `[[note-name]]`.
    - **Tags + language:** add `tags`; write in the vault's `lang`.
    - **No duplicates:** if a strong match already exists in `existing`, drop that note (the toolkit will also skip it).
+   - **Update vs create vs skip.** For a segment that matches a note in `existing` *and adds information*: **read that note** (its `path`), produce a **conservative merged body** — integrate the new info, preserve ALL existing content, links, and human edits, keep every source citation and add the new one, and keep the note's `# Heading` — then emit it as `{ "action": "update", "targetPath": "<existing path>", "title", "body": "<full merged body incl. heading>" }`. If the existing note already covers the segment, leave it `skip` (don't churn). Only `create` (new) notes omit `action`/`targetPath`.
 
-4. **Write the distilled specs** to a temp file `distilled.json`:
-   `{ "source": "<emit.source>", "notes": [ { "title", "type", "folder", "tags": [...], "body", "fromHeading" }, ... ] }`.
+4. **Write the distilled specs** to a temp file `distilled.json`. The `notes` array holds two possible shapes — mix them freely:
+   ```json
+   {
+     "source": "<emit.source>",
+     "notes": [
+       { "title": "...", "type": "...", "folder": "...", "tags": ["..."], "body": "...", "fromHeading": "..." },
+       { "action": "update", "targetPath": "<existing note path>", "title": "...", "body": "<full merged body>" }
+     ]
+   }
+   ```
+   Create notes (first shape, no `action`/`targetPath`) become new `_inbox/` drafts. Update notes (second shape) merge into the existing note at `targetPath` in place.
 
-5. **Dry-run and preview.** Run `node <cli> atomize --apply distilled.json` (no `--write`). Show the user the plan summary: note count, each title `[type → folder]`, splits, any skips or newly-seeded types. **Stop and ask: apply these to _inbox/?**
+5. **Apply autonomously.** Write `distilled.json`, then run `node <cli> atomize --apply distilled.json --write`. The toolkit creates new drafts under `_inbox/` and merges `update` notes in place. Print a compact summary (creates, updates with their targets, any skips) — this is information, not a checkpoint.
 
-6. **Apply on approval.** On "go," run `node <cli> atomize --apply distilled.json --write`. Report what landed under `_inbox/<folder>/`. The notes are `status: draft` in the `_inbox/` staging area — the user reviews and promotes them into the curated folders.
+6. **Reassure + reversibility.** Tell the user what changed and that **every edited note was backed up** — any update is undoable with `cortex atomize --undo` (or via git). Updates skipped by the shrink guard are reported; re-run with `--force` only if the shrink is intended.
 
 ## Safety (enforced by the toolkit, but respect them)
 
 - Dry-run is the default; only `--write` writes. Always preview before writing.
-- Notes land only in `_inbox/<folder>/` as `status: draft`. Never write into curated folders directly.
-- Never modify the source file or existing notes.
+- **New notes** (creates) land only in `_inbox/<folder>/` as `status: draft` — they are never written as brand-new files into curated folders directly.
+- **Source files** under `Markdown/` are never modified. Existing curated notes are only ever changed through the `update` path, which backs up each note before editing; every update is reversible with `cortex atomize --undo`.
 - Citations are mandatory (the toolkit adds them); keep the `source` correct.

@@ -21,3 +21,12 @@ export function renderNote(spec: NoteSpec, config: CortexConfig): string {
     '',
   ].join('\n');
 }
+
+export function renderUpdatedNote(existingContent: string, mergedBody: string, source: string): string {
+  const m = existingContent.match(/^---\n[\s\S]*?\n---\n?/);
+  const frontmatter = (m ? m[0] : '').replace(/\n+$/, ''); // verbatim block, trailing newlines normalized
+  const body = mergedBody.trim();
+  const parts = [frontmatter, '', body, ''];
+  if (!body.includes(`[[${source}]]`)) parts.push(`*Source: [[${source}]]*`, '');
+  return parts.join('\n');
+}
