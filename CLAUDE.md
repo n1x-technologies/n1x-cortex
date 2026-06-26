@@ -32,7 +32,7 @@ Where to start, by intent:
 
 ## What was done here (summary)
 
-Two tracks: **(1)** the method — the **4 pillars** (Atomize · Connect · Curate · AI Layer) — was distilled into a structured 9-section spec with a Typst **PDF generation pipeline** (see Section 6 and the `PROCESO`); the spec stands on its own, independent of any project it's applied to. **(2)** the **product** was built in `toolkit/` — the Cortex engine + AI agent (Phases 0–3.1: engine, viewer, cited query, AI-distilled atomization) — turning the method into a working local tool.
+Two tracks: **(1)** the method — the **4 pillars** (Atomize · Connect · Curate · AI Layer) — was distilled into a structured 9-section spec with a Typst **PDF generation pipeline** (see Section 6 and the `PROCESO`); the spec stands on its own, independent of any project it's applied to. **(2)** the **product** was built in `toolkit/` — the Cortex engine + AI agent (Phases 0–3.2: engine, viewer, cited query, AI-distilled atomization, autonomous update/merge) — turning the method into a working local tool.
 
 ## Rules for working in this repo
 
