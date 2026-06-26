@@ -21,6 +21,11 @@ export function planPromote(vaultDir: string, config: CortexConfig): { items: Pr
       if (!n.status || n.status === draft) return { from: n.path, to: '', action: 'skip', reason: 'still-draft' };
       const rest = n.path.slice(`${INBOX}/`.length);
       if (!rest.includes('/')) return { from: n.path, to: '', action: 'skip', reason: 'no-target-folder' };
+      const toAbs = resolve(vaultDir, rest);
+      const vaultAbs = resolve(vaultDir);
+      const sourcesAbs = resolve(vaultDir, config.sourcesDir.replace(/\/$/, ''));
+      if (toAbs === vaultAbs || !toAbs.startsWith(vaultAbs + sep)) return { from: n.path, to: rest, action: 'skip', reason: 'outside-vault' };
+      if (toAbs === sourcesAbs || toAbs.startsWith(sourcesAbs + sep)) return { from: n.path, to: rest, action: 'skip', reason: 'source-immutable' };
       if (existsSync(join(vaultDir, rest))) return { from: n.path, to: rest, action: 'skip', reason: 'exists' };
       return { from: n.path, to: rest, action: 'promote' };
     });
@@ -48,6 +53,7 @@ export function applyPromote(
     if (toAbs === sourcesAbs || toAbs.startsWith(sourcesAbs + sep)) { skipped.push({ from: item.from, reason: 'source-immutable' }); continue; }
     if (!dryRun) {
       const fromAbs = join(vaultDir, item.from);
+      if (existsSync(toAbs)) { skipped.push({ from: item.from, reason: 'exists' }); continue; }
       mkdirSync(dirname(toAbs), { recursive: true });
       writeFileSync(toAbs, readFileSync(fromAbs));
       rmSync(fromAbs);
