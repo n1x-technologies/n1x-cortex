@@ -24,7 +24,7 @@ describe('renderNote', () => {
     const md = renderNote(spec, cfg);
     expect(md).toMatch(/^---/);
     expect(md).toMatch(/id: op-limit/);
-    expect(md).toMatch(/status: draft/);
+    expect(md).toMatch(/status: "draft"/);
     expect(md).toMatch(/# Operation limit/);
     expect(md).toMatch(/The limit is 5\./);
     expect(md).toMatch(/\[\[FUENTE-rules\]\]/);
@@ -32,6 +32,12 @@ describe('renderNote', () => {
 });
 
 describe('planAtomize / applyAtomize', () => {
+  it('defaults to dryRun:true when no opts object is passed', () => {
+    const dir = vault();
+    const cfg = loadConfig(dir, ['tipo', 'estado']);
+    const plan = planAtomize(dir, join(dir, 'Markdown', 'rules.md'), cfg);
+    expect(plan.dryRun).toBe(true);
+  });
   it('plans creates as a dry-run and writes nothing', () => {
     const dir = vault();
     const cfg = loadConfig(dir, ['tipo', 'estado']);
@@ -47,6 +53,7 @@ describe('planAtomize / applyAtomize', () => {
     const plan = planAtomize(dir, join(dir, 'Markdown', 'rules.md'), cfg, { dryRun: false });
     const res = applyAtomize(dir, plan);
     expect(res.written.length).toBe(3);
+    expect(res.written.every(p => p.startsWith('_inbox/'))).toBe(true);
     expect(existsSync(join(dir, res.written[0]))).toBe(true);
     // re-plan: existing notes now reconcile to skip
     const notes2 = readdirSync(dir);
