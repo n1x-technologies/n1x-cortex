@@ -4,6 +4,7 @@ import { runStatus } from './commands/status.js';
 import { runOrphans } from './commands/orphans.js';
 import { runViz, openBrowser } from './commands/viz.js';
 import { runQuery, formatQuery } from './commands/query.js';
+import { runAtomize, formatPlan } from './commands/atomize.js';
 
 export async function main(argv: string[]): Promise<number> {
   const [cmd] = argv;
@@ -48,8 +49,16 @@ export async function main(argv: string[]): Promise<number> {
       console.log(formatQuery(runQuery(cwd, question)));
       return 0;
     }
+    case 'atomize': {
+      const rest = argv.slice(1);
+      const write = rest.includes('--write');
+      const source = rest.find(a => !a.startsWith('--'));
+      if (!source) { console.log('Usage: cortex atomize <source.md> [--write]'); return 1; }
+      console.log(formatPlan(runAtomize(cwd, source, { write })));
+      return 0;
+    }
     default:
-      console.log('Usage: cortex <init|status|orphans|viz|query>');
+      console.log('Usage: cortex <init|status|orphans|viz|query|atomize>');
       return cmd ? 1 : 0;
   }
 }
