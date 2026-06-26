@@ -3,6 +3,7 @@ import { runInit } from './commands/init.js';
 import { runStatus } from './commands/status.js';
 import { runOrphans } from './commands/orphans.js';
 import { runViz, openBrowser } from './commands/viz.js';
+import { runQuery, formatQuery } from './commands/query.js';
 
 export async function main(argv: string[]): Promise<number> {
   const [cmd] = argv;
@@ -41,8 +42,14 @@ export async function main(argv: string[]): Promise<number> {
         return 1;
       }
     }
+    case 'query': {
+      const question = argv.slice(1).join(' ').trim();
+      if (!question) { console.log('Usage: cortex query <question>'); return 1; }
+      console.log(formatQuery(runQuery(cwd, question)));
+      return 0;
+    }
     default:
-      console.log('Usage: cortex <init|status|orphans|viz>');
+      console.log('Usage: cortex <init|status|orphans|viz|query>');
       return cmd ? 1 : 0;
   }
 }
