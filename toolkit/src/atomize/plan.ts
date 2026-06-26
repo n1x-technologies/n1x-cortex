@@ -21,10 +21,24 @@ export function planAtomize(vaultDir: string, sourcePath: string, config: Cortex
   const specs = proposeNotes(segments, sourceName, config);
   const existing = scanVault(vaultDir, config);
 
+  const usedPaths = new Set<string>();
   const items: AtomizePlanItem[] = specs.map(spec => {
     const { action, matchPath } = reconcile(spec, existing);
-    const destPath = `${INBOX}/${spec.id}.md`;
-    return { spec, action, matchPath, destPath };
+    if (action !== 'create') {
+      return { spec, action, matchPath, destPath: `${INBOX}/${spec.id}.md` };
+    }
+    // De-collide within the batch: handle empty slug and duplicate destPaths.
+    const baseId = spec.id.trim() === '' ? 'note' : spec.id;
+    let candidatePath = `${INBOX}/${baseId}.md`;
+    let counter = 2;
+    while (usedPaths.has(candidatePath)) {
+      candidatePath = `${INBOX}/${baseId}-${counter}.md`;
+      counter++;
+    }
+    usedPaths.add(candidatePath);
+    const newId = candidatePath.slice(`${INBOX}/`.length, -'.md'.length);
+    const updatedSpec = { ...spec, id: newId };
+    return { spec: updatedSpec, action, matchPath, destPath: candidatePath };
   });
   return { source: sourceName, items, dryRun };
 }

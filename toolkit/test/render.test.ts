@@ -61,4 +61,25 @@ describe('planAtomize / applyAtomize', () => {
     expect(plan2.items.every(i => i.action === 'skip')).toBe(true);
     expect(notes2.length).toBeGreaterThan(0);
   });
+  it('de-collision: two headings with identical slugs get distinct destPaths and both files are written', () => {
+    // '## Summary' appears twice → slug('Summary') = 'summary' both times → collision without fix
+    const dir = mkdtempSync(join(tmpdir(), 'cortex-collide-'));
+    mkdirSync(join(dir, 'Markdown'));
+    writeFileSync(
+      join(dir, 'Markdown', 'collide.md'),
+      '## Summary\n\nFirst summary content.\n\n## Summary\n\nSecond summary content.\n',
+    );
+    const cfg = loadConfig(dir, []);
+    const plan = planAtomize(dir, join(dir, 'Markdown', 'collide.md'), cfg, { dryRun: false });
+    const res = applyAtomize(dir, plan);
+    // Both segments must be written as distinct files
+    expect(res.written.length).toBe(2);
+    expect(new Set(res.written).size).toBe(2);
+    expect(res.written.every(p => p.startsWith('_inbox/'))).toBe(true);
+    // One path ends with '-2.md' (the colliding entry gets a suffix)
+    expect(res.written.some(p => p.endsWith('-2.md'))).toBe(true);
+    // Both files must actually exist on disk
+    expect(existsSync(join(dir, res.written[0]))).toBe(true);
+    expect(existsSync(join(dir, res.written[1]))).toBe(true);
+  });
 });
