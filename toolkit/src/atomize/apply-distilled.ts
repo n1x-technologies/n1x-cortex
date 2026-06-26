@@ -21,6 +21,9 @@ export function applyDistilled(
 
   const usedPaths = new Set<string>();
   const items: AtomizePlanItem[] = input.notes.map(n => {
+    const safeFolder = (n.folder && !n.folder.startsWith('/') && !n.folder.split('/').includes('..'))
+      ? n.folder
+      : null;
     const spec: NoteSpec = {
       id: slug(n.title),
       title: n.title,
@@ -28,10 +31,10 @@ export function applyDistilled(
       body: n.body,
       source: input.source,
       status,
-      folder: n.folder ?? null,
+      folder: safeFolder,
       tags: n.tags,
     };
-    const folderPrefix = spec.folder ? `${spec.folder}/` : '';
+    const folderPrefix = safeFolder ? `${safeFolder}/` : '';
     const { action, matchPath } = reconcile(spec, existing);
     if (action !== 'create') {
       return { spec, action, matchPath, destPath: `${INBOX}/${folderPrefix}${spec.id}.md` };
