@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync, rmSync } from 'node:fs';
 import { join, dirname, relative, sep } from 'node:path';
 
 const BACKUP_ROOT = '.cortex/backups';
@@ -35,4 +35,48 @@ export function restoreLatestBackup(vaultDir: string): { restored: string[] } {
     restored.push(rel);
   }
   return { restored: restored.sort() };
+}
+
+const PROMOTIONS_ROOT = '.cortex/promotions';
+
+export function recordPromotions(vaultDir: string, moves: { from: string; to: string }[], runId: string): string {
+  const rel = `${PROMOTIONS_ROOT}/${runId}.json`;
+  const abs = join(vaultDir, rel);
+  mkdirSync(dirname(abs), { recursive: true });
+  writeFileSync(abs, JSON.stringify({ moves }, null, 2));
+  return rel;
+}
+
+export function undoLatestRun(vaultDir: string): { restored: string[]; reverted: string[] } {
+  const backupsRoot = join(vaultDir, '.cortex/backups');
+  const promosRoot = join(vaultDir, PROMOTIONS_ROOT);
+  const backupRuns = existsSync(backupsRoot)
+    ? readdirSync(backupsRoot).filter(r => statSync(join(backupsRoot, r)).isDirectory()).map(id => ({ id, kind: 'backup' as const }))
+    : [];
+  const promoRuns = existsSync(promosRoot)
+    ? readdirSync(promosRoot).filter(f => f.endsWith('.json')).map(f => ({ id: f.replace(/\.json$/, ''), kind: 'promo' as const }))
+    : [];
+  const all = [...backupRuns, ...promoRuns].sort((a, b) => a.id.localeCompare(b.id));
+  if (all.length === 0) return { restored: [], reverted: [] };
+  const latest = all[all.length - 1];
+  if (latest.kind === 'backup') {
+    const { restored } = restoreLatestBackup(vaultDir);
+    rmSync(join(vaultDir, '.cortex/backups', latest.id), { recursive: true, force: true });
+    return { restored, reverted: [] };
+  }
+
+  const journalPath = join(promosRoot, `${latest.id}.json`);
+  const { moves } = JSON.parse(readFileSync(journalPath, 'utf8')) as { moves: { from: string; to: string }[] };
+  const reverted: string[] = [];
+  for (const m of moves) {
+    const toAbs = join(vaultDir, m.to);
+    if (!existsSync(toAbs)) continue;
+    const fromAbs = join(vaultDir, m.from);
+    mkdirSync(dirname(fromAbs), { recursive: true });
+    writeFileSync(fromAbs, readFileSync(toAbs));
+    rmSync(toAbs);
+    reverted.push(m.from);
+  }
+  rmSync(journalPath); // consume the journal so the next undo targets the prior run
+  return { restored: [], reverted: reverted.sort() };
 }

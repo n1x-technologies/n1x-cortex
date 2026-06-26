@@ -41,9 +41,14 @@ You are the **AI layer** of the N1X Cortex atomize pipeline. The `cortex` toolki
 
 6. **Reassure + reversibility.** Tell the user what changed and that **every edited note was backed up** — any update is undoable with `cortex atomize --undo` (or via git). Updates skipped by the shrink guard are reported; re-run with `--force` only if the shrink is intended.
 
+7. **Graduate ready notes (optional, autonomous).** For each note you created or updated that you judge **complete and correct**, advance its status and promote it into the curated graph:
+   - `node <cli> set-status "<_inbox path>" documented --write` — your confidence is the trust signal; leave notes you are unsure about as `draft` in `_inbox/`.
+   - then `node <cli> promote --write` — graduates every note whose status is now beyond `draft` into its curated folder (`_inbox/03-Rules/x.md` → `03-Rules/x.md`). It never overwrites an existing curated note.
+   - Report what was promoted. The whole run is reversible: `node <cli> undo` reverses the most recent action (a promotion returns the note to `_inbox/`; an edit or status change is rolled back).
+
 ## Safety (enforced by the toolkit, but respect them)
 
 - Dry-run is the default; only `--write` writes. Always preview before writing.
 - **New notes** (creates) land only in `_inbox/<folder>/` as `status: draft` — they are never written as brand-new files into curated folders directly.
-- **Source files** under `Markdown/` are never modified. Existing curated notes are only ever changed through the `update` path, which backs up each note before editing; every update is reversible with `cortex atomize --undo`.
+- **Source files** under `Markdown/` are never modified. Existing curated notes are only ever changed through the `update` path, which backs up each note before editing. Every change — an edit, a `set-status` advance, or a `promote` move — is reversible: `cortex undo` reverses the most recent run.
 - Citations are mandatory (the toolkit adds them); keep the `source` correct.
