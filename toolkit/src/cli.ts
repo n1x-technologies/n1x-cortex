@@ -8,6 +8,7 @@ import { runAtomize, formatPlan, runEmit, runApply, formatDistilledPlan, runUndo
 import { runPromote, formatPromote, runSetStatus } from './commands/promote.js';
 import { runHookCommand } from './commands/hook.js';
 import { runPause, runResume } from './commands/pause.js';
+import { runGaps, formatGaps } from './commands/gaps.js';
 
 export async function main(argv: string[]): Promise<number> {
   const [cmd] = argv;
@@ -114,6 +115,10 @@ export async function main(argv: string[]): Promise<number> {
     case 'resume': {
       runResume(cwd);
       console.log('Cortex autonomy resumed.');
+      return 0;
+    }
+    case 'gaps': {
+      console.log(formatGaps(runGaps(cwd)));
       return 0;
     }
     default:
