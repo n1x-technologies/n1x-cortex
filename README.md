@@ -63,7 +63,7 @@ N1X Cortex runs as a local CLI (and a Claude Code skill) over any markdown vault
 | **Visualize** | `viz` | an interactive local web graph — nodes, ghost nodes for gaps, search, color-by type/status/freshness |
 | **Query (cited)** | `query "…"` | mechanical cited retrieval: the relevant notes, excerpts, and their sources |
 | **Atomize (AI)** | `atomize <src>` + the `/atomize` skill | an AI agent reads a source doc, splits it into one-idea-per-note drafts, infers type, routes a folder, adds tags + wikilinks, and **merges new info into existing notes** — autonomous, **dry-run by default** |
-| **Undo** | `atomize --undo` | restores the most recent set of notes the agent edited (every in-place update is backed up first) |
+| **Undo** | `undo` | restores the most recent set of notes the agent edited (every in-place update is backed up first) |
 | **Promote** | `promote` | graduates ready drafts (status advanced beyond `draft`) out of `_inbox/` into their curated folder — never overwriting existing notes, fully reversible with `undo` |
 | **Configure** | `init` | infers your vault's conventions into a `.cortex.json` (schema- & language-agnostic) |
 
@@ -186,7 +186,7 @@ This very repo uses it (dogfooding): see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 `toolkit/` is the **open-source engine + agent** at the heart of the product: it reads *any* markdown vault into a note graph, reports its structure, renders it in a local web viewer, answers cited queries, and atomizes new sources with AI — locally, read-first, dependency-light (Node ≥ 20 / TypeScript).
 
-**Shipping now (Phases 0–3.2): the engine, the CLI, the graph viewer, cited query, AI-distilled atomization, and autonomous update/merge with full reversibility.**
+**Shipping now (Phases 0–3.3): the engine, the CLI, the graph viewer, cited query, AI-distilled atomization, and autonomous update/merge with full reversibility.**
 
 ```bash
 cd toolkit && npm install && npm run build
