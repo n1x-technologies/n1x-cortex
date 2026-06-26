@@ -52,7 +52,19 @@ describe('runOrphans', () => {
     writeFileSync(join(dir, '01-Conceptos', 'a.md'), '---\ntipo: concepto\n---\n# A\n[[Hot]] [[Cold]]');
     writeFileSync(join(dir, '01-Conceptos', 'b.md'), '---\ntipo: concepto\n---\n# B\n[[Hot]]');
     const out = runOrphans(dir);
-    expect(out[0]).toEqual({ target: 'Hot', refs: 2 });
-    expect(out).toContainEqual({ target: 'Cold', refs: 1 });
+    expect(out.gaps[0]).toEqual({ target: 'Hot', refs: 2 });
+    expect(out.gaps).toContainEqual({ target: 'Cold', refs: 1 });
+  });
+
+  it('excludes source-citation targets from gaps and reports them separately', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cortex-or-src-'));
+    mkdirSync(join(dir, '01-Concepts'));
+    // a note that cites a source doc (frontmatter + body citation) AND has a real dangling link
+    writeFileSync(join(dir, '01-Concepts', 'n.md'),
+      '---\ntype: concept\nsource: "[[handbook]]"\n---\n# N\n\nBody. *Source: [[handbook]]*\n\nSee [[RealGap]].');
+    const out = runOrphans(dir);
+    expect(out.gaps.map(g => g.target)).toContain('RealGap');
+    expect(out.gaps.map(g => g.target)).not.toContain('handbook');   // source citation is NOT a gap
+    expect(out.sources.map(s => s.target)).toEqual(['handbook']);     // reported separately
   });
 });
