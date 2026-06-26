@@ -77,3 +77,22 @@ export interface ViewerData {
   lang: string | null;
   generatedAt: number;
 }
+
+// ── Query (Phase 2) ────────────────────────────────────────────────
+export interface QueryHit {
+  path: string;
+  id: string;
+  title: string;
+  type: string | null;
+  score: number;
+  excerpt: string;
+  source: string | null;
+  via: 'anchor' | 'link';
+}
+
+export interface QueryResult {
+  question: string;
+  anchors: string[];
+  hits: QueryHit[];
+  sources: string[];
+}
