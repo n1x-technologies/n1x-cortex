@@ -50,5 +50,5 @@ You are the **AI layer** of the N1X Cortex atomize pipeline. The `cortex` toolki
 
 - Dry-run is the default; only `--write` writes. Always preview before writing.
 - **New notes** (creates) land only in `_inbox/<folder>/` as `status: draft` — they are never written as brand-new files into curated folders directly.
-- **Source files** under `Markdown/` are never modified. Existing curated notes are only ever changed through the `update` path, which backs up each note before editing; every update is reversible with `cortex atomize --undo`.
+- **Source files** under `Markdown/` are never modified. Existing curated notes are only ever changed through the `update` path, which backs up each note before editing. Every change — an edit, a `set-status` advance, or a `promote` move — is reversible: `cortex undo` reverses the most recent run.
 - Citations are mandatory (the toolkit adds them); keep the `source` correct.

@@ -4,7 +4,7 @@
 
 **An AI agent that turns a sprawling documentation corpus into a living second brain** — it reads your sources, atomizes them into a linked knowledge graph, and answers from it with citations. Open-source, runs locally over any markdown vault.
 
-![Toolkit](https://img.shields.io/badge/toolkit-Phases%200–3.2-E94560)
+![Toolkit](https://img.shields.io/badge/toolkit-Phases%200–3.3-E94560)
 ![Engine](https://img.shields.io/badge/engine-Node%2FTS-1A1A2E)
 ![Local](https://img.shields.io/badge/runs-local%20%26%20offline-1A1A2E)
 ![License](https://img.shields.io/badge/license-MIT-E94560)
