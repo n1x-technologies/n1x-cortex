@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { runAtomize, formatPlan } from '../src/commands/atomize.js';
 import { runEmit, runApply, formatDistilledPlan, runUndo } from '../src/commands/atomize.js';
+import { runPromote, formatPromote, runSetStatus } from '../src/commands/promote.js';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -81,5 +82,31 @@ describe('runApply update + runUndo', () => {
     expect(undo.restored).toEqual(['01-Concepts/n.md']);
     expect(readFileSync(note, 'utf8')).toContain('orig body long enough');
     expect(readFileSync(note, 'utf8')).not.toContain('plus new info added');
+  });
+});
+
+describe('runSetStatus + runPromote + runUndo (3.3)', () => {
+  it('advances status, promotes, and undoes the promotion', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cortex-prcmd-'));
+    mkdirSync(join(dir, '01-Concepts'));
+    mkdirSync(join(dir, '_inbox', '01-Concepts'), { recursive: true });
+    const inbox = join(dir, '_inbox', '01-Concepts', 'n.md');
+    writeFileSync(inbox, '---\ntype: concept\nid: n\nstatus: "draft"\n---\n# N\n\nbody');
+
+    // not ready yet → promote skips it
+    expect(runPromote(dir, { write: true }).promoted).toEqual([]);
+
+    // advance status, then promote
+    expect(runSetStatus(dir, '_inbox/01-Concepts/n.md', 'documented', { write: true }).changed).toBe('_inbox/01-Concepts/n.md');
+    const r = runPromote(dir, { write: true });
+    expect(r.promoted).toEqual([{ from: '_inbox/01-Concepts/n.md', to: '01-Concepts/n.md' }]);
+    expect(existsSync(join(dir, '01-Concepts', 'n.md'))).toBe(true);
+    expect(formatPromote(r)).toMatch(/→ 01-Concepts\/n\.md/);
+
+    // undo the promotion → note returns to _inbox
+    const u = runUndo(dir);
+    expect(u.reverted).toEqual(['_inbox/01-Concepts/n.md']);
+    expect(existsSync(inbox)).toBe(true);
+    expect(existsSync(join(dir, '01-Concepts', 'n.md'))).toBe(false);
   });
 });

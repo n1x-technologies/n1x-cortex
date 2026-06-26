@@ -5,6 +5,7 @@ import { runOrphans } from './commands/orphans.js';
 import { runViz, openBrowser } from './commands/viz.js';
 import { runQuery, formatQuery } from './commands/query.js';
 import { runAtomize, formatPlan, runEmit, runApply, formatDistilledPlan, runUndo } from './commands/atomize.js';
+import { runPromote, formatPromote, runSetStatus } from './commands/promote.js';
 
 export async function main(argv: string[]): Promise<number> {
   const [cmd] = argv;
@@ -59,8 +60,9 @@ export async function main(argv: string[]): Promise<number> {
       const undo = rest.includes('--undo');
       const positional = rest.filter(a => !a.startsWith('--'));
       if (undo) {
-        const { restored } = runUndo(cwd);
-        console.log(restored.length ? `Restored ${restored.length} note(s):\n  ${restored.join('\n  ')}` : 'No backups to restore.');
+        const { restored, reverted } = runUndo(cwd);
+        const n = restored.length + reverted.length;
+        console.log(n ? `Undid latest run: ${restored.length} restored, ${reverted.length} reverted` : 'Nothing to undo.');
         return 0;
       }
       if (apply) {
@@ -75,8 +77,28 @@ export async function main(argv: string[]): Promise<number> {
       console.log(formatPlan(runAtomize(cwd, source, { write })));
       return 0;
     }
+    case 'promote': {
+      const write = argv.includes('--write');
+      console.log(formatPromote(runPromote(cwd, { write })));
+      return 0;
+    }
+    case 'undo': {
+      const { restored, reverted } = runUndo(cwd);
+      const n = restored.length + reverted.length;
+      console.log(n ? `Undid latest run: ${restored.length} restored, ${reverted.length} reverted` : 'Nothing to undo.');
+      return 0;
+    }
+    case 'set-status': {
+      const rest = argv.slice(1);
+      const write = rest.includes('--write');
+      const [notePath, newStatus] = rest.filter(a => !a.startsWith('--'));
+      if (!notePath || !newStatus) { console.log('Usage: cortex set-status <note.md> <status> [--write]'); return 1; }
+      const r = runSetStatus(cwd, notePath, newStatus, { write });
+      console.log(r.changed ? `${r.changed} → status: ${newStatus}` : r.skipped ? `skipped (${r.skipped.reason})` : '(dry-run — pass --write to apply)');
+      return 0;
+    }
     default:
-      console.log('Usage: cortex <init|status|orphans|viz|query|atomize>');
+      console.log('Usage: cortex <init|status|orphans|viz|query|atomize|promote|undo|set-status>');
       return cmd ? 1 : 0;
   }
 }
