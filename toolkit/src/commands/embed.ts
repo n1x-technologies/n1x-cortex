@@ -58,6 +58,14 @@ export async function runEmbed(
       try {
         embedder = await factory(model, resolve(vaultDir, '.cortex/models'));
       } catch (cause) {
+        const code = (cause as NodeJS.ErrnoException)?.code;
+        const message = cause instanceof Error ? cause.message : String(cause);
+        if (code === 'ERR_MODULE_NOT_FOUND' || message.includes('@xenova/transformers')) {
+          throw new Error(
+            'Semantic support is optional and not installed. Enable it with:  npm i -g @xenova/transformers',
+            { cause },
+          );
+        }
         throw new Error(`could not download model "${model}" — check your network connection`, { cause });
       }
     }
