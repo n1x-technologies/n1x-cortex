@@ -16,6 +16,7 @@ import { runDupes, formatDupes } from './commands/dupes.js';
 import { runVerify, formatVerify } from './commands/verify.js';
 import { runMoc, formatMoc } from './commands/moc.js';
 import { runDoc, formatDoc } from './commands/doc.js';
+import { runMcp } from './commands/mcp.js';
 
 export async function main(argv: string[]): Promise<number> {
   const [cmd] = argv;
@@ -132,6 +133,11 @@ export async function main(argv: string[]): Promise<number> {
       console.log(formatEmbed(await runEmbed(cwd, { force, model })));
       return 0;
     }
+    case 'mcp': {
+      const dir = argv.slice(1).filter(a => !a.startsWith('--'))[0];
+      await runMcp(dir ? (dir.startsWith('/') ? dir : `${cwd}/${dir}`) : cwd);
+      return 0;
+    }
     case 'gaps': {
       console.log(formatGaps(runGaps(cwd)));
       return 0;
@@ -168,7 +174,7 @@ export async function main(argv: string[]): Promise<number> {
       return 0;
     }
     default:
-      console.log('Usage: cortex <init|status|orphans|viz|query|atomize|promote|undo|set-status|hook|pause|resume|embed|gaps|dupes|verify|moc|doc>');
+      console.log('Usage: cortex <init|status|orphans|viz|query|atomize|promote|undo|set-status|hook|pause|resume|embed|mcp|gaps|dupes|verify|moc|doc>');
       return cmd ? 1 : 0;
   }
 }
