@@ -165,23 +165,25 @@ This very repo uses it (dogfooding): see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 `toolkit/` is the **open-source engine** that turns the methodology into a working tool: it reads *any* markdown vault into a note graph, reports its structure, and renders it in a local web viewer — locally, read-only, dependency-light (Node ≥ 20 / TypeScript).
 
-**Phases 0–1 — shipping now: the read-only engine, the CLI, and the graph viewer.**
+**Phases 0–3 — shipping now: the read-only engine, the CLI, the graph viewer, cited query, and assisted atomization (dry-run by default).**
 
 ```bash
 cd toolkit && npm install && npm run build
 # then, from any vault directory:
-node /path/to/toolkit/dist/cli.js status     # notes by type/status + orphan count
-node /path/to/toolkit/dist/cli.js orphans    # dangling links ranked by inbound refs = "atomize next"
-node /path/to/toolkit/dist/cli.js viz        # local web viewer: graph + search + color-by toggle
-node /path/to/toolkit/dist/cli.js query "…"  # mechanical cited retrieval: relevant notes + excerpts + sources
-node /path/to/toolkit/dist/cli.js init       # write a .cortex.json (infers your conventions)
+node /path/to/toolkit/dist/cli.js status              # notes by type/status + orphan count
+node /path/to/toolkit/dist/cli.js orphans             # dangling links ranked by inbound refs = "atomize next"
+node /path/to/toolkit/dist/cli.js viz                 # local web viewer: graph + search + color-by toggle
+node /path/to/toolkit/dist/cli.js query "…"           # mechanical cited retrieval: relevant notes + excerpts + sources
+node /path/to/toolkit/dist/cli.js atomize src.md      # plan draft notes from a source (DRY-RUN: prints the plan, writes nothing)
+node /path/to/toolkit/dist/cli.js atomize src.md --write   # apply: write the new draft notes into _inbox/
+node /path/to/toolkit/dist/cli.js init                # write a .cortex.json (infers your conventions)
 ```
 
 The **viewer** (`viz`) runs a local server (like claude-mem) and opens your vault as an interactive graph: nodes by note, ghost nodes for the gaps you haven't atomized yet, a **Color by Type / Status / Freshness** toggle, search, and a detail panel. Cytoscape.js, vendored offline — no CDN, localhost only.
 
 - **Schema- & locale-agnostic:** it *discovers* your vault's conventions (`tipo`/`type`, `estado`/`status`, folder names) — works in any language, on any schema, with no config required.
-- **`.md` is the only source of truth:** the engine never writes to your notes (only `init` writes a `.cortex.json`); everything else is derived and rebuildable.
-- **Roadmap:** Phase 0 (engine + CLI) ✓ · Phase 1 (web viewer) ✓ · Phase 2 (cited query) ✓ · Phase 3 — assisted atomization · Phase 4 — autonomy hooks. The full design lives in [`docs/superpowers/specs/`](docs/superpowers/specs/) and the build plans in [`docs/superpowers/plans/`](docs/superpowers/plans/).
+- **Your notes stay yours — write safety is the rule:** every command except `init` and `atomize` is read-only. `atomize` is **dry-run by default** (it prints a plan and writes nothing); only `--write` applies, and even then it *only creates new `status: draft` notes in a `_inbox/` staging folder* — it never edits your existing notes or the source file, and it skips anything that already exists (no duplicates). Everything else is derived and rebuildable.
+- **Roadmap:** Phase 0 (engine + CLI) ✓ · Phase 1 (web viewer) ✓ · Phase 2 (cited query) ✓ · Phase 3 (assisted atomization) ✓ · Phase 4 — autonomy hooks. The full design lives in [`docs/superpowers/specs/`](docs/superpowers/specs/) and the build plans in [`docs/superpowers/plans/`](docs/superpowers/plans/).
 
 ---
 
