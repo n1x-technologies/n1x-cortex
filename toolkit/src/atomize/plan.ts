@@ -35,6 +35,7 @@ export function applyAtomize(vaultDir: string, plan: AtomizePlan): { written: st
   const written: string[] = [];
   for (const item of plan.items) {
     if (item.action !== 'create') continue;
+    if (!item.destPath.startsWith(`${INBOX}/`)) continue;
     const abs = join(vaultDir, item.destPath);
     mkdirSync(dirname(abs), { recursive: true });
     writeFileSync(abs, renderNote(item.spec, config));
