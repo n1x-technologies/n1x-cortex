@@ -32,6 +32,10 @@ export function loadConfig(vaultDir: string, sampleKeys: string[] = []): CortexC
     autonomy: 'auto-draft',
     mocDir: '00-MOC',
     dupeThreshold: 0.45,
+    embedModel: 'Xenova/multilingual-e5-small',
+    embedDir: '.cortex/embeddings',
+    semanticDupeThreshold: 0.85,
+    rrfK: 60,
     outDir: '.cortex/out',
     viz: { port: 4317 },
   };

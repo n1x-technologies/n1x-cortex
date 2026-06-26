@@ -2,6 +2,7 @@ import { loadConfig } from '../config.js';
 import { scanVault, collectFrontmatterKeys } from '../vault.js';
 import { buildGraph } from '../graph.js';
 import { retrieve } from '../query/retrieve.js';
+import { semanticQueryRanking } from '../semantic/queryRank.js';
 import type { QueryResult } from '../types.js';
 
 export function runQuery(vaultDir: string, question: string): QueryResult {
@@ -9,6 +10,14 @@ export function runQuery(vaultDir: string, question: string): QueryResult {
   const notes = scanVault(vaultDir, config);
   const graph = buildGraph(notes);
   return retrieve(notes, graph, question);
+}
+
+export async function runQuerySemantic(vaultDir: string, question: string): Promise<QueryResult> {
+  const config = loadConfig(vaultDir, collectFrontmatterKeys(vaultDir));
+  const notes = scanVault(vaultDir, config);
+  const graph = buildGraph(notes);
+  const semanticRanking = await semanticQueryRanking(vaultDir, config, notes, question);
+  return retrieve(notes, graph, question, { semanticRanking, rrfK: config.rrfK });
 }
 
 export function formatQuery(r: QueryResult): string {
