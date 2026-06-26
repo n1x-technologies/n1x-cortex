@@ -65,9 +65,10 @@ N1X Cortex runs as a local CLI (and a Claude Code skill) over any markdown vault
 | **Atomize (AI)** | `atomize <src>` + the `/atomize` skill | an AI agent reads a source doc, splits it into one-idea-per-note drafts, infers type, routes a folder, adds tags + wikilinks, and **merges new info into existing notes** — autonomous, **dry-run by default** |
 | **Undo** | `undo` | restores the most recent set of notes the agent edited (every in-place update is backed up first) |
 | **Promote** | `promote` | graduates ready drafts (status advanced beyond `draft`) out of `_inbox/` into their curated folder — never overwriting existing notes, fully reversible with `undo` |
+| **Autonomy hooks** | `hook <event>` · `pause` · `resume` | Claude Code lifecycle hooks that index on session start and **suggest** `/atomize` when sources change — detect-and-suggest only, never auto-writing notes; silence them anytime with `pause` |
 | **Configure** | `init` | infers your vault's conventions into a `.cortex.json` (schema- & language-agnostic) |
 
-→ Full usage in **[The Cortex engine (toolkit)](#️-the-cortex-engine-toolkit)** below. Where it's headed next: **Phase 4 — autonomy hooks** (the agent driving its own atomization and upkeep).
+→ Full usage in **[The Cortex engine (toolkit)](#️-the-cortex-engine-toolkit)** below. Phase 4 adds **autonomy hooks** — Claude Code lifecycle hooks that index on session start and *suggest* atomization on turn end (detect-and-suggest; the agent never auto-writes notes).
 
 ---
 
@@ -204,6 +205,9 @@ node /path/to/toolkit/dist/cli.js atomize --undo                           # rol
 node /path/to/toolkit/dist/cli.js set-status "<note>" documented --write   # mark a draft ready (reversible)
 node /path/to/toolkit/dist/cli.js promote --write                          # graduate ready drafts _inbox/ → curated folders
 node /path/to/toolkit/dist/cli.js undo                                     # reverse the most recent run (edit / status / promotion)
+node /path/to/toolkit/dist/cli.js hook <event>                            # lifecycle hook entry (stdin payload → JSON); wired by the Claude Code plugin
+node /path/to/toolkit/dist/cli.js pause                                    # silence the autonomy hooks (kill switch)
+node /path/to/toolkit/dist/cli.js resume                                   # re-enable the autonomy hooks
 node /path/to/toolkit/dist/cli.js init                # write a .cortex.json (infers your conventions)
 ```
 
@@ -212,7 +216,7 @@ The **viewer** (`viz`) runs a local server (like claude-mem) and opens your vaul
 - **Schema- & locale-agnostic:** it *discovers* your vault's conventions (`tipo`/`type`, `estado`/`status`, folder names) — works in any language, on any schema, with no config required.
 - **Your notes stay yours — write safety is the rule:** every command except `init` and `atomize` is read-only. `atomize` is **dry-run by default** (it prints a plan and writes nothing); only `--write` applies, and even then it *only creates new `status: draft` notes in a `_inbox/` staging folder* — it never edits your existing notes or the source file, and it skips anything that already exists (no duplicates). Everything else is derived and rebuildable.
 - **AI-distilled atomization (`/atomize` skill):** `toolkit/skills/atomize/` is the Claude Code skill that turns a source doc into distilled atomic drafts — Claude rewrites each section, infers `type`, splits non-atomic sections, routes a folder, and adds tags + wikilinks, then writes them via `--apply` into `_inbox/`. The toolkit stays the deterministic, dependency-free engine; the intelligence lives in the skill.
-- **Roadmap:** Phase 0 (engine + CLI) ✓ · Phase 1 (web viewer) ✓ · Phase 2 (cited query) ✓ · Phase 3 (assisted atomization) ✓ · Phase 3.1 (AI-distilled notes) ✓ · Phase 3.2 (autonomous update/merge) ✓ · Phase 3.3 (autonomous promote) ✓ · Phase 4 — autonomy hooks. The full design lives in [`docs/superpowers/specs/`](docs/superpowers/specs/) and the build plans in [`docs/superpowers/plans/`](docs/superpowers/plans/).
+- **Roadmap:** Phase 0 (engine + CLI) ✓ · Phase 1 (web viewer) ✓ · Phase 2 (cited query) ✓ · Phase 3 (assisted atomization) ✓ · Phase 3.1 (AI-distilled notes) ✓ · Phase 3.2 (autonomous update/merge) ✓ · Phase 3.3 (autonomous promote) ✓ · Phase 4 ✓ — Autonomy hooks (detect-and-suggest), all five lifecycle events: SessionStart · Stop · PostToolUse · UserPromptSubmit · SessionEnd, plus kill switch; auto-write deferred. The full design lives in [`docs/superpowers/specs/`](docs/superpowers/specs/) and the build plans in [`docs/superpowers/plans/`](docs/superpowers/plans/).
 
 ---
 

@@ -6,6 +6,8 @@ import { runViz, openBrowser } from './commands/viz.js';
 import { runQuery, formatQuery } from './commands/query.js';
 import { runAtomize, formatPlan, runEmit, runApply, formatDistilledPlan, runUndo } from './commands/atomize.js';
 import { runPromote, formatPromote, runSetStatus } from './commands/promote.js';
+import { runHookCommand } from './commands/hook.js';
+import { runPause, runResume } from './commands/pause.js';
 
 export async function main(argv: string[]): Promise<number> {
   const [cmd] = argv;
@@ -97,8 +99,25 @@ export async function main(argv: string[]): Promise<number> {
       console.log(r.changed ? `${r.changed} → status: ${newStatus}` : r.skipped ? `skipped (${r.skipped.reason})` : '(dry-run — pass --write to apply)');
       return 0;
     }
+    case 'hook': {
+      const event = argv[1];
+      if (!event) { console.log('Usage: cortex hook <event>'); return 1; }
+      const out = await runHookCommand(cwd, event);
+      if (out && out !== '{}') process.stdout.write(out);
+      return 0;
+    }
+    case 'pause': {
+      runPause(cwd);
+      console.log('Cortex autonomy paused. Run `cortex resume` to re-enable.');
+      return 0;
+    }
+    case 'resume': {
+      runResume(cwd);
+      console.log('Cortex autonomy resumed.');
+      return 0;
+    }
     default:
-      console.log('Usage: cortex <init|status|orphans|viz|query|atomize|promote|undo|set-status>');
+      console.log('Usage: cortex <init|status|orphans|viz|query|atomize|promote|undo|set-status|hook|pause|resume>');
       return cmd ? 1 : 0;
   }
 }
