@@ -176,6 +176,8 @@ node /path/to/toolkit/dist/cli.js viz                 # local web viewer: graph 
 node /path/to/toolkit/dist/cli.js query "…"           # mechanical cited retrieval: relevant notes + excerpts + sources
 node /path/to/toolkit/dist/cli.js atomize src.md      # plan draft notes from a source (DRY-RUN: prints the plan, writes nothing)
 node /path/to/toolkit/dist/cli.js atomize src.md --write   # apply: write the new draft notes into _inbox/
+node /path/to/toolkit/dist/cli.js atomize src.md --emit-json        # emit segmentation + vault context as JSON (for the AI layer)
+node /path/to/toolkit/dist/cli.js atomize --apply distilled.json    # write AI-distilled notes (DRY-RUN; --write applies)
 node /path/to/toolkit/dist/cli.js init                # write a .cortex.json (infers your conventions)
 ```
 
@@ -183,7 +185,8 @@ The **viewer** (`viz`) runs a local server (like claude-mem) and opens your vaul
 
 - **Schema- & locale-agnostic:** it *discovers* your vault's conventions (`tipo`/`type`, `estado`/`status`, folder names) — works in any language, on any schema, with no config required.
 - **Your notes stay yours — write safety is the rule:** every command except `init` and `atomize` is read-only. `atomize` is **dry-run by default** (it prints a plan and writes nothing); only `--write` applies, and even then it *only creates new `status: draft` notes in a `_inbox/` staging folder* — it never edits your existing notes or the source file, and it skips anything that already exists (no duplicates). Everything else is derived and rebuildable.
-- **Roadmap:** Phase 0 (engine + CLI) ✓ · Phase 1 (web viewer) ✓ · Phase 2 (cited query) ✓ · Phase 3 (assisted atomization) ✓ · Phase 4 — autonomy hooks. The full design lives in [`docs/superpowers/specs/`](docs/superpowers/specs/) and the build plans in [`docs/superpowers/plans/`](docs/superpowers/plans/).
+- **AI-distilled atomization (`/atomize` skill):** `toolkit/skills/atomize/` is the Claude Code skill that turns a source doc into distilled atomic drafts — Claude rewrites each section, infers `type`, splits non-atomic sections, routes a folder, and adds tags + wikilinks, then writes them via `--apply` into `_inbox/`. The toolkit stays the deterministic, dependency-free engine; the intelligence lives in the skill.
+- **Roadmap:** Phase 0 (engine + CLI) ✓ · Phase 1 (web viewer) ✓ · Phase 2 (cited query) ✓ · Phase 3 (assisted atomization) ✓ · Phase 3.1 (AI-distilled notes) ✓ · Phase 4 — autonomy hooks. The full design lives in [`docs/superpowers/specs/`](docs/superpowers/specs/) and the build plans in [`docs/superpowers/plans/`](docs/superpowers/plans/).
 
 ---
 
