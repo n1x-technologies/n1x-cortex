@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { fileURLToPath } from 'node:url';
+import { realpathSync } from 'node:fs';
 import { runInit } from './commands/init.js';
 import { runStatus } from './commands/status.js';
 import { runOrphans } from './commands/orphans.js';
@@ -172,7 +173,20 @@ export async function main(argv: string[]): Promise<number> {
   }
 }
 
-const isMain = process.argv[1] === fileURLToPath(import.meta.url);
-if (isMain) {
+/**
+ * True when this module is the process entry point. Resolves symlinks on both
+ * sides so it holds when invoked through an npm/npx `bin` symlink (where
+ * `process.argv[1]` is the link and `import.meta.url` is the real file).
+ */
+export function isEntrypoint(argv1: string | undefined, moduleUrl: string): boolean {
+  if (!argv1) return false;
+  try {
+    return realpathSync(argv1) === realpathSync(fileURLToPath(moduleUrl));
+  } catch {
+    return false;
+  }
+}
+
+if (isEntrypoint(process.argv[1], import.meta.url)) {
   main(process.argv.slice(2)).then(code => process.exit(code));
 }
