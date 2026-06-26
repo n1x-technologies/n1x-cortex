@@ -16,7 +16,12 @@ export interface EmbedResult {
 
 export async function runEmbed(
   vaultDir: string,
-  opts: { force?: boolean; model?: string; embedder?: Embedder } = {},
+  opts: {
+    force?: boolean;
+    model?: string;
+    embedder?: Embedder;
+    embedderFactory?: (model: string, cacheDir: string) => Promise<Embedder>;
+  } = {},
 ): Promise<EmbedResult> {
   const config = loadConfig(vaultDir, collectFrontmatterKeys(vaultDir));
   const notes = scanVault(vaultDir, config);
@@ -45,7 +50,17 @@ export async function runEmbed(
 
   let dim = usable?.dim ?? 0;
   if (toEmbed.length) {
-    const embedder = opts.embedder ?? await createTransformersEmbedder(model, resolve(vaultDir, '.cortex/models'));
+    let embedder: Embedder;
+    if (opts.embedder) {
+      embedder = opts.embedder;
+    } else {
+      const factory = opts.embedderFactory ?? createTransformersEmbedder;
+      try {
+        embedder = await factory(model, resolve(vaultDir, '.cortex/models'));
+      } catch (cause) {
+        throw new Error(`could not download model "${model}" — check your network connection`, { cause });
+      }
+    }
     const vectors = await embedder.embed(toEmbed.map(t => t.text));
     toEmbed.forEach((t, i) => {
       const vec = Array.from(vectors[i]);

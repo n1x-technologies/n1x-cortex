@@ -43,6 +43,16 @@ describe('runEmbed', () => {
     expect(r.added).toBe(0);
   });
 
+  it('surfaces a friendly error when the embedder factory fails (offline first-run)', async () => {
+    const dir = vault();
+    await expect(
+      runEmbed(dir, {
+        embedderFactory: async () => { throw new Error('offline'); },
+        model: 'stub',
+      }),
+    ).rejects.toThrow(/could not download model "stub"/);
+  });
+
   it('drops deleted notes from the store count via removed', async () => {
     const dir = vault();
     await runEmbed(dir, { embedder: stub, model: 'stub' });
