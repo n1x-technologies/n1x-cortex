@@ -185,15 +185,38 @@ This very repo uses it (dogfooding): see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ---
 
+## Install
+
+```bash
+npm i -g @n1x-technologies/cortex      # or run without installing: npx @n1x-technologies/cortex
+cortex init                            # in your markdown vault
+cortex query "what is X?"
+```
+
+Semantic search and semantic de-duplication are **optional** (they pull a local embedding model). Enable them with:
+
+```bash
+npm i -g @xenova/transformers
+cortex embed
+```
+
+### From source (contributors)
+
+```bash
+git clone https://github.com/n1x-technologies/n1x-cortex.git
+cd n1x-cortex/toolkit && npm install && npm run build
+```
+
+---
+
 ## 🛠️ The Cortex engine (toolkit)
 
 `toolkit/` is the **open-source engine + agent** at the heart of the product: it reads *any* markdown vault into a note graph, reports its structure, renders it in a local web viewer, answers cited queries, and atomizes new sources with AI — locally, read-first, dependency-light (Node ≥ 20 / TypeScript).
 
-**Shipping now (Phases 0–3.3): the engine, the CLI, the graph viewer, cited query, AI-distilled atomization, and autonomous update/merge with full reversibility.**
+**Shipping now (Phases 0–6): the engine, the CLI, the graph viewer, cited query, AI-distilled atomization, autonomous update/merge with full reversibility, curation diagnostics (gaps/dupes/verify/moc/doc), and local-embedding semantic search.**
 
 ```bash
-cd toolkit && npm install && npm run build
-# then, from any vault directory:
+# from any vault directory (after installing — see Install section above):
 node /path/to/toolkit/dist/cli.js status              # notes by type/status + orphan count
 node /path/to/toolkit/dist/cli.js orphans             # dangling links ranked by inbound refs = "atomize next"
 node /path/to/toolkit/dist/cli.js viz                 # local web viewer: graph + search + color-by toggle
@@ -230,7 +253,7 @@ The **viewer** (`viz`) runs a local server (like claude-mem) and opens your vaul
 
 ## 🛠️ How to use it
 
-- **Run it on your vault:** `cd toolkit && npm install && npm run build`, then point the CLI at any markdown vault (`status`, `viz`, `query`, `atomize`) — see [The Cortex engine](#️-the-cortex-engine-toolkit) above.
+- **Run it on your vault:** install with `npm i -g @n1x-technologies/cortex` (see [Install](#install) above), then point the CLI at any markdown vault (`cortex status`, `cortex viz`, `cortex query`, `cortex atomize`).
 - **Start a vault from scratch:** use the generic structure (folders `00-MOC/` … `09-Strategy/`, standard frontmatter, wikilinks) and let `atomize` populate it. Your vault lives in your own project's repo, **never here**.
 - **Generate branded documents:** use `templates/typst/` to turn curated notes into PDFs.
 - **Go deeper on the model:** the spec ([`N1X-Cortex-v2.md`](N1X-Cortex-v2.md)) explains the reasoning; regenerate its PDF with `typst compile N1X-Cortex-v2.typ N1X-Cortex-v2.pdf` (see [`UPDATE-PROCESS.md`](UPDATE-PROCESS.md)).
