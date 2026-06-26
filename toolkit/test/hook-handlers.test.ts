@@ -1,6 +1,6 @@
 // toolkit/test/hook-handlers.test.ts
 import { describe, it, expect } from 'vitest';
-import { onSessionStart, onStop } from '../src/hooks/handlers.js';
+import { onSessionStart, onStop, onPostToolUse } from '../src/hooks/handlers.js';
 import { freshState } from '../src/hooks/state.js';
 import { loadConfig } from '../src/config.js';
 import { mkdtempSync, mkdirSync, writeFileSync, readdirSync } from 'node:fs';
@@ -48,5 +48,22 @@ describe('onStop', () => {
     const seeded = onStop({}, dir, cfg, freshState()).state;          // announce + clear
     const { response } = onStop({}, dir, cfg, seeded);                // snapshot now current
     expect(response).toEqual({});
+  });
+});
+
+describe('onPostToolUse', () => {
+  it('marks a sourcesDir .md path dirty', () => {
+    const dir = vault();
+    const cfg = loadConfig(dir, []);
+    const payload = { tool_input: { file_path: join(dir, 'Markdown', 'a.md') } };
+    const { state } = onPostToolUse(payload, dir, cfg, freshState());
+    expect(state.dirty).toEqual(['Markdown/a.md']);
+  });
+  it('ignores paths outside sourcesDir', () => {
+    const dir = vault();
+    const cfg = loadConfig(dir, []);
+    const payload = { tool_input: { file_path: join(dir, '01-Notes', 'n.md') } };
+    const { state } = onPostToolUse(payload, dir, cfg, freshState());
+    expect(state.dirty).toEqual([]);
   });
 });

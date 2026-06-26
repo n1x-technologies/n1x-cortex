@@ -1,6 +1,7 @@
 // toolkit/src/hooks/handlers.ts
+import { relative, sep } from 'node:path';
 import { scanVault } from '../vault.js';
-import { snapshotSources, reconcile, clearDirty, type HookState } from './state.js';
+import { snapshotSources, reconcile, clearDirty, markDirty, type HookState } from './state.js';
 import type { CortexConfig } from '../types.js';
 
 export interface HookResponse {
@@ -31,4 +32,20 @@ export const onStop: Handler = (_payload, vaultDir, config, state) => {
   if (reconciled.dirty.length === 0) return { state: reconciled, response: {} };
   const line = `Cortex: ${reconciled.dirty.length} source(s) changed — run /atomize to distill`;
   return { state: clearDirty(reconciled), response: { systemMessage: line } };
+};
+
+function sourceRelPath(payload: HookPayload, vaultDir: string, config: CortexConfig): string | null {
+  const ti = (payload.tool_input ?? {}) as Record<string, unknown>;
+  const raw = ti.file_path ?? ti.path ?? ti.notebook_path;
+  if (typeof raw !== 'string' || !raw.endsWith('.md')) return null;
+  const rel = relative(vaultDir, raw).split(sep).join('/');
+  if (rel.startsWith('..')) return null;                       // outside vault
+  const prefix = config.sourcesDir.endsWith('/') ? config.sourcesDir : config.sourcesDir + '/';
+  return rel.startsWith(prefix) ? rel : null;                  // only under sourcesDir
+}
+
+export const onPostToolUse: Handler = (payload, vaultDir, config, state) => {
+  if (!gate(state, config)) return { state, response: {} };
+  const rel = sourceRelPath(payload, vaultDir, config);
+  return { state: rel ? markDirty(state, rel) : state, response: {} };
 };
