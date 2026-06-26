@@ -30,6 +30,9 @@ export function loadConfig(vaultDir: string, sampleKeys: string[] = []): CortexC
     statusLifecycle: [...DEFAULT_LIFECYCLE],
     immutableStatus: null,
     autonomy: 'auto-draft',
+    mocDir: '00-MOC',
+    dupeThreshold: 0.45,
+    outDir: '.cortex/out',
     viz: { port: 4317 },
   };
 
