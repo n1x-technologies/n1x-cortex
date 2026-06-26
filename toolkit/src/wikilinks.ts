@@ -14,7 +14,9 @@ export function extractLinks(body: string): NoteLink[] {
     LINK_RE.lastIndex = 0;
     let m: RegExpExecArray | null;
     while ((m = LINK_RE.exec(line)) !== null) {
-      const raw = m[1].split('|')[0].split('#')[0].trim();
+      // Split on the alias pipe, escaped (`\|`, required inside Obsidian
+      // tables) or bare (`|`), so the backslash never sticks to the target.
+      const raw = m[1].split(/\\?\|/)[0].split('#')[0].trim();
       if (raw) links.push({ target: raw, heading: currentHeading });
     }
   }
