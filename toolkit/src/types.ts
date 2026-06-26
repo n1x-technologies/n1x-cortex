@@ -152,8 +152,17 @@ export interface DistilledNote {
   tags?: string[];
   body: string;
   fromHeading?: string;
+  action?: 'create' | 'update';
+  targetPath?: string;
 }
 export interface DistilledInput {
   source: string;
   notes: DistilledNote[];
+}
+export interface DistilledApplyResult {
+  plan: AtomizePlan;
+  written: string[];
+  updated: string[];
+  backups: string[];
+  skipped: { target: string; reason: string }[];
 }

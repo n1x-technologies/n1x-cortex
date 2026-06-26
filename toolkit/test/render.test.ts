@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { renderNote, planAtomize, applyAtomize } from '../src/atomize/plan.js';
+import { renderUpdatedNote } from '../src/atomize/render.js';
 import { loadConfig } from '../src/config.js';
 import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -109,5 +110,23 @@ describe('planAtomize / applyAtomize', () => {
     // Both files must actually exist on disk
     expect(existsSync(join(dir, res.written[0]))).toBe(true);
     expect(existsSync(join(dir, res.written[1]))).toBe(true);
+  });
+});
+
+describe('renderUpdatedNote', () => {
+  const existing = '---\ntype: concept\nid: x\ncustom: keep-me\n---\n# Title\n\nold body\n\n*Source: [[a]]*\n';
+
+  it('keeps the frontmatter block verbatim and replaces the body', () => {
+    const out = renderUpdatedNote(existing, '# Title\n\nmerged body', 'a');
+    expect(out).toMatch(/^---\ntype: concept\nid: x\ncustom: keep-me\n---/); // frontmatter byte-stable
+    expect(out).toContain('merged body');
+    expect(out).not.toContain('old body');
+  });
+
+  it('appends the source citation only when the merged body lacks it', () => {
+    const without = renderUpdatedNote(existing, '# Title\n\nmerged body', 'b');
+    expect(without).toContain('*Source: [[b]]*');                       // new source appended
+    const withIt = renderUpdatedNote(existing, '# Title\n\nbody cites [[b]] already', 'b');
+    expect(withIt.match(/\[\[b\]\]/g)?.length).toBe(1);                 // not duplicated
   });
 });
