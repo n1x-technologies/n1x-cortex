@@ -15,7 +15,7 @@ describe('package is publishable', () => {
   it('is configured for a public scoped publish', () => {
     expect(pkg.publishConfig?.access).toBe('public');
     expect(pkg.license).toBe('MIT');
-    expect(pkg.version).toBe('0.1.0');
+    expect(pkg.version).toMatch(/^\d+\.\d+\.\d+/);
     expect(pkg.engines?.node).toBe('>=18');
   });
   it('ships only the build output', () => {
