@@ -50,4 +50,37 @@ describe('applyPromote', () => {
     // idempotent: re-plan now finds nothing to promote
     expect(planPromote(dir, loadConfig(dir, [])).items.some(i => i.action === 'promote')).toBe(false);
   });
+
+  it('applyPromote: does not overwrite an existing curated destination (clobber guard)', () => {
+    const dir = vault();
+    const cfg = loadConfig(dir, []);
+    const r = applyPromote(dir, planPromote(dir, cfg), cfg, { dryRun: false, runId: 'RUN-CLOBBER' });
+    expect(readFileSync(join(dir, '03-Rules', 'dup.md'), 'utf8')).toBe('---\ntype: rule\n---\n# Dup (existing)');
+    expect(r.skipped.some(s => s.from === '_inbox/03-Rules/dup.md' && s.reason === 'exists')).toBe(true);
+  });
+
+  it('applyPromote: dry-run by default (no opts arg)', () => {
+    const dir = vault();
+    const cfg = loadConfig(dir, []);
+    const r = applyPromote(dir, planPromote(dir, cfg), cfg);
+    expect(r.promoted).toEqual([]);
+    expect(existsSync(join(dir, '03-Rules', 'ready.md'))).toBe(false);
+  });
+});
+
+describe('planPromote — confinement', () => {
+  it('marks source-immutable and applies skip it for notes whose dest is under sourcesDir', () => {
+    const dir = vault();
+    mkdirSync(join(dir, 'Markdown'), { recursive: true });
+    mkdirSync(join(dir, '_inbox', 'Markdown'), { recursive: true });
+    writeFileSync(join(dir, '_inbox', 'Markdown', 'x.md'), '---\nstatus: "documented"\n---\n# X');
+    const cfg = loadConfig(dir, []);
+    const { items } = planPromote(dir, cfg);
+    const item = items.find(i => i.from === '_inbox/Markdown/x.md');
+    expect(item).toMatchObject({ action: 'skip', reason: 'source-immutable' });
+    // applyPromote must not move it even with dryRun:false
+    const r = applyPromote(dir, { items }, cfg, { dryRun: false });
+    expect(existsSync(join(dir, 'Markdown', 'x.md'))).toBe(false);
+    expect(existsSync(join(dir, '_inbox', 'Markdown', 'x.md'))).toBe(true);
+  });
 });
