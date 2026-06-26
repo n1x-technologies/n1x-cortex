@@ -20,6 +20,7 @@ You are the **AI layer** of the N1X Cortex atomize pipeline. The `cortex` toolki
    - **Cold-vault fallback:** if `knownTypes`/`knownFolders` are empty, use the methodology's canonical vocabulary (types `concept/flow/rule/technical/error/security/ux/mvp/strategy`; folders `01-Concepts/ … 09-Strategy/`), localized to `lang` when set, and note in the preview that a new taxonomy is being seeded.
    - **Body:** rewrite into clean, structured natural language — not a copy of the source. For flow/process notes, add an *Implications for implementation* section.
    - **Connect:** add `[[wikilinks]]` to related sibling notes and to notes in `existing`. Dangling links are valid (Pillar 2).
+   - **Never write *illustrative* wikilinks in a body.** The engine parses **every** `[[...]]` as a real link, so example syntax like `[[note-name]]` or `[[example]]` becomes a phantom orphan in the graph. Only link to notes that exist or that you are genuinely creating; to *describe* link syntax, write it in prose or as inline code (`` `[[note-name]]` ``), never as a bare `[[note-name]]`.
    - **Tags + language:** add `tags`; write in the vault's `lang`.
    - **No duplicates:** if a strong match already exists in `existing`, drop that note (the toolkit will also skip it).
 
