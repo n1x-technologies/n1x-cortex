@@ -43,6 +43,16 @@ describe('runEmbed', () => {
     expect(r.added).toBe(0);
   });
 
+  it('reports a friendly "not installed" message when the optional dep is absent', async () => {
+    const dir = vault();
+    const notFound = Object.assign(new Error("Cannot find package '@xenova/transformers'"), {
+      code: 'ERR_MODULE_NOT_FOUND',
+    });
+    await expect(
+      runEmbed(dir, { embedderFactory: async () => { throw notFound; }, model: 'stub' }),
+    ).rejects.toThrow(/optional and not installed/);
+  });
+
   it('surfaces a friendly error when the embedder factory fails (offline first-run)', async () => {
     const dir = vault();
     await expect(
