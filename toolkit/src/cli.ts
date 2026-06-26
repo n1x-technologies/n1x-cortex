@@ -8,6 +8,7 @@ import { runAtomize, formatPlan, runEmit, runApply, formatDistilledPlan, runUndo
 import { runPromote, formatPromote, runSetStatus } from './commands/promote.js';
 import { runHookCommand } from './commands/hook.js';
 import { runPause, runResume } from './commands/pause.js';
+import { runEmbed, formatEmbed } from './commands/embed.js';
 import { runGaps, formatGaps } from './commands/gaps.js';
 import { runDupes, formatDupes } from './commands/dupes.js';
 import { runVerify, formatVerify } from './commands/verify.js';
@@ -121,6 +122,14 @@ export async function main(argv: string[]): Promise<number> {
       console.log('Cortex autonomy resumed.');
       return 0;
     }
+    case 'embed': {
+      const rest = argv.slice(1);
+      const force = rest.includes('--force');
+      const mi = rest.indexOf('--model');
+      const model = mi >= 0 ? rest[mi + 1] : undefined;
+      console.log(formatEmbed(await runEmbed(cwd, { force, model })));
+      return 0;
+    }
     case 'gaps': {
       console.log(formatGaps(runGaps(cwd)));
       return 0;
@@ -157,7 +166,7 @@ export async function main(argv: string[]): Promise<number> {
       return 0;
     }
     default:
-      console.log('Usage: cortex <init|status|orphans|viz|query|atomize|promote|undo|set-status|hook|pause|resume|gaps|dupes|verify|moc|doc>');
+      console.log('Usage: cortex <init|status|orphans|viz|query|atomize|promote|undo|set-status|hook|pause|resume|embed|gaps|dupes|verify|moc|doc>');
       return cmd ? 1 : 0;
   }
 }
