@@ -4,7 +4,7 @@ import { loadConfig } from '../src/config.js';
 import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { NoteSpec } from '../src/types.js';
+import type { NoteSpec, AtomizePlan } from '../src/types.js';
 
 const spec: NoteSpec = { id: 'op-limit', title: 'Operation limit', type: null,
   body: 'The limit is 5.', source: 'FUENTE-rules', status: 'draft', folder: null };
@@ -28,6 +28,13 @@ describe('renderNote', () => {
     expect(md).toMatch(/# Operation limit/);
     expect(md).toMatch(/The limit is 5\./);
     expect(md).toMatch(/\[\[FUENTE-rules\]\]/);
+  });
+  it('emits a tags line when the spec carries tags, and omits it otherwise', () => {
+    const cfg = loadConfig(mkdtempSync(join(tmpdir(), 'c-')), []);
+    const withTags = renderNote({ ...spec, tags: ['rule', 'limit'] }, cfg);
+    expect(withTags).toMatch(/tags: \[rule, limit\]/);
+    const noTags = renderNote(spec, cfg);
+    expect(noTags).not.toMatch(/tags:/);
   });
 });
 
@@ -61,6 +68,27 @@ describe('planAtomize / applyAtomize', () => {
     expect(plan2.items.every(i => i.action === 'skip')).toBe(true);
     expect(notes2.length).toBeGreaterThan(0);
   });
+  it('applyAtomize skips a plan item whose destPath traverses outside _inbox/', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cortex-traverse-'));
+    const escapedFile = join(dir, 'escape.md');
+    const plan: AtomizePlan = {
+      source: 'test',
+      dryRun: false,
+      items: [
+        {
+          spec: { ...spec, id: 'escape' },
+          action: 'create',
+          matchPath: null,
+          destPath: '_inbox/../escape.md',
+        },
+      ],
+    };
+    const res = applyAtomize(dir, plan);
+    expect(res.written).not.toContain('_inbox/../escape.md');
+    expect(res.written.length).toBe(0);
+    expect(existsSync(escapedFile)).toBe(false);
+  });
+
   it('de-collision: two headings with identical slugs get distinct destPaths and both files are written', () => {
     // '## Summary' appears twice → slug('Summary') = 'summary' both times → collision without fix
     const dir = mkdtempSync(join(tmpdir(), 'cortex-collide-'));

@@ -1,5 +1,5 @@
 import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
-import { join, dirname, basename } from 'node:path';
+import { join, dirname, basename, resolve, sep } from 'node:path';
 import { loadConfig } from '../config.js';
 import { scanVault, collectFrontmatterKeys } from '../vault.js';
 import { segmentSource } from './segment.js';
@@ -47,10 +47,11 @@ export function applyAtomize(vaultDir: string, plan: AtomizePlan): { written: st
   if (plan.dryRun) return { written: [] };
   const config = loadConfig(vaultDir, collectFrontmatterKeys(vaultDir));
   const written: string[] = [];
+  const inboxRoot = resolve(vaultDir, INBOX);
   for (const item of plan.items) {
     if (item.action !== 'create') continue;
-    if (!item.destPath.startsWith(`${INBOX}/`)) continue;
-    const abs = join(vaultDir, item.destPath);
+    const abs = resolve(vaultDir, item.destPath);
+    if (abs !== inboxRoot && !abs.startsWith(inboxRoot + sep)) continue;
     mkdirSync(dirname(abs), { recursive: true });
     writeFileSync(abs, renderNote(item.spec, config));
     written.push(item.destPath);
