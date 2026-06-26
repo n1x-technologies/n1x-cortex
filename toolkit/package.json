@@ -36,7 +36,8 @@
   },
   "scripts": {
     "test": "vitest run",
-    "build": "tsc && node scripts/copy-static.mjs",
+    "build": "tsc && node scripts/copy-static.mjs && node scripts/copy-meta.mjs",
+    "prepack": "npm run build",
     "cli": "tsx src/cli.ts",
     "prepublishOnly": "npm run build"
   },

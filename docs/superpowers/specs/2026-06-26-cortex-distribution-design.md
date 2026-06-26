@@ -33,7 +33,7 @@ The package is already a `bin` package (`@n1x/cortex`, `bin.cortex → dist/cli.
   "license": "MIT",
   "type": "module",
   "bin": { "cortex": "./dist/cli.js" },  // unchanged
-  "files": ["dist/"],                     // ship only the build (README + LICENSE auto-included)
+  "files": ["dist/"],                     // ship only the build (README + LICENSE copied into pkg dir by scripts/copy-meta.mjs at build/prepack time)
   "engines": { "node": ">=18" },
   "keywords": ["knowledge-graph", "markdown", "obsidian", "cli", "rag", "notes", "zettelkasten"],
   "repository": { "type": "git", "url": "git+https://github.com/n1x-technologies/n1x-cortex.git", "directory": "toolkit" },
