@@ -18,4 +18,20 @@ describe('extractLinks', () => {
   it('returns an empty array when there are no links', () => {
     expect(extractLinks('plain text, no links')).toEqual([]);
   });
+
+  it('strips an Obsidian table-escaped pipe (\\|) from the target', () => {
+    // Inside Markdown tables Obsidian requires escaping the alias pipe as \| so
+    // the column separator is not broken. The target must drop the backslash.
+    const body = '| col | [[IA-OPS-01-asignacion\\|IA de asignación]] | end |';
+    expect(extractLinks(body).map(l => l.target)).toEqual(['IA-OPS-01-asignacion']);
+  });
+
+  it('handles an escaped pipe combined with an anchor', () => {
+    expect(extractLinks('[[Target\\|alias#sec]]').map(l => l.target)).toEqual(['Target']);
+  });
+
+  it('still parses an unescaped alias pipe (non-table links)', () => {
+    expect(extractLinks('[[RULE-02\\|aliased]] and [[RULE-03|plain]]').map(l => l.target))
+      .toEqual(['RULE-02', 'RULE-03']);
+  });
 });
