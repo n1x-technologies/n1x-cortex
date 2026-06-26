@@ -213,7 +213,7 @@ cd n1x-cortex/toolkit && npm install && npm run build
 
 `toolkit/` is the **open-source engine + agent** at the heart of the product: it reads *any* markdown vault into a note graph, reports its structure, renders it in a local web viewer, answers cited queries, and atomizes new sources with AI — locally, read-first, dependency-light (Node ≥ 20 / TypeScript).
 
-**Shipping now (Phases 0–3.3): the engine, the CLI, the graph viewer, cited query, AI-distilled atomization, and autonomous update/merge with full reversibility.**
+**Shipping now (Phases 0–6): the engine, the CLI, the graph viewer, cited query, AI-distilled atomization, autonomous update/merge with full reversibility, curation diagnostics (gaps/dupes/verify/moc/doc), and local-embedding semantic search.**
 
 ```bash
 # from any vault directory (after installing — see Install section above):

@@ -18,6 +18,9 @@ describe('release workflow', () => {
   it('runs from the toolkit working directory', () => {
     expect(yml).toContain('working-directory: toolkit');
   });
+  it('configures the npm registry for auth', () => {
+    expect(yml).toContain('registry-url: https://registry.npmjs.org');
+  });
 });
 
 describe('ci workflow', () => {
