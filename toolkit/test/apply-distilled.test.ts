@@ -68,4 +68,59 @@ describe('applyDistilled', () => {
     const r = applyDistilled(dir, specsFile(dir, noFolder), cfg, { dryRun: false });
     expect(r.written).toEqual(['_inbox/loose-note.md']);
   });
+
+  it('routes empty or whitespace title to _inbox/note.md and de-collides two such notes', () => {
+    const dir = vault();
+    const cfg = loadConfig(dir, []);
+    const noTitle: DistilledInput = {
+      source: 'src',
+      notes: [
+        { title: '', body: 'First empty title.' },
+        { title: '   ', body: 'Second empty title.' },
+      ],
+    };
+    const r = applyDistilled(dir, specsFile(dir, noTitle), cfg, { dryRun: false });
+    expect(r.written.length).toBe(2);
+    expect(r.written).toContain('_inbox/note.md');
+    expect(r.written).toContain('_inbox/note-2.md');
+    expect(existsSync(join(dir, '_inbox/note.md'))).toBe(true);
+    expect(existsSync(join(dir, '_inbox/note-2.md'))).toBe(true);
+  });
+
+  it('two notes with the same title but different folders both create without collision', () => {
+    const dir = vault();
+    const cfg = loadConfig(dir, []);
+    const crossFolder: DistilledInput = {
+      source: 'src',
+      notes: [
+        { title: 'Shared title', folder: 'FolderA', body: 'In folder A.' },
+        { title: 'Shared title', folder: 'FolderB', body: 'In folder B.' },
+      ],
+    };
+    const r = applyDistilled(dir, specsFile(dir, crossFolder), cfg, { dryRun: false });
+    expect(r.written.length).toBe(2);
+    expect(r.written).toContain('_inbox/FolderA/shared-title.md');
+    expect(r.written).toContain('_inbox/FolderB/shared-title.md');
+    expect(existsSync(join(dir, '_inbox/FolderA/shared-title.md'))).toBe(true);
+    expect(existsSync(join(dir, '_inbox/FolderB/shared-title.md'))).toBe(true);
+  });
+
+  it('sanitizes a traversal folder — note lands under _inbox/ and nothing is created outside the vault', () => {
+    const dir = vault();
+    const cfg = loadConfig(dir, []);
+    const traversal: DistilledInput = {
+      source: 'src',
+      notes: [
+        { title: 'Evil note', body: 'Content.', folder: '../../evil' },
+      ],
+    };
+    const r = applyDistilled(dir, specsFile(dir, traversal), cfg, { dryRun: false });
+    // All written paths must be under _inbox/
+    r.written.forEach(p => {
+      expect(p.startsWith('_inbox/')).toBe(true);
+    });
+    // No file created at a traversed location relative to vault parent
+    expect(existsSync(join(dir, '..', 'evil', 'evil-note.md'))).toBe(false);
+    expect(existsSync(join(dir, '../../evil'))).toBe(false);
+  });
 });
