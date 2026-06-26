@@ -25,9 +25,10 @@ export async function main(argv: string[]): Promise<number> {
       return 0;
     }
     case 'orphans': {
-      const out = runOrphans(cwd);
-      console.log(`Gaps (dangling targets, atomize-next priority): ${out.length}`);
-      for (const { target, refs } of out.slice(0, 30)) console.log(`  ${String(refs).padStart(3)}  ${target}`);
+      const { gaps, sources } = runOrphans(cwd);
+      console.log(`Gaps (dangling targets, atomize-next priority): ${gaps.length}`);
+      for (const { target, refs } of gaps.slice(0, 30)) console.log(`  ${String(refs).padStart(3)}  ${target}`);
+      if (sources.length) console.log(`Source citations (cited, not gaps): ${sources.length}`);
       return 0;
     }
     case 'viz': {
