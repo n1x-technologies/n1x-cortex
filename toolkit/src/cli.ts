@@ -11,6 +11,7 @@ import { runPause, runResume } from './commands/pause.js';
 import { runGaps, formatGaps } from './commands/gaps.js';
 import { runDupes, formatDupes } from './commands/dupes.js';
 import { runVerify, formatVerify } from './commands/verify.js';
+import { runMoc, formatMoc } from './commands/moc.js';
 
 export async function main(argv: string[]): Promise<number> {
   const [cmd] = argv;
@@ -136,6 +137,14 @@ export async function main(argv: string[]): Promise<number> {
       const note = rest.filter(a => !a.startsWith('--') && a !== String(hops))[0];
       if (!note) { console.log('Usage: cortex verify <note.md> [--hops N]'); return 1; }
       console.log(formatVerify(runVerify(cwd, note, { hops })));
+      return 0;
+    }
+    case 'moc': {
+      const rest = argv.slice(1);
+      const write = rest.includes('--write');
+      const topic = rest.filter(a => !a.startsWith('--'))[0];
+      if (!topic) { console.log('Usage: cortex moc <topic> [--write]'); return 1; }
+      console.log(formatMoc(runMoc(cwd, topic, { write })));
       return 0;
     }
     default:
