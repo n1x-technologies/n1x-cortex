@@ -173,6 +173,7 @@ cd toolkit && npm install && npm run build
 node /path/to/toolkit/dist/cli.js status     # notes by type/status + orphan count
 node /path/to/toolkit/dist/cli.js orphans    # dangling links ranked by inbound refs = "atomize next"
 node /path/to/toolkit/dist/cli.js viz        # local web viewer: graph + search + color-by toggle
+node /path/to/toolkit/dist/cli.js query "…"  # mechanical cited retrieval: relevant notes + excerpts + sources
 node /path/to/toolkit/dist/cli.js init       # write a .cortex.json (infers your conventions)
 ```
 
@@ -180,7 +181,7 @@ The **viewer** (`viz`) runs a local server (like claude-mem) and opens your vaul
 
 - **Schema- & locale-agnostic:** it *discovers* your vault's conventions (`tipo`/`type`, `estado`/`status`, folder names) — works in any language, on any schema, with no config required.
 - **`.md` is the only source of truth:** the engine never writes to your notes (only `init` writes a `.cortex.json`); everything else is derived and rebuildable.
-- **Roadmap:** Phase 0 (engine + CLI) ✓ · Phase 1 (web viewer) ✓ · Phase 2 — cited query · Phase 3 — assisted atomization · Phase 4 — autonomy hooks. The full design lives in [`docs/superpowers/specs/`](docs/superpowers/specs/) and the build plans in [`docs/superpowers/plans/`](docs/superpowers/plans/).
+- **Roadmap:** Phase 0 (engine + CLI) ✓ · Phase 1 (web viewer) ✓ · Phase 2 (cited query) ✓ · Phase 3 — assisted atomization · Phase 4 — autonomy hooks. The full design lives in [`docs/superpowers/specs/`](docs/superpowers/specs/) and the build plans in [`docs/superpowers/plans/`](docs/superpowers/plans/).
 
 ---
 
