@@ -31,6 +31,10 @@ export interface CortexConfig {
   autonomy: 'off' | 'suggest' | 'auto-draft' | 'full';
   mocDir: string;
   dupeThreshold: number;
+  embedModel: string;
+  embedDir: string;
+  semanticDupeThreshold: number;
+  rrfK: number;
   outDir: string;
   viz: { port: number };
 }
