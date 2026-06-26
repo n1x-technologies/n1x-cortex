@@ -207,6 +207,22 @@ git clone https://github.com/n1x-technologies/n1x-cortex.git
 cd n1x-cortex/toolkit && npm install && npm run build
 ```
 
+### Use it from an AI agent (MCP)
+
+Cortex exposes your vault to AI agents over the Model Context Protocol, so an
+agent can query it as a cited knowledge source.
+
+```bash
+# in your vault directory, register the server with Claude Code:
+claude mcp add cortex -- cortex mcp
+```
+
+Tools: `cortex_query` (ask a question → ranked, cited notes) and
+`cortex_get_note` (fetch a full note by id/path). Semantic search is used
+automatically when an embedding store exists (`cortex embed`), and the
+long-running server keeps the model warm for fast queries; otherwise it falls
+back to lexical search.
+
 ---
 
 ## 🛠️ The Cortex engine (toolkit)
