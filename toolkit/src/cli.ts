@@ -3,7 +3,7 @@ import { runInit } from './commands/init.js';
 import { runStatus } from './commands/status.js';
 import { runOrphans } from './commands/orphans.js';
 import { runViz, openBrowser } from './commands/viz.js';
-import { runQuery, formatQuery } from './commands/query.js';
+import { runQuery, runQuerySemantic, formatQuery } from './commands/query.js';
 import { runAtomize, formatPlan, runEmit, runApply, formatDistilledPlan, runUndo } from './commands/atomize.js';
 import { runPromote, formatPromote, runSetStatus } from './commands/promote.js';
 import { runHookCommand } from './commands/hook.js';
@@ -56,7 +56,7 @@ export async function main(argv: string[]): Promise<number> {
     case 'query': {
       const question = argv.slice(1).join(' ').trim();
       if (!question) { console.log('Usage: cortex query <question>'); return 1; }
-      console.log(formatQuery(runQuery(cwd, question)));
+      console.log(formatQuery(await runQuerySemantic(cwd, question)));
       return 0;
     }
     case 'atomize': {
