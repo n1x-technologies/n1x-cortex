@@ -4,7 +4,7 @@ import { runStatus } from './commands/status.js';
 import { runOrphans } from './commands/orphans.js';
 import { runViz, openBrowser } from './commands/viz.js';
 import { runQuery, formatQuery } from './commands/query.js';
-import { runAtomize, formatPlan } from './commands/atomize.js';
+import { runAtomize, formatPlan, runEmit, runApply, formatDistilledPlan } from './commands/atomize.js';
 
 export async function main(argv: string[]): Promise<number> {
   const [cmd] = argv;
@@ -52,8 +52,18 @@ export async function main(argv: string[]): Promise<number> {
     case 'atomize': {
       const rest = argv.slice(1);
       const write = rest.includes('--write');
-      const source = rest.find(a => !a.startsWith('--'));
-      if (!source) { console.log('Usage: cortex atomize <source.md> [--write]'); return 1; }
+      const emit = rest.includes('--emit-json');
+      const apply = rest.includes('--apply');
+      const positional = rest.filter(a => !a.startsWith('--'));
+      if (apply) {
+        const specs = positional[0];
+        if (!specs) { console.log('Usage: cortex atomize --apply <specs.json> [--write]'); return 1; }
+        console.log(formatDistilledPlan(runApply(cwd, specs, { write })));
+        return 0;
+      }
+      const source = positional[0];
+      if (!source) { console.log('Usage: cortex atomize <source.md> [--emit-json | --write]'); return 1; }
+      if (emit) { console.log(runEmit(cwd, source)); return 0; }
       console.log(formatPlan(runAtomize(cwd, source, { write })));
       return 0;
     }
