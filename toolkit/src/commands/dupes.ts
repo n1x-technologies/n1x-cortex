@@ -3,9 +3,9 @@ import { loadConfig } from '../config.js';
 import { collectFrontmatterKeys } from '../vault.js';
 import { computeDupes, type DupePair } from '../curate/dupes.js';
 
-export function runDupes(vaultDir: string, opts: { threshold?: number }): DupePair[] {
+export function runDupes(vaultDir: string, opts: { threshold?: number; crossType?: boolean }): DupePair[] {
   const config = loadConfig(vaultDir, collectFrontmatterKeys(vaultDir));
-  return computeDupes(vaultDir, config, opts.threshold ?? config.dupeThreshold);
+  return computeDupes(vaultDir, config, opts.threshold ?? config.dupeThreshold, { crossType: opts.crossType });
 }
 
 export function formatDupes(pairs: DupePair[]): string {
