@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 440" width="1280" height="440" role="img" aria-label="N1X Cortex — the knowledge cortex for you and your agents">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1A1A2E"/>
+      <stop offset="1" stop-color="#12121F"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#E94560" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#E94560" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="nodeCoral" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FF6B82"/>
+      <stop offset="1" stop-color="#E94560"/>
+    </radialGradient>
+  </defs>
+
+  <!-- canvas -->
+  <rect width="1280" height="440" fill="url(#bg)"/>
+  <circle cx="945" cy="220" r="240" fill="url(#glow)"/>
+
+  <!-- faint dot grid -->
+  <g fill="#FFFFFF" opacity="0.04">
+    <circle cx="80"  cy="60" r="2"/><circle cx="160" cy="60" r="2"/><circle cx="240" cy="60" r="2"/>
+    <circle cx="80"  cy="380" r="2"/><circle cx="160" cy="380" r="2"/><circle cx="240" cy="380" r="2"/>
+    <circle cx="1200" cy="60" r="2"/><circle cx="1200" cy="380" r="2"/>
+  </g>
+
+  <!-- knowledge graph / brain motif -->
+  <g stroke="#3A3A55" stroke-width="1.6" fill="none" opacity="0.95">
+    <path d="M765,150 L845,108 L935,128 L1015,100 L1085,152 L1132,222 L1085,300 L1005,340 L915,330 L825,302 L765,238 Z"/>
+    <path d="M875,196 L845,108 M875,196 L825,302 M875,196 L960,228 M960,228 L935,128 M960,228 L915,330 M960,228 L1042,230 M1042,230 L1085,152 M1042,230 L1085,300 M765,238 L875,196"/>
+  </g>
+  <!-- edges to coral nodes -->
+  <g stroke="#E94560" stroke-width="1.8" fill="none" opacity="0.85">
+    <path d="M935,128 L1015,100 M1085,300 L1005,340 M960,228 L915,330"/>
+  </g>
+  <!-- light nodes -->
+  <g fill="#E8E8F0">
+    <circle cx="765" cy="150" r="5"/><circle cx="845" cy="108" r="5"/><circle cx="935" cy="128" r="5"/>
+    <circle cx="1085" cy="152" r="5"/><circle cx="1132" cy="222" r="5"/><circle cx="1005" cy="340" r="5"/>
+    <circle cx="825" cy="302" r="5"/><circle cx="765" cy="238" r="5"/><circle cx="875" cy="196" r="6"/>
+    <circle cx="1042" cy="230" r="5"/>
+  </g>
+  <!-- coral accent nodes -->
+  <g fill="url(#nodeCoral)">
+    <circle cx="1015" cy="100" r="8"/>
+    <circle cx="960" cy="228" r="9"/>
+    <circle cx="1085" cy="300" r="8"/>
+    <circle cx="915" cy="330" r="7"/>
+  </g>
+
+  <!-- logo mark -->
+  <g transform="translate(96,150)">
+    <rect x="0" y="0" width="64" height="64" rx="16" fill="none" stroke="#E94560" stroke-width="3"/>
+    <g stroke="#E8E8F0" stroke-width="2.4" fill="none">
+      <path d="M18,44 L18,22 L46,22 M18,33 L40,33"/>
+    </g>
+    <circle cx="46" cy="22" r="5" fill="url(#nodeCoral)"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="184" y="172" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="62" font-weight="800" letter-spacing="2" fill="#FFFFFF">N1X <tspan fill="#E94560">CORTEX</tspan></text>
+
+  <!-- tagline -->
+  <text x="186" y="218" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="23" font-weight="500" letter-spacing="0.3" fill="#A6A6BC">The knowledge cortex for you and your agents.</text>
+
+  <!-- install chip -->
+  <g transform="translate(186,250)">
+    <rect x="0" y="0" width="430" height="46" rx="10" fill="#0E0E18" stroke="#2A2A40" stroke-width="1"/>
+    <text x="18" y="30" font-family="'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace" font-size="18" fill="#E8E8F0"><tspan fill="#E94560">▸</tspan> npm i -g @n1x-technologies/cortex</text>
+  </g>
+
+  <!-- footer -->
+  <text x="186" y="332" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" letter-spacing="2" fill="#5C5C78">OPEN SOURCE · MCP-READY · BY N1X TECHNOLOGIES</text>
+</svg>
