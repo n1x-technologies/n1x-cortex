@@ -31,6 +31,7 @@ export function loadConfig(vaultDir: string, sampleKeys: string[] = []): CortexC
     immutableStatus: null,
     autonomy: 'auto-draft',
     mocDir: '00-MOC',
+    templatesDir: '_templates',
     dupeThreshold: 0.45,
     embedModel: 'Xenova/multilingual-e5-small',
     embedDir: '.cortex/embeddings',
