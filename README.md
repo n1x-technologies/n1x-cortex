@@ -44,7 +44,7 @@ Most knowledge lives in scattered markdown — Obsidian vaults, docs, wikis. Hum
 npm i -g @n1x-technologies/cortex      # or run without installing: npx @n1x-technologies/cortex
 
 cd my-vault                            # any folder of .md notes
-cortex init                            # detect your frontmatter, write .cortex.json
+cortex init                            # detect your frontmatter, write .cortex.json (+ gitignore the cache)
 cortex status                          # notes by type/status + orphans
 cortex query "how does X work?"        # a cited answer from your own notes
 cortex viz                             # 🌐 local web viewer — your knowledge graph
@@ -131,7 +131,7 @@ flowchart TB
 
 | Command | What it does |
 |---------|--------------|
-| `cortex init` | Detect frontmatter fields, write `.cortex.json`. |
+| `cortex init` | Detect frontmatter fields, write `.cortex.json`, gitignore the `.cortex/` cache. |
 | `cortex status` / `orphans` | Notes by type/status; dangling links ranked "atomize-next". |
 | `cortex query "..."` | Cited answer from your notes (hybrid retrieval). |
 | `cortex viz` | Local web viewer: graph + search + color-by. |
