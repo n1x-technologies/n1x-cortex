@@ -160,9 +160,9 @@ Then `cortex query` and `cortex dupes` become hybrid (lexical + semantic), and t
 Cortex today is the **open-source, local engine** — free, yours, on your machine. It's the open core of a bigger idea:
 
 - **A reliable brain for autonomous software.** As teams hand more work to agents, those agents need a *single source of truth* they can trust and cite. Cortex is that layer — the **brain of an agentic / autonomous software factory**, where many agents read from and (soon) write to one shared, verifiable knowledge base.
-- **Cortex → Brain.** **Cortex** stays the local open core. **Brain** is the commercial product built on the same engine — multi-tenant, hosted, team-grade — the shared cortex for a whole organization and its fleet of agents.
+- **Local-first, always.** Cortex stays the open, on-your-machine engine — no vault content ever leaves your machine. The roadmap below is all Cortex; it grows by deepening the local engine and its agent loop, not by locking anything behind a service.
 
-The path is incremental and the tool layer is transport-agnostic, so nothing gets thrown away on the way there.
+The path is incremental, so nothing gets thrown away on the way there.
 
 ## 🗺️ Roadmap
 
@@ -172,7 +172,6 @@ The path is incremental and the tool layer is transport-agnostic, so nothing get
 - ✅ **Semantic layer** — local embeddings, hybrid query/dupes.
 - ✅ **MCP server (read)** — `cortex_query` + `cortex_get_note` for agents.
 - ⏭️ **MCP write/curate** — agents capture & curate knowledge as they work ("agent as curator").
-- ⏭️ **Brain** — networked, multi-tenant, the shared cortex for teams + agent fleets.
 
 ## From source (contributors)
 
@@ -186,4 +185,4 @@ The engine lives in [`toolkit/`](toolkit/); design specs and plans are in [`docs
 
 ## License
 
-[MIT](LICENSE) © N1X Technologies. *"N1X", "N1X Cortex", and "N1X Brain" are trademarks of N1X Technologies.*
+[MIT](LICENSE) © N1X Technologies. *"N1X" and "N1X Cortex" are trademarks of N1X Technologies.*
