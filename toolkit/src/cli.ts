@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { fileURLToPath } from 'node:url';
 import { realpathSync } from 'node:fs';
+import { resolve as resolvePath } from 'node:path';
 import { runInit } from './commands/init.js';
 import { runStatus } from './commands/status.js';
 import { runOrphans } from './commands/orphans.js';
@@ -135,7 +136,7 @@ export async function main(argv: string[]): Promise<number> {
     }
     case 'mcp': {
       const dir = argv.slice(1).filter(a => !a.startsWith('--'))[0];
-      await runMcp(dir ? (dir.startsWith('/') ? dir : `${cwd}/${dir}`) : cwd);
+      await runMcp(dir ? resolvePath(cwd, dir) : cwd);
       return 0;
     }
     case 'gaps': {

@@ -14,20 +14,24 @@ import { queryTool, getNoteTool } from './tools.js';
 export function createMcpServer(vaultDir: string): McpServer {
   const server = new McpServer({ name: 'cortex', version: '0.1.0' });
 
-  // Warm embedder, memoized for the life of the process. `undefined` = not yet
-  // resolved; `null` = resolved to "no semantic" (no store / no peer / failed).
-  let warm: Embedder | null | undefined;
-  async function warmEmbedder(): Promise<Embedder | undefined> {
-    if (warm !== undefined) return warm ?? undefined;
-    const config = loadConfig(vaultDir, collectFrontmatterKeys(vaultDir));
-    const store = loadStore(resolve(vaultDir, config.embedDir));
-    if (!store || store.model !== config.embedModel) { warm = null; return undefined; }
-    try {
-      warm = await createTransformersEmbedder(config.embedModel, resolve(vaultDir, '.cortex/models'));
-    } catch {
-      warm = null; // optional peer absent or model load failed → lexical
+  // Warm embedder, memoized for the life of the process. The in-flight promise
+  // is stored (not the resolved value) so concurrent first-calls share one load
+  // rather than each racing to start a second model initialisation.
+  let warmP: Promise<Embedder | undefined> | undefined;
+  function warmEmbedder(): Promise<Embedder | undefined> {
+    if (!warmP) {
+      warmP = (async (): Promise<Embedder | undefined> => {
+        const config = loadConfig(vaultDir, collectFrontmatterKeys(vaultDir));
+        const store = loadStore(resolve(vaultDir, config.embedDir));
+        if (!store || store.model !== config.embedModel) return undefined;
+        try {
+          return await createTransformersEmbedder(config.embedModel, resolve(vaultDir, '.cortex/models'));
+        } catch {
+          return undefined; // optional peer absent or model load failed → lexical
+        }
+      })();
     }
-    return warm ?? undefined;
+    return warmP;
   }
 
   server.registerTool(
@@ -42,8 +46,12 @@ export function createMcpServer(vaultDir: string): McpServer {
       },
     },
     async ({ question, maxHits }) => {
-      const result = await queryTool(vaultDir, { question, maxHits }, await warmEmbedder());
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      try {
+        const result = await queryTool(vaultDir, { question, maxHits }, await warmEmbedder());
+        return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+      } catch (e) {
+        return { isError: true, content: [{ type: 'text' as const, text: (e as Error).message }] };
+      }
     },
   );
 
