@@ -15,7 +15,7 @@ import { runPause, runResume } from './commands/pause.js';
 import { runEmbed, formatEmbed } from './commands/embed.js';
 import { runGaps, formatGaps } from './commands/gaps.js';
 import { runDupes, formatDupes } from './commands/dupes.js';
-import { runVerify, formatVerify } from './commands/verify.js';
+import { runVerify, formatVerify, runVerifyAll, formatVerifyAll } from './commands/verify.js';
 import { runMoc, formatMoc } from './commands/moc.js';
 import { runDoc, formatDoc } from './commands/doc.js';
 import { runMcp, runMcpInstall, runMcpUninstall } from './commands/mcp.js';
@@ -183,8 +183,12 @@ export async function main(argv: string[]): Promise<number> {
       const rest = argv.slice(1);
       const hi = rest.indexOf('--hops');
       const hops = hi >= 0 ? Number(rest[hi + 1]) : undefined;
+      if (rest.includes('--all')) {
+        console.log(formatVerifyAll(runVerifyAll(cwd, { hops })));
+        return 0;
+      }
       const note = rest.filter(a => !a.startsWith('--') && a !== String(hops))[0];
-      if (!note) { console.log('Usage: cortex verify <note.md> [--hops N]'); return 1; }
+      if (!note) { console.log('Usage: cortex verify <note.md> [--hops N]  |  cortex verify --all [--hops N]'); return 1; }
       console.log(formatVerify(runVerify(cwd, note, { hops })));
       return 0;
     }
