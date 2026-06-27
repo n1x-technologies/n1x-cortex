@@ -8,7 +8,7 @@ This is **N1X Cortex**, owned by **N1X Technologies** — an open-source **produ
 
 It is generic and reusable, NOT a client's vault, and contains **no client data**.
 
-> **Brand note:** the product used to be called **BRAIN**; since v2.0 its name is **N1X Cortex** and the attribution is **N1X Technologies**. There is also a separate commercial product, **Brain** — the hosted, multi-tenant evolution built on this same engine.
+> **Brand note:** the product used to be called **BRAIN**; since v2.0 its name is **N1X Cortex** and the attribution is **N1X Technologies**. Always use the current name.
 
 Where to start: the engine and its commands are in `toolkit/`; design specs and implementation plans are in `docs/superpowers/`.
 
