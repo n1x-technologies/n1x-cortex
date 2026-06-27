@@ -45,10 +45,11 @@ export async function main(argv: string[]): Promise<number> {
   if (cmd === '--help' || cmd === '-h' || cmd === 'help' || !cmd) { console.log(USAGE); return 0; }
   switch (cmd) {
     case 'init': {
-      const { created, config } = runInit(cwd);
+      const { created, gitignoreUpdated, config } = runInit(cwd);
       console.log(created
         ? `Created .cortex.json (type=${config.fields.type}, status=${config.fields.status})`
         : '.cortex.json already exists — left unchanged');
+      if (gitignoreUpdated) console.log('Added .cortex/ to .gitignore (generated cache — not committed).');
       return 0;
     }
     case 'status': {

@@ -4,6 +4,7 @@ import { scanVault, collectFrontmatterKeys } from '../vault.js';
 import { loadStore, saveStore, storeMap, hashContent, type EmbeddingStore, type EmbeddingRecord } from '../semantic/store.js';
 import { noteText, passageText } from '../semantic/text.js';
 import { createTransformersEmbedder, type Embedder } from '../semantic/embedder.js';
+import { ensureCortexIgnored } from '../gitignore.js';
 
 export interface EmbedResult {
   model: string;
@@ -12,6 +13,7 @@ export interface EmbedResult {
   removed: number;
   reused: number;
   total: number;
+  gitignoreUpdated: boolean;
 }
 
 export async function runEmbed(
@@ -24,6 +26,9 @@ export async function runEmbed(
   } = {},
 ): Promise<EmbedResult> {
   const config = loadConfig(vaultDir, collectFrontmatterKeys(vaultDir));
+  // Embedding generates a heavy per-machine cache under .cortex/ — make sure
+  // it's gitignored before we write any vectors.
+  const gitignoreUpdated = ensureCortexIgnored(vaultDir);
   const notes = scanVault(vaultDir, config);
   const model = opts.model ?? config.embedModel;
   const embedDir = resolve(vaultDir, config.embedDir);
@@ -82,9 +87,10 @@ export async function runEmbed(
 
   const store: EmbeddingStore = { model, dim, records };
   saveStore(embedDir, store);
-  return { model, added, changed, removed, reused, total: records.length };
+  return { model, added, changed, removed, reused, total: records.length, gitignoreUpdated };
 }
 
 export function formatEmbed(r: EmbedResult): string {
-  return `Embedded with ${r.model}: +${r.added} new, ~${r.changed} changed, -${r.removed} removed, ${r.reused} reused (store: ${r.total} notes).`;
+  const main = `Embedded with ${r.model}: +${r.added} new, ~${r.changed} changed, -${r.removed} removed, ${r.reused} reused (store: ${r.total} notes).`;
+  return r.gitignoreUpdated ? `${main}\nAdded .cortex/ to .gitignore (generated cache — not committed).` : main;
 }
