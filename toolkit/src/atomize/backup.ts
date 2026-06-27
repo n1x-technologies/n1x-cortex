@@ -47,6 +47,15 @@ export function recordPromotions(vaultDir: string, moves: { from: string; to: st
   return rel;
 }
 
+/** Record freshly created files so `cortex undo` can delete them. */
+export function recordCreations(vaultDir: string, created: string[], runId: string): string {
+  const rel = `${PROMOTIONS_ROOT}/${runId}.json`;
+  const abs = join(vaultDir, rel);
+  mkdirSync(dirname(abs), { recursive: true });
+  writeFileSync(abs, JSON.stringify({ moves: [], created }, null, 2));
+  return rel;
+}
+
 export function undoLatestRun(vaultDir: string): { restored: string[]; reverted: string[] } {
   const backupsRoot = join(vaultDir, '.cortex/backups');
   const promosRoot = join(vaultDir, PROMOTIONS_ROOT);
@@ -66,9 +75,12 @@ export function undoLatestRun(vaultDir: string): { restored: string[]; reverted:
   }
 
   const journalPath = join(promosRoot, `${latest.id}.json`);
-  const { moves } = JSON.parse(readFileSync(journalPath, 'utf8')) as { moves: { from: string; to: string }[] };
+  const journal = JSON.parse(readFileSync(journalPath, 'utf8')) as {
+    moves: { from: string; to: string }[];
+    created?: string[];
+  };
   const reverted: string[] = [];
-  for (const m of moves) {
+  for (const m of journal.moves) {
     const toAbs = join(vaultDir, m.to);
     if (!existsSync(toAbs)) continue;
     const fromAbs = join(vaultDir, m.from);
@@ -76,6 +88,11 @@ export function undoLatestRun(vaultDir: string): { restored: string[]; reverted:
     writeFileSync(fromAbs, readFileSync(toAbs));
     rmSync(toAbs);
     reverted.push(m.from);
+  }
+  // Undo creations by deleting the files that were scaffolded.
+  for (const rel of journal.created ?? []) {
+    const abs = join(vaultDir, rel);
+    if (existsSync(abs)) { rmSync(abs); reverted.push(rel); }
   }
   rmSync(journalPath); // consume the journal so the next undo targets the prior run
   return { restored: [], reverted: reverted.sort() };

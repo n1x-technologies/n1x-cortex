@@ -132,6 +132,7 @@ flowchart TB
 | Command | What it does |
 |---------|--------------|
 | `cortex init` | Detect frontmatter fields, write `.cortex.json`, gitignore the `.cortex/` cache. |
+| `cortex new <type> <id>` | Scaffold a note from `_templates/<type>.md` in the right folder (`--title`/`--module`/`--dir`). |
 | `cortex status` / `orphans` | Notes by type/status; dangling links ranked "atomize-next". |
 | `cortex query "..."` | Cited answer from your notes (hybrid retrieval). |
 | `cortex viz` | Local web viewer: graph + search + color-by. |
