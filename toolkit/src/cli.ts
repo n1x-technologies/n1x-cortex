@@ -2,6 +2,7 @@
 import { fileURLToPath } from 'node:url';
 import { realpathSync } from 'node:fs';
 import { resolve as resolvePath } from 'node:path';
+import { createRequire } from 'node:module';
 import { runInit } from './commands/init.js';
 import { runStatus } from './commands/status.js';
 import { runOrphans } from './commands/orphans.js';
@@ -17,11 +18,31 @@ import { runDupes, formatDupes } from './commands/dupes.js';
 import { runVerify, formatVerify } from './commands/verify.js';
 import { runMoc, formatMoc } from './commands/moc.js';
 import { runDoc, formatDoc } from './commands/doc.js';
-import { runMcp } from './commands/mcp.js';
+import { runMcp, runMcpInstall, runMcpUninstall } from './commands/mcp.js';
+
+const USAGE = 'Usage: cortex <init|status|orphans|viz|query|atomize|promote|undo|set-status|hook|pause|resume|embed|mcp|gaps|dupes|verify|moc|doc>';
+
+const MCP_HELP = `Usage: cortex mcp [install|uninstall] [--vault <path>] [--scope local|project|user]
+
+  cortex mcp                  Start the stdio MCP server (vault = positional arg or cwd)
+  cortex mcp install          Register the Cortex MCP server with Claude Code
+  cortex mcp uninstall        Remove the Cortex MCP registration
+
+Options:
+  --vault <path>              Vault directory (default: current directory)
+  --scope local|project|user  Registration scope (default: local)
+
+Verify with: claude mcp list`;
+
+function pkgVersion(): string {
+  return (createRequire(import.meta.url)('../package.json') as { version: string }).version;
+}
 
 export async function main(argv: string[]): Promise<number> {
   const [cmd] = argv;
   const cwd = process.cwd();
+  if (cmd === '--version' || cmd === '-v') { console.log(pkgVersion()); return 0; }
+  if (cmd === '--help' || cmd === '-h' || cmd === 'help' || !cmd) { console.log(USAGE); return 0; }
   switch (cmd) {
     case 'init': {
       const { created, config } = runInit(cwd);
@@ -135,8 +156,15 @@ export async function main(argv: string[]): Promise<number> {
       return 0;
     }
     case 'mcp': {
-      const dir = argv.slice(1).filter(a => !a.startsWith('--'))[0];
-      await runMcp(dir ? resolvePath(cwd, dir) : cwd);
+      const rest = argv.slice(1);
+      const positionals = rest.filter(a => !a.startsWith('--'));
+      const sub = positionals[0];
+      if (rest.includes('--help') || rest.includes('-h') || sub === 'help') { console.log(MCP_HELP); return 0; }
+      if (sub === 'install') return runMcpInstall(cwd, rest);
+      if (sub === 'uninstall') return runMcpUninstall(cwd, rest);
+      // Bare vault path (or nothing) → start the stdio server. Only the literal
+      // keywords install/uninstall/help are subcommands; anything else is a vault.
+      await runMcp(sub ? resolvePath(cwd, sub) : cwd);
       return 0;
     }
     case 'gaps': {
@@ -175,8 +203,8 @@ export async function main(argv: string[]): Promise<number> {
       return 0;
     }
     default:
-      console.log('Usage: cortex <init|status|orphans|viz|query|atomize|promote|undo|set-status|hook|pause|resume|embed|mcp|gaps|dupes|verify|moc|doc>');
-      return cmd ? 1 : 0;
+      console.log(USAGE);
+      return 1;
   }
 }
 

@@ -65,9 +65,20 @@ npm i -g @n1x-technologies/cortex@latest
 This is the part that matters for the future. Cortex speaks the **[Model Context Protocol](https://modelcontextprotocol.io)**, so an agent can use your vault as a **cited knowledge source** — one of the first building blocks for agents that work from a *reliable* brain instead of guessing.
 
 ```bash
-# register the server with Claude Code (run inside your vault):
-claude mcp add cortex -- cortex mcp
+# register the server with Claude Code — one command, run inside your vault:
+cortex mcp install
+
+# point it at a different vault, or pick a scope (default: local):
+cortex mcp install --vault /path/to/vault --scope project
+
+# verify it's wired up:
+claude mcp list
+
+# remove it later:
+cortex mcp uninstall
 ```
+
+`cortex mcp install` registers `cortex` with Claude Code for you (via the `claude` CLI when present, falling back to a merged `.mcp.json` for `--scope project`). It's idempotent — re-run it any time.
 
 The agent gets two tools:
 
@@ -124,6 +135,7 @@ flowchart TB
 | `cortex status` / `orphans` | Notes by type/status; dangling links ranked "atomize-next". |
 | `cortex query "..."` | Cited answer from your notes (hybrid retrieval). |
 | `cortex viz` | Local web viewer: graph + search + color-by. |
+| `cortex mcp install` | **One-command hookup** to Claude Code (`uninstall` to remove). |
 | `cortex mcp` | **Run the MCP server** for agents (stdio). |
 | `cortex embed` | Build the local embedding store (enables semantic search). |
 | `cortex atomize <src>` | AI-distill a source into draft notes (dry-run; `--write`). |
