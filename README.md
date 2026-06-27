@@ -161,7 +161,7 @@ cd n1x-cortex/toolkit && npm install && npm run build
 npm test
 ```
 
-The engine lives in [`toolkit/`](toolkit/); design specs and plans are in [`docs/design/`](docs/design/). The methodology behind it is written up in [`N1X-Cortex-v2.md`](N1X-Cortex-v2.md). Contributions go through PRs — see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+The engine lives in [`toolkit/`](toolkit/); design specs and plans are in [`docs/design/`](docs/design/). Contributions go through PRs — see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## License
 
