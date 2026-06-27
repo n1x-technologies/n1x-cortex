@@ -10,7 +10,7 @@ describe('phase 6 semantic config defaults', () => {
     const c = loadConfig(dir, []);
     expect(c.embedModel).toBe('Xenova/multilingual-e5-small');
     expect(c.embedDir).toBe('.cortex/embeddings');
-    expect(c.semanticDupeThreshold).toBe(0.85);
+    expect(c.semanticDupeThreshold).toBe(0.88);
     expect(c.rrfK).toBe(60);
   });
   it('honors overrides from .cortex.json', () => {

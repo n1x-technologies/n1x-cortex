@@ -175,7 +175,8 @@ export async function main(argv: string[]): Promise<number> {
     case 'dupes': {
       const ti = argv.indexOf('--threshold');
       const threshold = ti >= 0 ? Number(argv[ti + 1]) : undefined;
-      console.log(formatDupes(runDupes(cwd, { threshold })));
+      const crossType = argv.includes('--cross-type');
+      console.log(formatDupes(runDupes(cwd, { threshold, crossType })));
       return 0;
     }
     case 'verify': {
