@@ -19,8 +19,9 @@ import { runVerify, formatVerify, runVerifyAll, formatVerifyAll } from './comman
 import { runMoc, formatMoc } from './commands/moc.js';
 import { runDoc, formatDoc } from './commands/doc.js';
 import { runMcp, runMcpInstall, runMcpUninstall } from './commands/mcp.js';
+import { runNew, formatNew } from './commands/new.js';
 
-const USAGE = 'Usage: cortex <init|status|orphans|viz|query|atomize|promote|undo|set-status|hook|pause|resume|embed|mcp|gaps|dupes|verify|moc|doc>';
+const USAGE = 'Usage: cortex <init|new|status|orphans|viz|query|atomize|promote|undo|set-status|hook|pause|resume|embed|mcp|gaps|dupes|verify|moc|doc>';
 
 const MCP_HELP = `Usage: cortex mcp [install|uninstall] [--vault <path>] [--scope local|project|user]
 
@@ -51,6 +52,21 @@ export async function main(argv: string[]): Promise<number> {
         : '.cortex.json already exists — left unchanged');
       if (gitignoreUpdated) console.log('Added .cortex/ to .gitignore (generated cache — not committed).');
       return 0;
+    }
+    case 'new': {
+      const rest = argv.slice(1);
+      const ti = rest.indexOf('--title');
+      const title = ti >= 0 ? rest[ti + 1] : undefined;
+      const mi = rest.indexOf('--module');
+      const module = mi >= 0 ? rest[mi + 1] : undefined;
+      const di = rest.indexOf('--dir');
+      const dir = di >= 0 ? rest[di + 1] : undefined;
+      const flagVals = new Set([title, module, dir].filter(Boolean) as string[]);
+      const [type, id] = rest.filter(a => !a.startsWith('--') && !flagVals.has(a));
+      if (!type || !id) { console.log('Usage: cortex new <type> <id> [--title "..."] [--module "..."] [--dir <folder>]'); return 1; }
+      const r = runNew(cwd, type, id, { title, module, dir });
+      console.log(formatNew(r));
+      return r.created ? 0 : 1;
     }
     case 'status': {
       const s = runStatus(cwd);
