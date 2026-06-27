@@ -52,6 +52,14 @@ cortex viz                             # 🌐 local web viewer — your knowledg
 
 That's it — no account, no server, no cloud.
 
+### Updating
+
+Re-run the install anywhere to jump to the latest version:
+
+```bash
+npm i -g @n1x-technologies/cortex@latest
+```
+
 ## 🤖 Use it from an AI agent (MCP)
 
 This is the part that matters for the future. Cortex speaks the **[Model Context Protocol](https://modelcontextprotocol.io)**, so an agent can use your vault as a **cited knowledge source** — one of the first building blocks for agents that work from a *reliable* brain instead of guessing.
