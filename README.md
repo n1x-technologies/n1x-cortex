@@ -139,7 +139,7 @@ flowchart TB
 | `cortex mcp` | **Run the MCP server** for agents (stdio). |
 | `cortex embed` | Build the local embedding store (enables semantic search). |
 | `cortex atomize <src>` | AI-distill a source into draft notes (dry-run; `--write`). |
-| `cortex gaps` / `dupes` / `verify` | Curation diagnostics. `dupes` compares within a type by default (`--cross-type` to widen). |
+| `cortex gaps` / `dupes` / `verify` | Curation diagnostics. `dupes` compares within a type by default (`--cross-type` to widen); `verify --all` sweeps the whole vault for incomplete notes. |
 | `cortex moc` / `doc` | Generate a Map-of-Content note / a branded Typst PDF. |
 | `cortex undo` | Reverse the last write. Everything is reversible. |
 
