@@ -5,14 +5,15 @@ import { runInit } from './commands/init.js';
 import { runStatus } from './commands/status.js';
 import { runOrphans } from './commands/orphans.js';
 import { runViz, openBrowser } from './commands/viz.js';
-import { runQuery, runQuerySemantic, formatQuery } from './commands/query.js';
+import { runQuery, runQuerySemantic, formatQuery, formatQueryJson } from './commands/query.js';
 import { runAtomize, formatPlan, runEmit, runApply, formatDistilledPlan, runUndo } from './commands/atomize.js';
 import { runPromote, formatPromote, runSetStatus } from './commands/promote.js';
 import { runHookCommand } from './commands/hook.js';
 import { runPause, runResume } from './commands/pause.js';
 import { runEmbed, formatEmbed } from './commands/embed.js';
 import { runGaps, formatGaps } from './commands/gaps.js';
-import { runDupes, formatDupes } from './commands/dupes.js';
+import { runDupes, formatDupes, formatDupesJson } from './commands/dupes.js';
+import { runMerge, formatMerge } from './commands/merge.js';
 import { runVerify, formatVerify } from './commands/verify.js';
 import { runMoc, formatMoc } from './commands/moc.js';
 import { runDoc, formatDoc } from './commands/doc.js';
@@ -56,9 +57,12 @@ export async function main(argv: string[]): Promise<number> {
       }
     }
     case 'query': {
-      const question = argv.slice(1).join(' ').trim();
-      if (!question) { console.log('Usage: cortex query <question>'); return 1; }
-      console.log(formatQuery(await runQuerySemantic(cwd, question)));
+      const rest = argv.slice(1);
+      const json = rest.includes('--json');
+      const question = rest.filter(a => a !== '--json').join(' ').trim();
+      if (!question) { console.log('Usage: cortex query <question> [--json]'); return 1; }
+      const result = await runQuerySemantic(cwd, question);
+      console.log(json ? formatQueryJson(result) : formatQuery(result));
       return 0;
     }
     case 'atomize': {
@@ -139,7 +143,22 @@ export async function main(argv: string[]): Promise<number> {
     case 'dupes': {
       const ti = argv.indexOf('--threshold');
       const threshold = ti >= 0 ? Number(argv[ti + 1]) : undefined;
-      console.log(formatDupes(runDupes(cwd, { threshold })));
+      const pairs = runDupes(cwd, { threshold });
+      console.log(argv.includes('--json') ? formatDupesJson(pairs) : formatDupes(pairs));
+      return 0;
+    }
+    case 'merge': {
+      const rest = argv.slice(1);
+      const write = rest.includes('--write');
+      const fi = rest.indexOf('--content-file');
+      const contentFile = fi >= 0 ? rest[fi + 1] : undefined;
+      const positional = rest.filter(a => !a.startsWith('--') && a !== contentFile);
+      const [keep, drop] = positional;
+      if (!keep || !drop || !contentFile) {
+        console.log('Usage: cortex merge <keep.md> <drop.md> --content-file <merged.md> [--write]');
+        return 1;
+      }
+      console.log(formatMerge(runMerge(cwd, keep, drop, contentFile, { write })));
       return 0;
     }
     case 'verify': {
@@ -168,7 +187,7 @@ export async function main(argv: string[]): Promise<number> {
       return 0;
     }
     default:
-      console.log('Usage: cortex <init|status|orphans|viz|query|atomize|promote|undo|set-status|hook|pause|resume|embed|gaps|dupes|verify|moc|doc>');
+      console.log('Usage: cortex <init|status|orphans|viz|query|atomize|promote|undo|set-status|hook|pause|resume|embed|gaps|dupes|merge|verify|moc|doc>');
       return cmd ? 1 : 0;
   }
 }

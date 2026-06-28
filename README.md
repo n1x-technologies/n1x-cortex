@@ -4,7 +4,7 @@
 
 **An AI agent that turns a sprawling documentation corpus into a living second brain** — it reads your sources, atomizes them into a linked knowledge graph, and answers from it with citations. Open-source, runs locally over any markdown vault.
 
-![Toolkit](https://img.shields.io/badge/toolkit-Phases%200–6-E94560)
+![Toolkit](https://img.shields.io/badge/toolkit-Phases%200–7-E94560)
 ![Engine](https://img.shields.io/badge/engine-Node%2FTS-1A1A2E)
 ![Local](https://img.shields.io/badge/runs-local%20%26%20offline-1A1A2E)
 ![License](https://img.shields.io/badge/license-MIT-E94560)
@@ -55,18 +55,18 @@ N1X Cortex is the system that fixes that. It's an **AI agent with a memory**: po
 
 ## 📦 What it does today
 
-N1X Cortex runs as a local CLI (and a Claude Code skill) over any markdown vault. Everything is **read-first** — it never touches your notes except atomization, which only stages new `status: draft` notes in `_inbox/`.
+N1X Cortex runs as a local CLI (and a Claude Code skill) over any markdown vault. It is **read-first by default** — most commands only read. Writes are confined to atomization (which stages `status: draft` notes in `_inbox/`) and, when you turn autonomy on, the **background capture** that distills changed sources for you. Every write is backed up and reversible (`cortex undo`), and `Markdown/` sources are never modified.
 
 | Capability | Command | What you get |
 |---|---|---|
 | **Inspect** | `status` · `orphans` | your vault at a glance: notes by type/status, and the gaps to atomize next |
 | **Visualize** | `viz` | an interactive local web graph — nodes, ghost nodes for gaps, search, color-by type/status/freshness |
-| **Query (cited)** | `query "…"` | mechanical cited retrieval: the relevant notes, excerpts, and their sources |
+| **Query (cited)** | `query "…"` · `query "…" --json` · `/query` | mechanical cited retrieval: the relevant notes, excerpts, and their sources — `--json` and the `/query` skill make it consumable by other agents |
 | **Atomize (AI)** | `atomize <src>` + the `/atomize` skill | an AI agent reads a source doc, splits it into one-idea-per-note drafts, infers type, routes a folder, adds tags + wikilinks, and **merges new info into existing notes** — autonomous, **dry-run by default** |
 | **Undo** | `undo` | restores the most recent set of notes the agent edited (every in-place update is backed up first) |
 | **Promote** | `promote` | graduates ready drafts (status advanced beyond `draft`) out of `_inbox/` into their curated folder — never overwriting existing notes, fully reversible with `undo` |
-| **Autonomy hooks** | `hook <event>` · `pause` · `resume` | Claude Code lifecycle hooks that index on session start and **suggest** `/atomize` when sources change — detect-and-suggest only, never auto-writing notes; silence them anytime with `pause` |
-| **Curation & outputs** | `gaps` · `dupes` · `verify` · `moc` · `doc` | read-only diagnostics (coverage gaps, near-duplicates, link-closure completeness) plus producers: `moc` writes a reversible Map-of-Content note, `doc` consolidates a topic's notes into a branded Typst PDF |
+| **Autonomy** | `hook <event>` · `pause` · `resume` | Claude Code lifecycle hooks that index on session start and **capture in the background** when sources change: with `autonomy: auto-draft`/`full` the brain spawns a headless `/atomize` run (drafts to `_inbox/`; `full` also promotes) — without taking your turn, every write reversible; with `autonomy: suggest` it only nudges. Silence it anytime with `pause` |
+| **Curation & merge** | `gaps` · `dupes` · `merge` · `verify` · `moc` · `doc` | read-only diagnostics (coverage gaps, near-duplicates, link-closure completeness) plus producers: `merge` (+ the `/dupes-merge` skill) reversibly folds a near-duplicate pair into one note and redirects inbound links; `moc` writes a reversible Map-of-Content note; `doc` consolidates a topic's notes into a branded Typst PDF |
 | **Semantic layer** | `embed` | builds a local on-device embedding store (`.cortex/embeddings/`, transformers.js, no network at query time); `query` and `dupes` then run hybrid lexical+semantic retrieval (Reciprocal Rank Fusion), degrading to TF-IDF when no store is present — no vault content leaves the machine |
 | **Configure** | `init` | infers your vault's conventions into a `.cortex.json` (schema- & language-agnostic) |
 
@@ -213,7 +213,7 @@ cd n1x-cortex/toolkit && npm install && npm run build
 
 `toolkit/` is the **open-source engine + agent** at the heart of the product: it reads *any* markdown vault into a note graph, reports its structure, renders it in a local web viewer, answers cited queries, and atomizes new sources with AI — locally, read-first, dependency-light (Node ≥ 20 / TypeScript).
 
-**Shipping now (Phases 0–6): the engine, the CLI, the graph viewer, cited query, AI-distilled atomization, autonomous update/merge with full reversibility, curation diagnostics (gaps/dupes/verify/moc/doc), and local-embedding semantic search.**
+**Shipping now (Phases 0–7): the engine, the CLI, the graph viewer, cited query (+ `--json`/`/query`), AI-distilled atomization, autonomous update/merge with full reversibility, curation diagnostics (gaps/dupes/verify/moc/doc), reversible duplicate merge (`merge`/`/dupes-merge`), local-embedding semantic search, and autonomous background capture (the `Stop` hook distills changed sources for you).**
 
 ```bash
 # from any vault directory (after installing — see Install section above):
@@ -221,6 +221,7 @@ node /path/to/toolkit/dist/cli.js status              # notes by type/status + o
 node /path/to/toolkit/dist/cli.js orphans             # dangling links ranked by inbound refs = "atomize next"
 node /path/to/toolkit/dist/cli.js viz                 # local web viewer: graph + search + color-by toggle
 node /path/to/toolkit/dist/cli.js query "…"           # mechanical cited retrieval: relevant notes + excerpts + sources
+node /path/to/toolkit/dist/cli.js query "…" --json    # same retrieval as structured JSON (for the /query skill / other agents)
 node /path/to/toolkit/dist/cli.js atomize src.md      # plan draft notes from a source (DRY-RUN: prints the plan, writes nothing)
 node /path/to/toolkit/dist/cli.js atomize src.md --write   # apply: write the new draft notes into _inbox/
 node /path/to/toolkit/dist/cli.js atomize src.md --emit-json        # emit segmentation + vault context as JSON (for the AI layer)
@@ -235,6 +236,8 @@ node /path/to/toolkit/dist/cli.js pause                                    # sil
 node /path/to/toolkit/dist/cli.js resume                                   # re-enable the autonomy hooks
 node /path/to/toolkit/dist/cli.js gaps                # coverage report: orphans, stubs, untyped, stale (read-only)
 node /path/to/toolkit/dist/cli.js dupes               # near-duplicate notes by cosine similarity (suggest-only)
+node /path/to/toolkit/dist/cli.js dupes --json        # the same pairs as JSON (for the /dupes-merge skill)
+node /path/to/toolkit/dist/cli.js merge A.md B.md --content-file merged.md   # fold a near-dup pair into one note + redirect links (DRY-RUN; --write applies, reversible)
 node /path/to/toolkit/dist/cli.js verify "<note>"     # link-closure completeness: exists / cited / verified, by hops
 node /path/to/toolkit/dist/cli.js moc <topic>         # (re)generate a Map-of-Content note (DRY-RUN; --write applies, reversible)
 node /path/to/toolkit/dist/cli.js doc <topic>         # consolidate a topic's notes → branded Typst in .cortex/out/ (--pdf compiles)
@@ -247,7 +250,7 @@ The **viewer** (`viz`) runs a local server (like claude-mem) and opens your vaul
 - **Schema- & locale-agnostic:** it *discovers* your vault's conventions (`tipo`/`type`, `estado`/`status`, folder names) — works in any language, on any schema, with no config required.
 - **Your notes stay yours — write safety is the rule:** every command except `init` and `atomize` is read-only. `atomize` is **dry-run by default** (it prints a plan and writes nothing); only `--write` applies, and even then it *only creates new `status: draft` notes in a `_inbox/` staging folder* — it never edits your existing notes or the source file, and it skips anything that already exists (no duplicates). Everything else is derived and rebuildable.
 - **AI-distilled atomization (`/atomize` skill):** `toolkit/skills/atomize/` is the Claude Code skill that turns a source doc into distilled atomic drafts — Claude rewrites each section, infers `type`, splits non-atomic sections, routes a folder, and adds tags + wikilinks, then writes them via `--apply` into `_inbox/`. The toolkit stays the deterministic, dependency-free engine; the intelligence lives in the skill.
-- **Roadmap:** Phase 0 (engine + CLI) ✓ · Phase 1 (web viewer) ✓ · Phase 2 (cited query) ✓ · Phase 3 (assisted atomization) ✓ · Phase 3.1 (AI-distilled notes) ✓ · Phase 3.2 (autonomous update/merge) ✓ · Phase 3.3 (autonomous promote) ✓ · Phase 4 ✓ — Autonomy hooks (detect-and-suggest), all five lifecycle events: SessionStart · Stop · PostToolUse · UserPromptSubmit · SessionEnd, plus kill switch; auto-write deferred. · Phase 5 ✓ — Curation & outputs: gaps · dupes · verify · moc · doc (Typst). · Phase 6 ✓ — Semantic layer: `embed` builds a local embedding store (`.cortex/embeddings/`, transformers.js, no network at query time); `query` and `dupes` run hybrid lexical+semantic retrieval (Reciprocal Rank Fusion), degrading to TF-IDF when no store is present. The full design lives in [`docs/superpowers/specs/`](docs/superpowers/specs/) and the build plans in [`docs/superpowers/plans/`](docs/superpowers/plans/).
+- **Roadmap:** Phase 0 (engine + CLI) ✓ · Phase 1 (web viewer) ✓ · Phase 2 (cited query) ✓ · Phase 3 (assisted atomization) ✓ · Phase 3.1 (AI-distilled notes) ✓ · Phase 3.2 (autonomous update/merge) ✓ · Phase 3.3 (autonomous promote) ✓ · Phase 4 ✓ — Autonomy hooks (detect-and-suggest), all five lifecycle events: SessionStart · Stop · PostToolUse · UserPromptSubmit · SessionEnd, plus kill switch; auto-write deferred. · Phase 5 ✓ — Curation & outputs: gaps · dupes · verify · moc · doc (Typst). · Phase 6 ✓ — Semantic layer: `embed` builds a local embedding store (`.cortex/embeddings/`, transformers.js, no network at query time); `query` and `dupes` run hybrid lexical+semantic retrieval (Reciprocal Rank Fusion), degrading to TF-IDF when no store is present. · Phase 7 ✓ — **Autonomous background capture**: with `autonomy: auto-draft`/`full` the `Stop` hook spawns a headless `/atomize` run over changed sources (drafts to `_inbox/`; `full` also promotes), guarded by anti-recursion + single-flight lock + cooldown + per-session cap, every write reversible; plus reversible duplicate merge (`merge` + `/dupes-merge`) and machine-readable cited query (`query --json` + `/query`). The full design lives in [`docs/superpowers/specs/`](docs/superpowers/specs/) and the build plans in [`docs/superpowers/plans/`](docs/superpowers/plans/).
 
 ---
 

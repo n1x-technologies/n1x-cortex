@@ -37,6 +37,10 @@ export function loadConfig(vaultDir: string, sampleKeys: string[] = []): CortexC
     semanticDupeThreshold: 0.85,
     rrfK: 60,
     outDir: '.cortex/out',
+    captureCooldownMs: 60000,
+    maxCapturesPerSession: 20,
+    captureMaxRunMs: 900000,
+    claudeBin: 'claude',
     viz: { port: 4317 },
   };
 

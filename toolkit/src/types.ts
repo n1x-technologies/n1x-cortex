@@ -36,6 +36,11 @@ export interface CortexConfig {
   semanticDupeThreshold: number;
   rrfK: number;
   outDir: string;
+  // Phase 7 — autonomous background capture
+  captureCooldownMs: number;      // min gap between background captures
+  maxCapturesPerSession: number;  // per-session spawn cap
+  captureMaxRunMs: number;        // stale-lock reclaim age
+  claudeBin: string;              // headless binary (overridable for tests/portability)
   viz: { port: number };
 }
 

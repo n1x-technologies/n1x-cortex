@@ -34,7 +34,7 @@ describe('onSessionStart', () => {
 describe('onStop', () => {
   it('suggests /atomize when a source changed, and writes no notes', () => {
     const dir = vault();
-    const cfg = loadConfig(dir, []);
+    const cfg = { ...loadConfig(dir, []), autonomy: 'suggest' as const };  // auto-draft now captures (Phase 7)
     const before = readdirSync(join(dir, '01-Notes')).length;
     // snapshot is empty in freshState → the existing source counts as dirty
     const { state, response } = onStop({}, dir, cfg, freshState());
