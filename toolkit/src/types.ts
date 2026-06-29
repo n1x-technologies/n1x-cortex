@@ -42,6 +42,8 @@ export interface CortexConfig {
   maxCapturesPerSession: number;  // per-session spawn cap
   captureMaxRunMs: number;        // stale-lock reclaim age
   claudeBin: string;              // headless binary (overridable for tests/portability)
+  // MCP write/curate — bound a remote writer
+  mcpMaxWritesPerSession: number; // per-session committed-write cap over MCP
   viz: { port: number };
 }
 

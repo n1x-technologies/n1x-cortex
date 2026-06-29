@@ -16,16 +16,32 @@ function makeRunId(): string {
   return new Date().toISOString().replace(/[:.]/g, '-');
 }
 
+/** File-path entry point: read distilled specs from disk, then apply them. */
 export function applyDistilled(
   vaultDir: string,
   specsPath: string,
   config: CortexConfig,
   opts: { dryRun?: boolean; force?: boolean; runId?: string } = {},
 ): DistilledApplyResult {
+  const input = JSON.parse(readFileSync(specsPath, 'utf8')) as DistilledInput;
+  return applyDistilledInput(vaultDir, input, config, opts);
+}
+
+/**
+ * Inline entry point: apply already-parsed distilled specs (no disk round-trip).
+ * This is the seam the MCP `cortex_atomize_apply` tool uses — the calling agent
+ * passes its distilled notes inline; the write/backup/undo path is identical to
+ * the file-based CLI flow.
+ */
+export function applyDistilledInput(
+  vaultDir: string,
+  input: DistilledInput,
+  config: CortexConfig,
+  opts: { dryRun?: boolean; force?: boolean; runId?: string } = {},
+): DistilledApplyResult {
   const dryRun = opts.dryRun ?? true;
   const force = opts.force ?? false;
   const runId = opts.runId ?? makeRunId();
-  const input = JSON.parse(readFileSync(specsPath, 'utf8')) as DistilledInput;
   const existing = scanVault(vaultDir, config);
   const status = config.statusLifecycle[0] ?? 'draft';
   const sourcesDir = config.sourcesDir.replace(/\/$/, '');

@@ -2,13 +2,23 @@ import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createMcpServer } from '../mcp/server.js';
+import type { WriteScope } from '../mcp/audit.js';
 import {
   Scope, mcpServerSpec, resolveCliPath, hasClaudeCli,
   writeProjectConfig, removeProjectConfig,
 } from '../mcp/install.js';
 
-export async function runMcp(vaultDir: string): Promise<void> {
-  const server = createMcpServer(vaultDir);
+/** Parse the `--write[=draft|curate]` flag. Bare `--write` means draft scope. */
+export function parseWriteScope(rest: string[]): WriteScope | 'invalid' {
+  const flag = rest.find(a => a === '--write' || a.startsWith('--write='));
+  if (!flag) return 'none';
+  if (flag === '--write') return 'draft';
+  const val = flag.slice('--write='.length);
+  return val === 'draft' || val === 'curate' ? val : 'invalid';
+}
+
+export async function runMcp(vaultDir: string, writeScope: WriteScope = 'none'): Promise<void> {
+  const server = createMcpServer(vaultDir, writeScope);
   const transport = new StdioServerTransport();
   await server.connect(transport);
   // Stay alive on stdio until the client disconnects (EOF / transport close).
@@ -18,19 +28,21 @@ export async function runMcp(vaultDir: string): Promise<void> {
   await new Promise<void>((resolve) => { transport.onclose = resolve; });
 }
 
-function parseArgs(cwd: string, rest: string[]): { vault: string; scope: Scope } {
+function parseArgs(cwd: string, rest: string[]): { vault: string; scope: Scope; writeScope: WriteScope } {
   const vi = rest.indexOf('--vault');
   const vault = vi >= 0 && rest[vi + 1] ? resolve(cwd, rest[vi + 1]) : cwd;
   const si = rest.indexOf('--scope');
   const s = si >= 0 ? rest[si + 1] : undefined;
   const scope: Scope = s === 'project' || s === 'user' || s === 'local' ? s : 'local';
-  return { vault, scope };
+  const ws = parseWriteScope(rest);
+  const writeScope: WriteScope = ws === 'invalid' ? 'none' : ws;
+  return { vault, scope, writeScope };
 }
 
 /** Register the Cortex MCP server with Claude Code. */
 export function runMcpInstall(cwd: string, rest: string[]): number {
-  const { vault, scope } = parseArgs(cwd, rest);
-  const spec = mcpServerSpec(resolveCliPath(), vault);
+  const { vault, scope, writeScope } = parseArgs(cwd, rest);
+  const spec = mcpServerSpec(resolveCliPath(), vault, writeScope);
   const manual = `  claude mcp add cortex --scope ${scope} -- ${spec.command} ${spec.args.join(' ')}`;
 
   if (hasClaudeCli()) {

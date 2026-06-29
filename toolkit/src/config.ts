@@ -42,6 +42,7 @@ export function loadConfig(vaultDir: string, sampleKeys: string[] = []): CortexC
     maxCapturesPerSession: 20,
     captureMaxRunMs: 900000,
     claudeBin: 'claude',
+    mcpMaxWritesPerSession: 100,
     viz: { port: 4317 },
   };
 
