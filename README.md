@@ -64,23 +64,39 @@ npm i -g @n1x-technologies/cortex@latest
 
 This is the part that matters for the future. Cortex speaks the **[Model Context Protocol](https://modelcontextprotocol.io)**, so an agent can use your vault as a **cited knowledge source** — one of the first building blocks for agents that work from a *reliable* brain instead of guessing.
 
+Run `cortex mcp install` **inside your vault** to register the server with Claude Code. The flag you give it decides what the agent is allowed to do:
+
 ```bash
-# register the server with Claude Code — one command, run inside your vault:
+# read-only (default) — agents can query and read your vault:
 cortex mcp install
 
-# point it at a different vault, or pick a scope (default: local):
-cortex mcp install --vault /path/to/vault --scope project
+# ⭐ recommended — also let agents capture knowledge back as drafts (reversible):
+cortex mcp install --write=draft
 
-# verify it's wired up:
+# full curator — drafts + promote + merge (structural, still reversible):
+cortex mcp install --write=curate
+
+# options — choose the vault and the registration scope (default scope: local):
+cortex mcp install --write=draft --vault /path/to/vault --scope project   # scope: local | project | user
+
+# verify, or remove:
 claude mcp list
-
-# remove it later:
 cortex mcp uninstall
 ```
 
-`cortex mcp install` registers `cortex` with Claude Code for you (via the `claude` CLI when present, falling back to a merged `.mcp.json` for `--scope project`). It's idempotent — re-run it any time.
+`cortex mcp install` registers `cortex` with Claude Code for you (via the `claude` CLI when present, falling back to a merged `.mcp.json` for `--scope project`). It's idempotent — **re-run it any time to switch modes**. One catch: **reconnect the session afterward** (restart Claude Code, or `/mcp` → reconnect) so the agent picks up the new tool set — a running session won't see the change until it reconnects.
 
-By default the server is **read-only** — agents *consume* the brain:
+### Pick a mode
+
+| Mode | Flag | What the agent can do | Use it when |
+|------|------|------------------------|-------------|
+| **Read-only** | *(none)* | Query & read notes. | You only want the agent to *consult* the brain. |
+| **Draft** ⭐ | `--write=draft` | Read **+** capture: distill sources into `draft`s in `_inbox/`, set status, undo. Nothing leaves `_inbox/`. | **The recommended default.** The agent captures knowledge as it works; you review the drafts in `_inbox/` before anything is curated. Fully reversible. |
+| **Curate** | `--write=curate` | Draft **+** promote drafts out of `_inbox/` and merge duplicates (structural moves). | You also trust the agent to *organize*, not just capture. Still reversible. |
+
+Write is **opt-in at install time** — an agent can never enable or escalate its own scope. Every write is backed up and reversible (`cortex_undo`), sources under `Markdown/` are never touched, and an audit trail lands in `.cortex/mcp-writes.log`.
+
+**Read tools (always on):**
 
 | Tool | What the agent does with it |
 |------|------------------------------|
@@ -89,13 +105,7 @@ By default the server is **read-only** — agents *consume* the brain:
 
 The server is long-running, so it loads the embedding model **once** and stays warm → fast semantic queries.
 
-**Agent as curator (write-back).** Start the server with a **write scope** and agents *write* the brain too — capture sources, advance and promote drafts, fold duplicates. It's opt-in (the human chooses the scope at launch — an agent can't enable it), every write is reversible (`cortex_undo`), sources under `Markdown/` are never touched, and an audit trail lands in `.cortex/mcp-writes.log`.
-
-```bash
-cortex mcp --write           # draft scope: capture into _inbox/, set-status, undo
-cortex mcp --write=curate    # also promote + merge (structural, still reversible)
-# or register a writer:  cortex mcp install --write=curate
-```
+**Write/curate tools (added by `--write`):**
 
 | Tool (scope) | What the agent does with it |
 |------|------------------------------|
