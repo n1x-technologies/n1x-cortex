@@ -30,6 +30,7 @@ export interface CortexConfig {
   immutableStatus: string | null;
   autonomy: 'off' | 'suggest' | 'auto-draft' | 'full';
   mocDir: string;
+  templatesDir: string;
   dupeThreshold: number;
   embedModel: string;
   embedDir: string;

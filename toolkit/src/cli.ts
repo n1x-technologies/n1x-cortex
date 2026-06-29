@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { fileURLToPath } from 'node:url';
 import { realpathSync } from 'node:fs';
+import { resolve as resolvePath } from 'node:path';
+import { createRequire } from 'node:module';
 import { runInit } from './commands/init.js';
 import { runStatus } from './commands/status.js';
 import { runOrphans } from './commands/orphans.js';
@@ -14,20 +16,58 @@ import { runEmbed, formatEmbed } from './commands/embed.js';
 import { runGaps, formatGaps } from './commands/gaps.js';
 import { runDupes, formatDupes, formatDupesJson } from './commands/dupes.js';
 import { runMerge, formatMerge } from './commands/merge.js';
-import { runVerify, formatVerify } from './commands/verify.js';
+import { runVerify, formatVerify, runVerifyAll, formatVerifyAll } from './commands/verify.js';
 import { runMoc, formatMoc } from './commands/moc.js';
 import { runDoc, formatDoc } from './commands/doc.js';
+import { runMcp, runMcpInstall, runMcpUninstall } from './commands/mcp.js';
+import { runNew, formatNew } from './commands/new.js';
+
+const USAGE = 'Usage: cortex <init|new|status|orphans|viz|query|atomize|promote|undo|set-status|hook|pause|resume|embed|mcp|gaps|dupes|merge|verify|moc|doc>';
+
+const MCP_HELP = `Usage: cortex mcp [install|uninstall] [--vault <path>] [--scope local|project|user]
+
+  cortex mcp                  Start the stdio MCP server (vault = positional arg or cwd)
+  cortex mcp install          Register the Cortex MCP server with Claude Code
+  cortex mcp uninstall        Remove the Cortex MCP registration
+
+Options:
+  --vault <path>              Vault directory (default: current directory)
+  --scope local|project|user  Registration scope (default: local)
+
+Verify with: claude mcp list`;
+
+function pkgVersion(): string {
+  return (createRequire(import.meta.url)('../package.json') as { version: string }).version;
+}
 
 export async function main(argv: string[]): Promise<number> {
   const [cmd] = argv;
   const cwd = process.cwd();
+  if (cmd === '--version' || cmd === '-v') { console.log(pkgVersion()); return 0; }
+  if (cmd === '--help' || cmd === '-h' || cmd === 'help' || !cmd) { console.log(USAGE); return 0; }
   switch (cmd) {
     case 'init': {
-      const { created, config } = runInit(cwd);
+      const { created, gitignoreUpdated, config } = runInit(cwd);
       console.log(created
         ? `Created .cortex.json (type=${config.fields.type}, status=${config.fields.status})`
         : '.cortex.json already exists — left unchanged');
+      if (gitignoreUpdated) console.log('Added .cortex/ to .gitignore (generated cache — not committed).');
       return 0;
+    }
+    case 'new': {
+      const rest = argv.slice(1);
+      const ti = rest.indexOf('--title');
+      const title = ti >= 0 ? rest[ti + 1] : undefined;
+      const mi = rest.indexOf('--module');
+      const module = mi >= 0 ? rest[mi + 1] : undefined;
+      const di = rest.indexOf('--dir');
+      const dir = di >= 0 ? rest[di + 1] : undefined;
+      const flagVals = new Set([title, module, dir].filter(Boolean) as string[]);
+      const [type, id] = rest.filter(a => !a.startsWith('--') && !flagVals.has(a));
+      if (!type || !id) { console.log('Usage: cortex new <type> <id> [--title "..."] [--module "..."] [--dir <folder>]'); return 1; }
+      const r = runNew(cwd, type, id, { title, module, dir });
+      console.log(formatNew(r));
+      return r.created ? 0 : 1;
     }
     case 'status': {
       const s = runStatus(cwd);
@@ -136,6 +176,18 @@ export async function main(argv: string[]): Promise<number> {
       console.log(formatEmbed(await runEmbed(cwd, { force, model })));
       return 0;
     }
+    case 'mcp': {
+      const rest = argv.slice(1);
+      const positionals = rest.filter(a => !a.startsWith('--'));
+      const sub = positionals[0];
+      if (rest.includes('--help') || rest.includes('-h') || sub === 'help') { console.log(MCP_HELP); return 0; }
+      if (sub === 'install') return runMcpInstall(cwd, rest);
+      if (sub === 'uninstall') return runMcpUninstall(cwd, rest);
+      // Bare vault path (or nothing) → start the stdio server. Only the literal
+      // keywords install/uninstall/help are subcommands; anything else is a vault.
+      await runMcp(sub ? resolvePath(cwd, sub) : cwd);
+      return 0;
+    }
     case 'gaps': {
       console.log(formatGaps(runGaps(cwd)));
       return 0;
@@ -143,7 +195,8 @@ export async function main(argv: string[]): Promise<number> {
     case 'dupes': {
       const ti = argv.indexOf('--threshold');
       const threshold = ti >= 0 ? Number(argv[ti + 1]) : undefined;
-      const pairs = runDupes(cwd, { threshold });
+      const crossType = argv.includes('--cross-type');
+      const pairs = runDupes(cwd, { threshold, crossType });
       console.log(argv.includes('--json') ? formatDupesJson(pairs) : formatDupes(pairs));
       return 0;
     }
@@ -165,8 +218,12 @@ export async function main(argv: string[]): Promise<number> {
       const rest = argv.slice(1);
       const hi = rest.indexOf('--hops');
       const hops = hi >= 0 ? Number(rest[hi + 1]) : undefined;
+      if (rest.includes('--all')) {
+        console.log(formatVerifyAll(runVerifyAll(cwd, { hops })));
+        return 0;
+      }
       const note = rest.filter(a => !a.startsWith('--') && a !== String(hops))[0];
-      if (!note) { console.log('Usage: cortex verify <note.md> [--hops N]'); return 1; }
+      if (!note) { console.log('Usage: cortex verify <note.md> [--hops N]  |  cortex verify --all [--hops N]'); return 1; }
       console.log(formatVerify(runVerify(cwd, note, { hops })));
       return 0;
     }
@@ -187,8 +244,8 @@ export async function main(argv: string[]): Promise<number> {
       return 0;
     }
     default:
-      console.log('Usage: cortex <init|status|orphans|viz|query|atomize|promote|undo|set-status|hook|pause|resume|embed|gaps|dupes|merge|verify|moc|doc>');
-      return cmd ? 1 : 0;
+      console.log(USAGE);
+      return 1;
   }
 }
 

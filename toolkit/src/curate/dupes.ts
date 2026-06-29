@@ -18,9 +18,22 @@ export interface DupePair {
 
 const round2 = (x: number) => Math.round(x * 100) / 100;
 const pairKey = (a: string, b: string) => a < b ? `${a}\0${b}` : `${b}\0${a}`;
+const typeKey = (t: string | null) => (t ?? '').trim();
 
-export function computeDupes(vaultDir: string, config: CortexConfig, threshold: number): DupePair[] {
+export interface DupeOptions {
+  /**
+   * Include pairs whose notes have different types. Off by default: with
+   * embedding models like e5, same-concept notes across types score ~0.98 by
+   * design, drowning out real (same-type) duplicates. Vaults with no `type`
+   * taxonomy are unaffected — every note shares the empty type bucket.
+   */
+  crossType?: boolean;
+}
+
+export function computeDupes(vaultDir: string, config: CortexConfig, threshold: number, opts: DupeOptions = {}): DupePair[] {
   const notes = scanVault(vaultDir, config);
+  const crossType = opts.crossType ?? false;
+  const typeOf = new Map(notes.map(n => [n.path, typeKey(n.type)]));
   const merged = new Map<string, DupePair>();
 
   // ── Lexical pairs (TF-IDF cosine via inverted index) ──
@@ -53,6 +66,7 @@ export function computeDupes(vaultDir: string, config: CortexConfig, threshold: 
         const k = i < j ? `${i}:${j}` : `${j}:${i}`;
         if (seen.has(k)) continue;
         seen.add(k);
+        if (!crossType && typeKey(notes[i].type) !== typeKey(notes[j].type)) continue;
         const [small, large] = vecs[i].size < vecs[j].size ? [vecs[i], vecs[j]] : [vecs[j], vecs[i]];
         let dot = 0;
         for (const [t, w] of small) { const w2 = large.get(t); if (w2) dot += w * w2; }
@@ -76,6 +90,7 @@ export function computeDupes(vaultDir: string, config: CortexConfig, threshold: 
     }
     for (let i = 0; i < dense.length; i++) {
       for (let j = i + 1; j < dense.length; j++) {
+        if (!crossType && (typeOf.get(dense[i].path) ?? '') !== (typeOf.get(dense[j].path) ?? '')) continue;
         const cos = cosineDense(dense[i].vector, dense[j].vector);
         if (cos >= config.semanticDupeThreshold) {
           const [a, b] = [dense[i].path, dense[j].path].sort();

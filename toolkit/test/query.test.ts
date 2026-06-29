@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { runQuery, formatQuery } from '../src/commands/query.js';
+import { runQuery, formatQuery, runQuerySemantic } from '../src/commands/query.js';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -23,5 +23,15 @@ describe('runQuery', () => {
     expect(out).toMatch(/Operation limit/);
     expect(out).toMatch(/Cite:/);
     expect(out).toMatch(/03-Rules\/limit\.md/);
+  });
+  it('runQuerySemantic forwards an injected embedder to the semantic ranking', async () => {
+    const dir = vault();
+    // Inject a stub embedder. With no embedding store in the fixture,
+    // semanticQueryRanking returns [] before ever calling the embedder, so the
+    // call must still succeed via the lexical path — proving the extra
+    // parameter is accepted and threaded through without error.
+    const stub = { id: 'stub', dim: 3, async embed() { return []; } };
+    const r = await runQuerySemantic(dir, 'operation limit', stub);
+    expect(r.hits[0].id).toBe('RULE-LIMIT');
   });
 });

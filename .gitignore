@@ -4,11 +4,8 @@ _img/
 # PDFs are derived from .typ — generated on demand, not versioned (coherente con consumers)
 *.pdf
 
-.cortex/out/
-.cortex/embeddings/
-.cortex/models/
-.cortex/capture.lock
-.cortex/capture.log
+# Cortex (generated cache — do not commit)
+.cortex/
 
 # Scratch / tooling working dirs (not part of the repo)
 .superpowers/
