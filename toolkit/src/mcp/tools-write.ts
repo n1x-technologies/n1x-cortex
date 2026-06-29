@@ -19,7 +19,7 @@ import { applyDistilledInput } from '../atomize/apply-distilled.js';
 import { setStatus } from '../atomize/set-status.js';
 import { planPromote, applyPromote } from '../atomize/promote.js';
 import { runMergeNotes } from '../curate/merge.js';
-import { undoLatestRun } from '../atomize/backup.js';
+import { undoLatestRun, recordCreations } from '../atomize/backup.js';
 import { computeDupes } from '../curate/dupes.js';
 import { computeGaps } from '../curate/gaps.js';
 import { mintMcpRunId } from './audit.js';
@@ -47,7 +47,9 @@ function assertInVault(vaultDir: string, rel: string, label = 'path'): void {
 /** The distillation worksheet for a source: its segments + existing-note context. */
 export function atomizeEmitTool(vaultDir: string, args: { source: string }) {
   assertInVault(vaultDir, args.source, 'source');
-  return emitPlan(vaultDir, args.source, cfg(vaultDir));
+  // emitPlan reads the source path directly; resolve it against the vault so the
+  // tool works regardless of the server process's cwd.
+  return emitPlan(vaultDir, resolve(vaultDir, args.source), cfg(vaultDir));
 }
 
 /** Near-duplicate pairs — merge candidates that feed cortex_merge. */
@@ -77,6 +79,10 @@ export function atomizeApplyTool(
     cfg(vaultDir),
     { dryRun: !write, force: args.force, runId: runId ?? undefined },
   );
+  // The CLI atomize path does not journal newly-created drafts, so they would
+  // survive `undo`. An agent writing unattended needs creates to be reversible
+  // too: record them under the run id so cortex_undo deletes them.
+  if (write && runId && data.written.length) recordCreations(vaultDir, data.written, runId);
   return { dryRun: !write, runId, data };
 }
 
