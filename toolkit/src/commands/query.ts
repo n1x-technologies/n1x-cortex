@@ -25,6 +25,11 @@ export async function runQuerySemantic(
   return retrieve(notes, graph, question, { semanticRanking, rrfK: config.rrfK });
 }
 
+/** Machine-readable rendering of a query result — for the /query skill and other agents. */
+export function formatQueryJson(r: QueryResult): string {
+  return JSON.stringify(r, null, 2);
+}
+
 export function formatQuery(r: QueryResult): string {
   const lines: string[] = [];
   lines.push(`Q: ${r.question}`);

@@ -8,6 +8,11 @@ export function runDupes(vaultDir: string, opts: { threshold?: number; crossType
   return computeDupes(vaultDir, config, opts.threshold ?? config.dupeThreshold, { crossType: opts.crossType });
 }
 
+/** Machine-readable dupe pairs — for the /dupes-merge skill. */
+export function formatDupesJson(pairs: DupePair[]): string {
+  return JSON.stringify(pairs, null, 2);
+}
+
 export function formatDupes(pairs: DupePair[]): string {
   if (!pairs.length) return 'No near-duplicate notes found.';
   const lines = [`Near-duplicate pairs (merge candidates): ${pairs.length}`];

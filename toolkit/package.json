@@ -1,6 +1,6 @@
 {
   "name": "@n1x-technologies/cortex",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Turn any markdown vault into an AI-queryable knowledge graph (CLI + local viewer + cited query + AI atomization).",
   "license": "MIT",
   "type": "module",
