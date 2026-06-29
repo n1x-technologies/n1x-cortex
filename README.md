@@ -99,7 +99,7 @@ flowchart LR
   W -.reversible.-> V
 ```
 
-> Today the loop is **read** (agents consume the brain). **Write-back** — agents capturing and curating knowledge as they work — is the next slice. See [the roadmap](#-roadmap).
+> Over **MCP**, today's loop is **read** (agents consume the brain). Write-back has begun via Cortex's Claude Code hooks — with autonomy on, they **capture changed sources into the graph in the background**, reversibly. Bringing write-back *to MCP* is next. See [the roadmap](#-roadmap).
 
 ## How it works
 
@@ -124,7 +124,7 @@ flowchart TB
 
 - **Atomize** — distill sources into small, single-idea notes (AI-assisted, dry-run by default, every write reversible).
 - **Connect** — wikilinks + frontmatter become a typed graph; orphans and gaps surface automatically.
-- **Curate** — read-only diagnostics (`gaps`, `dupes`, `verify`) keep the brain healthy.
+- **Curate** — diagnostics (`gaps`, `dupes`, `verify`) keep the brain healthy; `merge` folds duplicates into one note, reversibly.
 - **AI Layer** — cited query (hybrid lexical + semantic), the MCP server, and a branded document generator.
 
 ## Commands
@@ -134,14 +134,16 @@ flowchart TB
 | `cortex init` | Detect frontmatter fields, write `.cortex.json`, gitignore the `.cortex/` cache. |
 | `cortex new <type> <id>` | Scaffold a note from `_templates/<type>.md` in the right folder (`--title`/`--module`/`--dir`). |
 | `cortex status` / `orphans` | Notes by type/status; dangling links ranked "atomize-next". |
-| `cortex query "..."` | Cited answer from your notes (hybrid retrieval). |
+| `cortex query "..."` | Cited answer from your notes (hybrid retrieval). `--json` (or the `/query` skill) for machine-readable output. |
 | `cortex viz` | Local web viewer: graph + search + color-by. |
 | `cortex mcp install` | **One-command hookup** to Claude Code (`uninstall` to remove). |
 | `cortex mcp` | **Run the MCP server** for agents (stdio). |
 | `cortex embed` | Build the local embedding store (enables semantic search). |
 | `cortex atomize <src>` | AI-distill a source into draft notes (dry-run; `--write`). |
 | `cortex gaps` / `dupes` / `verify` | Curation diagnostics. `dupes` compares within a type by default (`--cross-type` to widen); `verify --all` sweeps the whole vault for incomplete notes. |
+| `cortex merge <keep> <drop>` | Fold a near-duplicate pair into one note, redirecting inbound links (via the `/dupes-merge` skill). Dry-run; `--write`, reversible. |
 | `cortex moc` / `doc` | Generate a Map-of-Content note / a branded Typst PDF. |
+| `cortex hook` · `pause` · `resume` | Claude Code autonomy hooks. With `autonomy: auto-draft`/`full`, the Stop hook captures changed sources into the graph **in the background** (reversible); `pause` is the kill switch. |
 | `cortex undo` | Reverse the last write. Everything is reversible. |
 
 ## Semantic search (optional)
@@ -171,6 +173,7 @@ The path is incremental, so nothing gets thrown away on the way there.
 - ✅ **Curation & outputs** — gaps/dupes/verify, MOC notes, branded PDFs.
 - ✅ **Semantic layer** — local embeddings, hybrid query/dupes.
 - ✅ **MCP server (read)** — `cortex_query` + `cortex_get_note` for agents.
+- ✅ **Autonomous capture (hooks)** — the Stop hook distills changed sources into the graph in the background (`auto-draft`/`full`), reversible; plus reversible duplicate `merge`.
 - ⏭️ **MCP write/curate** — agents capture & curate knowledge as they work ("agent as curator").
 
 ## From source (contributors)

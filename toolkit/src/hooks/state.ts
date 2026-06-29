@@ -8,11 +8,12 @@ export interface HookState {
   sources: Record<string, number>;   // vault-relative .md path → mtimeMs
   dirty: string[];                    // sources changed since last clear
   paused: boolean;
-  session: { injectedTokens: number };
+  lastCaptureAt: number;              // mtimeMs of the last background capture spawn (Phase 7)
+  session: { injectedTokens: number; captureCount: number };
 }
 
 export function freshState(): HookState {
-  return { version: 1, sources: {}, dirty: [], paused: false, session: { injectedTokens: 0 } };
+  return { version: 1, sources: {}, dirty: [], paused: false, lastCaptureAt: 0, session: { injectedTokens: 0, captureCount: 0 } };
 }
 
 function statePath(vaultDir: string): string {

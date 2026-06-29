@@ -3,13 +3,16 @@ import { relative, sep } from 'node:path';
 import { scanVault } from '../vault.js';
 import { snapshotSources, reconcile, clearDirty, markDirty, type HookState } from './state.js';
 import { runQuery, formatQuery } from '../commands/query.js';
+import { shouldCapture, type CaptureMode } from '../capture/guard.js';
 import type { CortexConfig } from '../types.js';
 
 export interface HookResponse {
   systemMessage?: string;
   hookSpecificOutput?: { hookEventName: string; additionalContext?: string };
 }
-export interface HandlerResult { state: HookState; response: HookResponse; }
+/** A request (not an act) to spawn a background capture — the impure spawn happens in dispatch. */
+export interface CaptureIntent { mode: CaptureMode; sources: string[]; }
+export interface HandlerResult { state: HookState; response: HookResponse; capture?: CaptureIntent; }
 export type HookPayload = Record<string, unknown>;
 export type Handler = (payload: HookPayload, vaultDir: string, config: CortexConfig, state: HookState) => HandlerResult;
 
@@ -31,8 +34,27 @@ export const onStop: Handler = (_payload, vaultDir, config, state) => {
   if (!gate(state, config)) return { state, response: {} };
   const reconciled = reconcile(state, snapshotSources(vaultDir, config));
   if (reconciled.dirty.length === 0) return { state: reconciled, response: {} };
-  const line = `Cortex: ${reconciled.dirty.length} source(s) changed — run /atomize to distill`;
-  return { state: clearDirty(reconciled), response: { systemMessage: line } };
+
+  // Phase 7 — autonomous capture: auto-draft/full spawn a background /atomize run.
+  const decision = shouldCapture(reconciled, config, Date.now());
+  if (decision.ok && decision.mode) {
+    const sources = [...reconciled.dirty];
+    const line = `Cortex: capturing ${sources.length} source(s) in the background`;
+    return {
+      state: clearDirty(reconciled),
+      response: { systemMessage: line },
+      capture: { mode: decision.mode, sources },
+    };
+  }
+
+  // suggest: announce and clear (Phase 4). auto-draft/full that declined for a transient
+  // reason (cooldown / session-cap) stay quiet and keep the sources dirty so a later Stop
+  // retries — clearing would lose them, since the snapshot is already reconciled.
+  if (config.autonomy === 'suggest') {
+    const line = `Cortex: ${reconciled.dirty.length} source(s) changed — run /atomize to distill`;
+    return { state: clearDirty(reconciled), response: { systemMessage: line } };
+  }
+  return { state: reconciled, response: {} };
 };
 
 function sourceRelPath(payload: HookPayload, vaultDir: string, config: CortexConfig): string | null {
@@ -69,7 +91,7 @@ export const onUserPromptSubmit: Handler = (payload, vaultDir, config, state) =>
   const grounding = formatQuery(runQuery(vaultDir, prompt));
   if (!grounding.trim()) return { state, response: {} };
   const estTokens = Math.ceil(grounding.length / 4);
-  const next: HookState = { ...state, session: { injectedTokens: state.session.injectedTokens + estTokens } };
+  const next: HookState = { ...state, session: { ...state.session, injectedTokens: state.session.injectedTokens + estTokens } };
   return {
     state: next,
     response: { hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: grounding } },
@@ -79,7 +101,7 @@ export const onUserPromptSubmit: Handler = (payload, vaultDir, config, state) =>
 export const onSessionEnd: Handler = (_payload, vaultDir, config, state) => {
   if (!gate(state, config)) return { state, response: {} };
   const reconciled = reconcile(state, snapshotSources(vaultDir, config));
-  const next: HookState = { ...reconciled, session: { injectedTokens: 0 } };
+  const next: HookState = { ...reconciled, session: { injectedTokens: 0, captureCount: 0 } };
   if (reconciled.dirty.length === 0) return { state: next, response: {} };
   return {
     state: next,
