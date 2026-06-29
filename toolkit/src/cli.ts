@@ -19,21 +19,25 @@ import { runMerge, formatMerge } from './commands/merge.js';
 import { runVerify, formatVerify, runVerifyAll, formatVerifyAll } from './commands/verify.js';
 import { runMoc, formatMoc } from './commands/moc.js';
 import { runDoc, formatDoc } from './commands/doc.js';
-import { runMcp, runMcpInstall, runMcpUninstall } from './commands/mcp.js';
+import { runMcp, runMcpInstall, runMcpUninstall, parseWriteScope } from './commands/mcp.js';
 import { runNew, formatNew } from './commands/new.js';
 
 const USAGE = 'Usage: cortex <init|new|status|orphans|viz|query|atomize|promote|undo|set-status|hook|pause|resume|embed|mcp|gaps|dupes|merge|verify|moc|doc>';
 
-const MCP_HELP = `Usage: cortex mcp [install|uninstall] [--vault <path>] [--scope local|project|user]
+const MCP_HELP = `Usage: cortex mcp [install|uninstall] [--write[=draft|curate]] [--vault <path>] [--scope local|project|user]
 
-  cortex mcp                  Start the stdio MCP server (vault = positional arg or cwd)
+  cortex mcp                  Start the stdio MCP server, read-only (vault = positional arg or cwd)
+  cortex mcp --write          Start with write tools (draft scope: atomize→_inbox, set-status, undo)
+  cortex mcp --write=curate   Also expose promote + merge (structural, still reversible)
   cortex mcp install          Register the Cortex MCP server with Claude Code
   cortex mcp uninstall        Remove the Cortex MCP registration
 
 Options:
+  --write[=draft|curate]      Enable agent write/curate tools (default: read-only)
   --vault <path>              Vault directory (default: current directory)
   --scope local|project|user  Registration scope (default: local)
 
+Write is reversible: every change is backed up; cortex_undo / \`cortex undo\` reverses the latest run.
 Verify with: claude mcp list`;
 
 function pkgVersion(): string {
@@ -183,9 +187,14 @@ export async function main(argv: string[]): Promise<number> {
       if (rest.includes('--help') || rest.includes('-h') || sub === 'help') { console.log(MCP_HELP); return 0; }
       if (sub === 'install') return runMcpInstall(cwd, rest);
       if (sub === 'uninstall') return runMcpUninstall(cwd, rest);
+      const writeScope = parseWriteScope(rest);
+      if (writeScope === 'invalid') {
+        console.error('Invalid --write value. Use --write (=draft), --write=draft, or --write=curate.');
+        return 1;
+      }
       // Bare vault path (or nothing) → start the stdio server. Only the literal
       // keywords install/uninstall/help are subcommands; anything else is a vault.
-      await runMcp(sub ? resolvePath(cwd, sub) : cwd);
+      await runMcp(sub ? resolvePath(cwd, sub) : cwd, writeScope);
       return 0;
     }
     case 'gaps': {

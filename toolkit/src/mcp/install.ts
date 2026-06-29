@@ -3,6 +3,8 @@ import { fileURLToPath } from 'node:url';
 import { resolve, dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
+import type { WriteScope } from './audit.js';
+
 export type Scope = 'local' | 'project' | 'user';
 
 export interface ServerSpec {
@@ -10,9 +12,11 @@ export interface ServerSpec {
   args: string[];
 }
 
-/** The registration spec: always `node <abs cli.js> mcp <vault>` (robust cross-platform, incl. Windows shims). */
-export function mcpServerSpec(cliPath: string, vault: string): ServerSpec {
-  return { command: 'node', args: [cliPath, 'mcp', vault] };
+/** The registration spec: `node <abs cli.js> mcp <vault> [--write=<scope>]` (robust cross-platform, incl. Windows shims). */
+export function mcpServerSpec(cliPath: string, vault: string, writeScope: WriteScope = 'none'): ServerSpec {
+  const args = [cliPath, 'mcp', vault];
+  if (writeScope === 'draft' || writeScope === 'curate') args.push(`--write=${writeScope}`);
+  return { command: 'node', args };
 }
 
 /**

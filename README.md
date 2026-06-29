@@ -80,7 +80,7 @@ cortex mcp uninstall
 
 `cortex mcp install` registers `cortex` with Claude Code for you (via the `claude` CLI when present, falling back to a merged `.mcp.json` for `--scope project`). It's idempotent — re-run it any time.
 
-The agent gets two tools:
+By default the server is **read-only** — agents *consume* the brain:
 
 | Tool | What the agent does with it |
 |------|------------------------------|
@@ -89,17 +89,35 @@ The agent gets two tools:
 
 The server is long-running, so it loads the embedding model **once** and stays warm → fast semantic queries.
 
+**Agent as curator (write-back).** Start the server with a **write scope** and agents *write* the brain too — capture sources, advance and promote drafts, fold duplicates. It's opt-in (the human chooses the scope at launch — an agent can't enable it), every write is reversible (`cortex_undo`), sources under `Markdown/` are never touched, and an audit trail lands in `.cortex/mcp-writes.log`.
+
+```bash
+cortex mcp --write           # draft scope: capture into _inbox/, set-status, undo
+cortex mcp --write=curate    # also promote + merge (structural, still reversible)
+# or register a writer:  cortex mcp install --write=curate
+```
+
+| Tool (scope) | What the agent does with it |
+|------|------------------------------|
+| `cortex_atomize_emit` (draft) | Get a source's distillation worksheet — **the agent itself distills** it. |
+| `cortex_atomize_apply` (draft) | Write its distilled notes as `draft`s in `_inbox/`. Dry-run unless `write:true`. |
+| `cortex_set_status` (draft) | Advance a note's lifecycle status. |
+| `cortex_dupes` / `cortex_gaps` (draft) | Read companions — find merge candidates / thin spots. |
+| `cortex_promote` (curate) | Graduate ready drafts out of `_inbox/` into curated folders. |
+| `cortex_merge` (curate) | Fold a near-duplicate pair into one note, redirecting links. |
+| `cortex_undo` (any write) | Reverse the latest write run — the escape hatch, never capped. |
+
 ```mermaid
 flowchart LR
   A["🤖 Agent<br/>(Claude Code, …)"] -->|cortex_query / cortex_get_note| M["Cortex MCP server<br/>(stdio, warm model)"]
   M --> E["Cortex engine"]
   E --> V[("📁 your markdown vault")]
   E -.cited answer.-> A
-  A -.-> W["✍️ capture / curate<br/><i>(next: write-back)</i>"]
-  W -.reversible.-> V
+  A -->|"✍️ atomize / promote / merge<br/>(--write, opt-in)"| W["capture / curate"]
+  W -->|reversible| V
 ```
 
-> Over **MCP**, today's loop is **read** (agents consume the brain). Write-back has begun via Cortex's Claude Code hooks — with autonomy on, they **capture changed sources into the graph in the background**, reversibly. Bringing write-back *to MCP* is next. See [the roadmap](#-roadmap).
+> Over **MCP** the loop is now **read *and* write**: agents consume the brain (default) and — when the human opts in with `--write` — capture and curate it back, every change reversible. The same write-back also runs autonomously via Cortex's Claude Code hooks. See [the roadmap](#-roadmap).
 
 ## How it works
 
@@ -136,8 +154,8 @@ flowchart TB
 | `cortex status` / `orphans` | Notes by type/status; dangling links ranked "atomize-next". |
 | `cortex query "..."` | Cited answer from your notes (hybrid retrieval). `--json` (or the `/query` skill) for machine-readable output. |
 | `cortex viz` | Local web viewer: graph + search + color-by. |
-| `cortex mcp install` | **One-command hookup** to Claude Code (`uninstall` to remove). |
-| `cortex mcp` | **Run the MCP server** for agents (stdio). |
+| `cortex mcp install` | **One-command hookup** to Claude Code (`uninstall` to remove; `--write[=curate]` to register a writer). |
+| `cortex mcp` | **Run the MCP server** for agents (stdio). Read-only by default; `--write[=draft\|curate]` exposes reversible capture/curation tools. |
 | `cortex embed` | Build the local embedding store (enables semantic search). |
 | `cortex atomize <src>` | AI-distill a source into draft notes (dry-run; `--write`). |
 | `cortex gaps` / `dupes` / `verify` | Curation diagnostics. `dupes` compares within a type by default (`--cross-type` to widen); `verify --all` sweeps the whole vault for incomplete notes. |
@@ -174,7 +192,7 @@ The path is incremental, so nothing gets thrown away on the way there.
 - ✅ **Semantic layer** — local embeddings, hybrid query/dupes.
 - ✅ **MCP server (read)** — `cortex_query` + `cortex_get_note` for agents.
 - ✅ **Autonomous capture (hooks)** — the Stop hook distills changed sources into the graph in the background (`auto-draft`/`full`), reversible; plus reversible duplicate `merge`.
-- ⏭️ **MCP write/curate** — agents capture & curate knowledge as they work ("agent as curator").
+- ✅ **MCP write/curate** — `cortex mcp --write[=draft|curate]` exposes capture & curation as MCP tools so *any* agent writes back ("agent as curator"), read-only by default, every write reversible.
 
 ## From source (contributors)
 
