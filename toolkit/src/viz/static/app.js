@@ -1,7 +1,7 @@
 /* Cortex Viewer — fetches /api/graph and renders it with Cytoscape. */
-const TYPE_PALETTE = ['#4F9DDE', '#E94560', '#46C0A0', '#E0A458', '#9B7EDE', '#D86F9B', '#6FB36F', '#C8A24A'];
-const FRESH = { gap: '#6e6e80', stale: '#db6d28', draft: '#d29922', verified: '#2ea043', fresh: '#46c0a0' };
-const STATUS_FALLBACK = ['#8a8aa0', '#4F9DDE', '#2ea043', '#E0A458'];
+const TYPE_PALETTE = ['#5a5a5a', '#727272', '#8a8a8a', '#a2a2a2', '#bababa', '#d2d2d2', '#666666', '#9e9e9e'];
+const FRESH = { gap: '#4d4d4d', stale: '#6b6b6b', draft: '#8f8f8f', verified: '#bcbcbc', fresh: '#e8e8e8' };
+const STATUS_FALLBACK = ['#6e6e6e', '#8f8f8f', '#bcbcbc', '#a2a2a2'];
 
 const state = { data: null, mode: 'type', typeColors: {}, statusColors: {}, search: '', hoverNode: null, hidden: new Set(), view: 'graph', forces: { centre: 0.5, repel: 500, link: 0.5, distance: 155 } };
 
@@ -14,8 +14,8 @@ function assignColors(values, palette) {
 function nodeColor(n) {
   if (!n.exists) return FRESH.gap;
   if (state.mode === 'freshness') return FRESH[n.freshness] || FRESH.fresh;
-  if (state.mode === 'status') return state.statusColors[n.status] || '#8a8aa0';
-  return state.typeColors[n.type] || '#8a8aa0';
+  if (state.mode === 'status') return state.statusColors[n.status] || '#8f8f8f';
+  return state.typeColors[n.type] || '#8f8f8f';
 }
 
 function groupKey(n) {
@@ -28,9 +28,9 @@ function groupKey(n) {
 
 function groupColor(key) {
   if (key === '__gap__') return FRESH.gap;
-  if (key === '__none__') return '#8a8aa0';
+  if (key === '__none__') return '#8f8f8f';
   if (state.mode === 'freshness') return FRESH[key] || FRESH.fresh;
-  return (state.mode === 'status' ? state.statusColors : state.typeColors)[key] || '#8a8aa0';
+  return (state.mode === 'status' ? state.statusColors : state.typeColors)[key] || '#8f8f8f';
 }
 
 const FRESH_LABEL = { verified: 'verified & in sync', draft: 'draft', stale: 'stale', fresh: 'fresh' };
@@ -246,22 +246,22 @@ function render() {
         'background-color': (n) => nodeColor(n.data()),
         'width': (n) => 8 + Math.min(28, (n.data('degree') || 0) * 1.4),
         'height': (n) => 8 + Math.min(28, (n.data('degree') || 0) * 1.4),
-        'label': 'data(label)', 'font-size': 6, 'color': '#cfcfe6',
+        'label': 'data(label)', 'font-size': 6, 'color': '#c8c8c8',
         'text-opacity': 0, 'min-zoomed-font-size': 8,
-        'border-width': (n) => n.data('exists') ? 0 : 2,
-        'border-style': 'dashed', 'border-color': '#8a8aa0',
+        'border-width': (n) => n.data('exists') ? 1 : 2,
+        'border-style': 'dashed', 'border-color': '#565656',
         'background-opacity': (n) => n.data('exists') ? 1 : 0.25,
       }},
-      { selector: 'node:selected', style: { 'border-width': 3, 'border-color': '#fff', 'border-style': 'solid', 'text-opacity': 1 } },
-      { selector: 'edge', style: { 'width': 0.6, 'line-color': '#3a3a55', 'curve-style': 'haystack', 'opacity': 0.6 } },
-      { selector: 'edge[?dangling]', style: { 'line-color': '#5a5a70', 'line-style': 'dashed' } },
+      { selector: 'node:selected', style: { 'border-width': 3, 'border-color': '#e5e5e5', 'border-style': 'solid', 'text-opacity': 1 } },
+      { selector: 'edge', style: { 'width': 0.6, 'line-color': '#404040', 'curve-style': 'haystack', 'opacity': 0.6 } },
+      { selector: 'edge[?dangling]', style: { 'line-color': '#565656', 'line-style': 'dashed' } },
       { selector: 'node[?isFolder]', style: {
-        'shape': 'round-rectangle', 'background-color': '#2a2a40', 'background-opacity': 1,
-        'border-width': 1, 'border-color': '#3a3a55', 'border-style': 'solid',
+        'shape': 'round-rectangle', 'background-color': '#333333', 'background-opacity': 1,
+        'border-width': 1, 'border-color': '#565656', 'border-style': 'solid',
         'width': 'label', 'height': 16, 'padding': '4px',
-        'label': 'data(label)', 'font-size': 8, 'color': '#cfcfe6', 'text-opacity': 1, 'text-valign': 'center',
+        'label': 'data(label)', 'font-size': 8, 'color': '#e5e5e5', 'text-opacity': 1, 'text-valign': 'center',
       }},
-      { selector: 'edge[?tree]', style: { 'width': 1, 'line-color': '#3a3a55', 'curve-style': 'bezier', 'opacity': 0.7, 'target-arrow-shape': 'none' } },
+      { selector: 'edge[?tree]', style: { 'width': 1, 'line-color': '#404040', 'curve-style': 'bezier', 'opacity': 0.7, 'target-arrow-shape': 'none' } },
       { selector: '.faded', style: { 'opacity': 0.12, 'text-opacity': 0 } },
       { selector: '.spotlight', style: { 'text-opacity': 1 } },
       { selector: '.hidden', style: { 'display': 'none' } },

@@ -13,6 +13,7 @@ const MIME: Record<string, string> = {
   '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  '.woff2': 'font/woff2',
 };
 
 export function createServer(vaultDir: string): Server {
