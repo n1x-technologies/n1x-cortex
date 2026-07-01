@@ -163,7 +163,7 @@ flowchart TB
 | `cortex new <type> <id>` | Scaffold a note from `_templates/<type>.md` in the right folder (`--title`/`--module`/`--dir`). |
 | `cortex status` / `orphans` | Notes by type/status; dangling links ranked "atomize-next". |
 | `cortex query "..."` | Cited answer from your notes (hybrid retrieval). `--json` (or the `/query` skill) for machine-readable output. |
-| `cortex viz` | Local web viewer: interactive graph in a branded sidebar — search, color-by, animated focus, neighbor highlighting, a bidirectional (in/out) link panel, a tri-state group filter, and a Graph/Tree view toggle. |
+| `cortex viz` | Local web viewer: interactive graph in a branded sidebar — search, color-by, animated focus, neighbor highlighting, a bidirectional (in/out) link panel, a tri-state group filter, a Graph/Tree view toggle, and live force controls (d3-force). |
 | `cortex mcp install` | **One-command hookup** to Claude Code (`uninstall` to remove; `--write[=curate]` to register a writer). |
 | `cortex mcp` | **Run the MCP server** for agents (stdio). Read-only by default; `--write[=draft\|curate]` exposes reversible capture/curation tools. |
 | `cortex embed` | Build the local embedding store (enables semantic search). |
