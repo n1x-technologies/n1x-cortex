@@ -3,7 +3,7 @@ const TYPE_PALETTE = ['#4F9DDE', '#E94560', '#46C0A0', '#E0A458', '#9B7EDE', '#D
 const FRESH = { gap: '#6e6e80', stale: '#db6d28', draft: '#d29922', verified: '#2ea043', fresh: '#46c0a0' };
 const STATUS_FALLBACK = ['#8a8aa0', '#4F9DDE', '#2ea043', '#E0A458'];
 
-const state = { data: null, mode: 'type', typeColors: {}, statusColors: {}, search: '', hoverNode: null, hidden: new Set() };
+const state = { data: null, mode: 'type', typeColors: {}, statusColors: {}, search: '', hoverNode: null, hidden: new Set(), view: 'graph' };
 
 function assignColors(values, palette) {
   const map = {};
@@ -92,7 +92,9 @@ function applyFilter() {
 }
 
 let cy;
-function render() {
+const GRAPH_LAYOUT = { name: 'cose', animate: false, nodeRepulsion: 6000, idealEdgeLength: 70 };
+
+function buildGraphElements() {
   const nodeIds = new Set(state.data.nodes.map(n => n.id));
   const elements = [];
   for (const n of state.data.nodes) {
@@ -102,10 +104,24 @@ function render() {
     if (!nodeIds.has(e.source) || !nodeIds.has(e.target)) continue;
     elements.push({ data: { id: `${e.source}->${e.target}`, source: e.source, target: e.target, dangling: e.dangling } });
   }
+  return elements;
+}
+
+function setView() {
+  if (!cy) return;
+  cy.$(':selected').unselect();
+  hidePanel();
+  cy.elements().remove();
+  cy.add(buildGraphElements());
+  cy.layout(GRAPH_LAYOUT).run();
+  recolor();
+  applyFilter();
+}
+
+function render() {
   cy = cytoscape({
     container: document.getElementById('cy'),
-    elements,
-    layout: { name: 'cose', animate: false, nodeRepulsion: 6000, idealEdgeLength: 70 },
+    elements: [],
     style: [
       { selector: 'node', style: {
         'background-color': (n) => nodeColor(n.data()),
@@ -130,6 +146,7 @@ function render() {
   cy.on('mouseout', 'node', () => { state.hoverNode = null; updateFocus(); });
   cy.on('select unselect', 'node', () => updateFocus());
   cy.on('tap', (ev) => { if (ev.target === cy) { cy.$(':selected').unselect(); hidePanel(); updateFocus(); } });
+  setView();
 }
 
 function recolor() {
