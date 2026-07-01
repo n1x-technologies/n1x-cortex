@@ -166,12 +166,48 @@ function buildTreeElements() {
   return elements;
 }
 
+function mmEsc(s) {
+  return String(s).replace(/"/g, '#quot;').replace(/[\n\r`]/g, ' ').trim() || '(untitled)';
+}
+
+function buildMermaid() {
+  const nodes = state.data.nodes;
+  const idMap = new Map(nodes.map((n, i) => [n.id, 'n' + i]));
+  const label = (n) => mmEsc((n.title || n.id) + (n.exists ? '' : ' (missing)'));
+  const decl = (n) => `${idMap.get(n.id)}["${label(n)}"]`;
+  const folders = new Map();
+  for (const n of nodes) {
+    const f = n.folder || '';
+    (folders.get(f) || folders.set(f, []).get(f)).push(n);
+  }
+  const lines = ['flowchart LR'];
+  let fi = 0;
+  for (const [f, ns] of folders) {
+    if (f === '') { ns.forEach(n => lines.push('  ' + decl(n))); continue; }
+    lines.push(`  subgraph f${fi}["${mmEsc(f)}"]`);
+    ns.forEach(n => lines.push('    ' + decl(n)));
+    lines.push('  end');
+    fi++;
+  }
+  for (const e of state.data.edges) {
+    const s = idMap.get(e.source), t = idMap.get(e.target);
+    if (s && t) lines.push(`  ${s} --> ${t}`);
+  }
+  return lines.join('\n');
+}
+
 function setView() {
   if (!cy) return;
   document.getElementById('s-forces').style.display = state.view === 'graph' ? '' : 'none';
+  document.getElementById('cy').classList.toggle('hidden', state.view === 'mermaid');
+  document.getElementById('mermaid-view').classList.toggle('hidden', state.view !== 'mermaid');
   cy.$(':selected').unselect();
   hidePanel();
   stopSim();
+  if (state.view === 'mermaid') {
+    document.getElementById('mermaid-src').textContent = buildMermaid();
+    return;
+  }
   cy.elements().remove();
   cy.add(state.view === 'tree' ? buildTreeElements() : buildGraphElements());
   if (state.view === 'tree') { cy.$('[?isFolder]').unselectify(); cy.layout(TREE_LAYOUT).run(); }
@@ -337,6 +373,20 @@ async function main() {
     document.querySelectorAll('#viewtoggle button').forEach(x => x.classList.toggle('active', x.dataset.view === state.view));
     setView();
   }));
+  document.getElementById('mermaid-copy').addEventListener('click', async () => {
+    const btn = document.getElementById('mermaid-copy');
+    const src = document.getElementById('mermaid-src').textContent;
+    try {
+      await navigator.clipboard.writeText(src);
+      btn.textContent = 'Copied';
+    } catch (e) {
+      const range = document.createRange();
+      range.selectNodeContents(document.getElementById('mermaid-src'));
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+      btn.textContent = 'Select + ⌘C';
+    }
+    setTimeout(() => { btn.textContent = 'Copy'; }, 1200);
+  });
   document.querySelectorAll('#s-forces input[data-force]').forEach(sl => sl.addEventListener('input', () => {
     state.forces[sl.dataset.force] = Number(sl.value);
     relayout();
