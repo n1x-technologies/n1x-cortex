@@ -151,7 +151,7 @@ flowchart TB
 ```
 
 - **Atomize** — distill sources into small, single-idea notes (AI-assisted, dry-run by default, every write reversible).
-- **Connect** — wikilinks + frontmatter become a typed graph; orphans and gaps surface automatically.
+- **Connect** — wikilinks + frontmatter become a typed graph; orphans and gaps surface automatically. Raw sources (`Markdown/`) and note templates (`_templates/`) are excluded, so they never appear as nodes.
 - **Curate** — diagnostics (`gaps`, `dupes`, `verify`) keep the brain healthy; `merge` folds duplicates into one note, reversibly.
 - **AI Layer** — cited query (hybrid lexical + semantic), the MCP server, and a branded document generator.
 
