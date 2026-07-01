@@ -1,10 +1,9 @@
-/* N1X Cortex viewer — strictly monochrome (charcoal/light), MONTECH type. */
-@font-face { font-family: 'MONTECHV02'; src: url('fonts/MONTECHV02-Light.woff2') format('woff2'); font-weight: 300; font-style: normal; font-display: swap; }
-@font-face { font-family: 'MONTECHV02'; src: url('fonts/MONTECHV02-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
-@font-face { font-family: 'MONTECHV02'; src: url('fonts/MONTECHV02-Medium.woff2') format('woff2'); font-weight: 500; font-style: normal; font-display: swap; }
-@font-face { font-family: 'MONTECHV02'; src: url('fonts/MONTECHV02-SemiBold.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
-@font-face { font-family: 'MONTECHV02'; src: url('fonts/MONTECHV02-Bold.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
-@font-face { font-family: 'MONTECHV02'; src: url('fonts/MONTECHV02-ExtraBold.woff2') format('woff2'); font-weight: 800; font-style: normal; font-display: swap; }
+/* N1X Cortex viewer — strictly monochrome (charcoal/light), Space Grotesk + Inter (OFL). */
+@font-face { font-family: 'Space Grotesk'; src: url('fonts/space-grotesk-400.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Space Grotesk'; src: url('fonts/space-grotesk-500.woff2') format('woff2'); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Space Grotesk'; src: url('fonts/space-grotesk-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url('fonts/inter-400.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url('fonts/inter-600.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
 
 :root{
   --n1x-charcoal:#292929; --n1x-light:#e5e5e5;
@@ -16,7 +15,8 @@
   --color-text-muted:#7d7d7d;
   --color-border:#3a3a3a;
   --color-border-strong:#565656;
-  --font-body:'MONTECHV02',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --font-display: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 
   /* back-compat aliases — every legacy var now resolves to a monochrome token */
   --bg: var(--color-bg); --panel: var(--color-bg-deep);
@@ -33,7 +33,7 @@ main { display: flex; height: 100%; }
   display: flex; flex-direction: column; }
 #sidebar section { padding: 12px 14px; border-bottom: 1px solid var(--color-border); }
 #s-info { flex: 1; }
-.brand { display: block; margin-bottom: 12px; font-weight: 800; font-size: 15px;
+.brand { display: block; margin-bottom: 12px; font-family: var(--font-display); font-weight: 800; font-size: 15px;
   text-transform: uppercase; letter-spacing: .22em; color: var(--color-text); }
 #search { width: 100%; background: var(--color-bg-elevated); color: var(--color-text);
   border: 1px solid var(--color-border-strong); border-radius: 6px; padding: 7px 9px;
@@ -42,14 +42,14 @@ main { display: flex; height: 100%; }
 #search:focus-visible, #colorby:focus-visible { outline: none; border-color: var(--color-text); }
 .empty { color: var(--color-text-secondary); font-size: 12px; margin: 0; }
 #panel.hidden { display: none; }
-#panel h2 { margin: 0 0 10px; font-size: 16px; font-weight: 700; letter-spacing: -.01em;
+#panel h2 { margin: 0 0 10px; font-family: var(--font-display); font-size: 16px; font-weight: 700; letter-spacing: -.01em;
   color: var(--color-text); word-break: break-word; }
 #panel dl { display: grid; grid-template-columns: auto 1fr; gap: 5px 10px; margin: 0 0 12px; font-size: 12px; }
-#panel dt { color: var(--color-text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: .06em; font-size: 11px; }
+#panel dt { color: var(--color-text-muted); font-family: var(--font-display); font-weight: 500; text-transform: uppercase; letter-spacing: .06em; font-size: 11px; }
 #panel dd { margin: 0; color: var(--color-text); }
 #panel a { color: var(--color-text); text-decoration: none; display: block; padding: 1px 0; }
 #panel a:hover { text-decoration: underline; text-underline-offset: 2px; }
-.colorby { color: var(--color-text-secondary); font-size: 12px; display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.colorby { color: var(--color-text-secondary); font-family: var(--font-display); font-size: 12px; display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
 #colorby { background: var(--color-bg-elevated); color: var(--color-text);
   border: 1px solid var(--color-border-strong); border-radius: 6px; padding: 5px 8px;
   font-family: var(--font-body); font-size: 13px; }
@@ -59,23 +59,23 @@ main { display: flex; height: 100%; }
 .frow input { margin: 0; flex: none; accent-color: var(--n1x-light); }
 .frow .flabel { flex: 1; color: var(--color-text); }
 .frow .fcount { color: var(--color-text-muted); font-size: 11px; }
-.fall { font-weight: 600; border-bottom: 1px solid var(--color-border); margin-bottom: 4px; padding-bottom: 4px; }
+.fall { font-family: var(--font-display); font-weight: 600; border-bottom: 1px solid var(--color-border); margin-bottom: 4px; padding-bottom: 4px; }
 #legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%;
   border: 1px solid var(--color-border-strong); vertical-align: middle; margin-right: 5px; }
 #p-links .more { color: var(--color-text-muted); font-size: 11px; margin: 2px 0 8px; }
 #viewtoggle { display: flex; gap: 4px; margin-bottom: 8px; }
 #viewtoggle button { flex: 1; background: var(--color-bg-elevated); color: var(--color-text-secondary);
   border: 1px solid var(--color-border-strong); border-radius: 6px; padding: 5px 8px;
-  font-family: var(--font-body); font-size: 12px; font-weight: 500; cursor: pointer; }
+  font-family: var(--font-display); font-size: 12px; font-weight: 500; cursor: pointer; }
 #viewtoggle button:hover { color: var(--color-text); border-color: var(--color-text); }
 #viewtoggle button.active { background: var(--n1x-light); color: var(--n1x-charcoal);
   border-color: var(--n1x-light); font-weight: 600; }
 #open-note { display: inline-block; margin: 0 0 12px; background: var(--n1x-light); color: var(--n1x-charcoal);
-  border: 1px solid var(--n1x-light); border-radius: 6px; padding: 6px 12px; font-family: var(--font-body);
+  border: 1px solid var(--n1x-light); border-radius: 6px; padding: 6px 12px; font-family: var(--font-display);
   font-size: 12px; font-weight: 600; letter-spacing: .02em; cursor: pointer; transition: background .12s, color .12s; }
 #open-note:hover { background: transparent; color: var(--n1x-light); }
 #open-note.hidden { display: none; }
-#s-forces summary { font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+#s-forces summary { font-family: var(--font-display); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
   color: var(--color-text-secondary); cursor: pointer; margin-bottom: 8px; }
 #s-forces .force { display: block; color: var(--color-text-secondary); font-size: 12px; margin-bottom: 8px; }
 #s-forces .force input[type="range"] { display: block; width: 100%; margin-top: 4px; accent-color: var(--n1x-light); }
@@ -84,7 +84,7 @@ main { display: flex; height: 100%; }
   background: var(--color-bg); }
 #mermaid-copy { position: absolute; top: 12px; right: 16px; background: var(--n1x-light); color: var(--n1x-charcoal);
   border: 1px solid var(--n1x-light); border-radius: 6px; padding: 5px 10px;
-  font-family: var(--font-body); font-size: 12px; font-weight: 600; cursor: pointer; }
+  font-family: var(--font-display); font-size: 12px; font-weight: 600; cursor: pointer; }
 #mermaid-copy:hover { background: var(--color-text); }
 #mermaid-src { margin: 0; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
   color: var(--color-text); white-space: pre-wrap; word-break: break-word; }

@@ -16,21 +16,20 @@ export function renderMarkdown(body: string): string {
 }
 
 const PAGE_CSS = `
-@font-face{font-family:'MONTECHV02';src:url('/fonts/MONTECHV02-Light.woff2') format('woff2');font-weight:300;font-display:swap}
-@font-face{font-family:'MONTECHV02';src:url('/fonts/MONTECHV02-Regular.woff2') format('woff2');font-weight:400;font-display:swap}
-@font-face{font-family:'MONTECHV02';src:url('/fonts/MONTECHV02-Medium.woff2') format('woff2');font-weight:500;font-display:swap}
-@font-face{font-family:'MONTECHV02';src:url('/fonts/MONTECHV02-SemiBold.woff2') format('woff2');font-weight:600;font-display:swap}
-@font-face{font-family:'MONTECHV02';src:url('/fonts/MONTECHV02-Bold.woff2') format('woff2');font-weight:700;font-display:swap}
-@font-face{font-family:'MONTECHV02';src:url('/fonts/MONTECHV02-ExtraBold.woff2') format('woff2');font-weight:800;font-display:swap}
-:root{--bg:#292929;--bg-deep:#1e1e1e;--bg-elevated:#333333;--text:#e5e5e5;--text-secondary:#b0b0b0;--text-muted:#7d7d7d;--border:#3a3a3a;--border-strong:#565656;--font:'MONTECHV02',-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}
+@font-face{font-family:'Space Grotesk';src:url('/fonts/space-grotesk-500.woff2') format('woff2');font-weight:500;font-display:swap}
+@font-face{font-family:'Space Grotesk';src:url('/fonts/space-grotesk-700.woff2') format('woff2');font-weight:700;font-display:swap}
+@font-face{font-family:'Inter';src:url('/fonts/inter-400.woff2') format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'Inter';src:url('/fonts/inter-600.woff2') format('woff2');font-weight:600;font-display:swap}
+:root{--bg:#292929;--bg-deep:#1e1e1e;--bg-elevated:#333333;--text:#e5e5e5;--text-secondary:#b0b0b0;--text-muted:#7d7d7d;--border:#3a3a3a;--border-strong:#565656;--font-display:'Space Grotesk',-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;--font-body:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.7 var(--font);-webkit-font-smoothing:antialiased}
-.wordmark{max-width:720px;margin:0 auto;padding:28px 24px 0;font-weight:700;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--text-muted)}
+html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.7 var(--font-body);-webkit-font-smoothing:antialiased}
+.wordmark{max-width:720px;margin:0 auto;padding:28px 24px 0;font-family:var(--font-display);font-weight:700;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--text-muted)}
 main{max-width:720px;margin:0 auto;padding:32px 24px 40px}
-h1{font-weight:800;font-size:34px;line-height:1.15;letter-spacing:-.02em;margin:0 0 10px}
-.meta{color:var(--text-muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;margin:0 0 32px}
+h1{font-family:var(--font-display);font-weight:800;font-size:34px;line-height:1.15;letter-spacing:-.02em;margin:0 0 10px}
+.meta{color:var(--text-muted);font-family:var(--font-display);font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;margin:0 0 32px}
 article{border-top:1px solid var(--border);padding-top:32px;font-weight:400}
-article h1,article h2,article h3,article h4{font-weight:700;letter-spacing:-.01em;line-height:1.25;margin:1.8em 0 .5em}
+article strong{font-weight:600}
+article h1,article h2,article h3,article h4{font-family:var(--font-display);font-weight:700;letter-spacing:-.01em;line-height:1.25;margin:1.8em 0 .5em}
 article h2{font-size:24px}article h3{font-size:19px}
 article p{margin:0 0 1.1em}
 article a{color:var(--text);text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--border-strong)}
@@ -43,7 +42,7 @@ article ul,article ol{padding-left:1.3em}
 article table{border-collapse:collapse;width:100%}article th,article td{border:1px solid var(--border);padding:6px 10px;text-align:left}article th{background:var(--bg-elevated)}
 article img{max-width:100%;border-radius:6px}
 article hr{border:none;border-top:1px solid var(--border);margin:2em 0}
-.footer{max-width:720px;margin:0 auto;padding:56px 24px 80px;color:var(--text-muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase;border-top:1px solid var(--border);margin-top:24px}
+.footer{max-width:720px;margin:0 auto;padding:56px 24px 80px;color:var(--text-muted);font-family:var(--font-display);font-size:11px;letter-spacing:.08em;text-transform:uppercase;border-top:1px solid var(--border);margin-top:24px}
 `;
 
 export function renderNotePage(note: Note, bodyHtml: string): string {
