@@ -116,7 +116,7 @@ function showPanel(n) {
   document.querySelectorAll('#p-links a').forEach(a => a.addEventListener('click', (ev) => {
     ev.preventDefault();
     const node = cy.getElementById(a.dataset.id);
-    if (node.nonempty()) { focusNode(node); node.select(); showPanel(node.data()); }
+    if (node.nonempty()) { cy.$(':selected').unselect(); focusNode(node); node.select(); showPanel(node.data()); }
   }));
 }
 function hidePanel() { document.getElementById('panel').classList.add('hidden'); }
