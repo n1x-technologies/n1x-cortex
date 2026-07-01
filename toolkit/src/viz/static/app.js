@@ -84,6 +84,11 @@ function applyFilter() {
   cy.batch(() => cy.nodes().forEach(n => {
     if (state.hidden.has(groupKey(n.data()))) n.addClass('hidden'); else n.removeClass('hidden');
   }));
+  // If the selected node was just hidden, drop the stale selection/panel so the
+  // graph doesn't stay dimmed around an invisible spotlight center.
+  const hiddenSelected = cy.$('node:selected').filter('.hidden');
+  if (hiddenSelected.nonempty()) { hiddenSelected.unselect(); hidePanel(); }
+  updateFocus();
 }
 
 let cy;
