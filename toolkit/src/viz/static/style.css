@@ -70,6 +70,11 @@ main { display: flex; height: 100%; }
 #viewtoggle button:hover { color: var(--color-text); border-color: var(--color-text); }
 #viewtoggle button.active { background: var(--n1x-light); color: var(--n1x-charcoal);
   border-color: var(--n1x-light); font-weight: 600; }
+#open-note { display: inline-block; margin: 0 0 12px; background: var(--n1x-light); color: var(--n1x-charcoal);
+  border: 1px solid var(--n1x-light); border-radius: 6px; padding: 6px 12px; font-family: var(--font-body);
+  font-size: 12px; font-weight: 600; letter-spacing: .02em; cursor: pointer; transition: background .12s, color .12s; }
+#open-note:hover { background: transparent; color: var(--n1x-light); }
+#open-note.hidden { display: none; }
 #s-forces summary { font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
   color: var(--color-text-secondary); cursor: pointer; margin-bottom: 8px; }
 #s-forces .force { display: block; color: var(--color-text-secondary); font-size: 12px; margin-bottom: 8px; }

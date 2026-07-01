@@ -312,6 +312,13 @@ function showPanel(n) {
   document.getElementById('info-empty').style.display = 'none';
   document.getElementById('panel').classList.remove('hidden');
   document.getElementById('p-title').textContent = n.label || n.id;
+  const openBtn = document.getElementById('open-note');
+  if (n.exists && !n.isFolder) {
+    openBtn.classList.remove('hidden');
+    openBtn.onclick = () => window.open('note/' + encodeURIComponent(n.id), '_blank', 'noopener');
+  } else {
+    openBtn.classList.add('hidden');
+  }
   const meta = [['id', n.id], ['type', n.type], ['status', n.status], ['folder', n.folder], ['freshness', n.freshness], ['links', n.degree]];
   document.getElementById('p-meta').innerHTML = meta.filter(([, v]) => v != null && v !== '')
     .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
