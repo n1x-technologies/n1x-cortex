@@ -25,7 +25,12 @@ main { display: flex; height: 100%; }
 #colorby { background: #2a2a40; color: var(--ink); border: 1px solid var(--line);
   border-radius: 6px; padding: 5px 8px; font-size: 13px; }
 .stats { color: var(--muted); font-size: 12px; }
-#legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11px; }
+#legend { display: block; font-size: 12px; }
+.frow { display: flex; align-items: center; gap: 6px; padding: 2px 0; cursor: pointer; }
+.frow input { margin: 0; flex: none; }
+.frow .flabel { flex: 1; }
+.frow .fcount { color: var(--muted); font-size: 11px; }
+.fall { font-weight: 600; border-bottom: 1px solid var(--line); margin-bottom: 4px; padding-bottom: 4px; }
 #legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%;
   vertical-align: middle; margin-right: 5px; }
 #p-links .more { color: var(--muted); font-size: 11px; margin: 2px 0 8px; }
