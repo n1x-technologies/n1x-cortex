@@ -3,7 +3,7 @@ const TYPE_PALETTE = ['#4F9DDE', '#E94560', '#46C0A0', '#E0A458', '#9B7EDE', '#D
 const FRESH = { gap: '#6e6e80', stale: '#db6d28', draft: '#d29922', verified: '#2ea043', fresh: '#46c0a0' };
 const STATUS_FALLBACK = ['#8a8aa0', '#4F9DDE', '#2ea043', '#E0A458'];
 
-const state = { data: null, mode: 'type', typeColors: {}, statusColors: {}, search: '', hoverNode: null, hidden: new Set(), view: 'graph' };
+const state = { data: null, mode: 'type', typeColors: {}, statusColors: {}, search: '', hoverNode: null, hidden: new Set(), view: 'graph', forces: { gravity: 1, nodeRepulsion: 6000, edgeElasticity: 32, idealEdgeLength: 70 } };
 
 function assignColors(values, palette) {
   const map = {};
@@ -93,7 +93,20 @@ function applyFilter() {
 }
 
 let cy;
-const GRAPH_LAYOUT = { name: 'cose', animate: false, nodeRepulsion: 6000, idealEdgeLength: 70 };
+function graphLayout() {
+  return { name: 'cose', animate: false,
+    gravity: state.forces.gravity,
+    nodeRepulsion: state.forces.nodeRepulsion,
+    edgeElasticity: state.forces.edgeElasticity,
+    idealEdgeLength: state.forces.idealEdgeLength };
+}
+
+let relayoutTimer;
+function relayout() {
+  if (!cy || state.view !== 'graph') return;
+  clearTimeout(relayoutTimer);
+  relayoutTimer = setTimeout(() => cy.layout(graphLayout()).run(), 200);
+}
 
 function buildGraphElements() {
   const nodeIds = new Set(state.data.nodes.map(n => n.id));
@@ -131,12 +144,13 @@ function buildTreeElements() {
 
 function setView() {
   if (!cy) return;
+  document.getElementById('s-forces').style.display = state.view === 'graph' ? '' : 'none';
   cy.$(':selected').unselect();
   hidePanel();
   cy.elements().remove();
   cy.add(state.view === 'tree' ? buildTreeElements() : buildGraphElements());
   if (state.view === 'tree') cy.$('[?isFolder]').unselectify();
-  cy.layout(state.view === 'tree' ? TREE_LAYOUT : GRAPH_LAYOUT).run();
+  cy.layout(state.view === 'tree' ? TREE_LAYOUT : graphLayout()).run();
   recolor();
   applyFilter();
 }
@@ -297,6 +311,10 @@ async function main() {
     state.view = b.dataset.view;
     document.querySelectorAll('#viewtoggle button').forEach(x => x.classList.toggle('active', x.dataset.view === state.view));
     setView();
+  }));
+  document.querySelectorAll('#s-forces input[data-force]').forEach(sl => sl.addEventListener('input', () => {
+    state.forces[sl.dataset.force] = Number(sl.value);
+    relayout();
   }));
 }
 main();

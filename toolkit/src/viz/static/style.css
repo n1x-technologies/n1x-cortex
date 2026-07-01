@@ -38,3 +38,6 @@ main { display: flex; height: 100%; }
 #viewtoggle button { flex: 1; background: #2a2a40; color: var(--muted); border: 1px solid var(--line);
   border-radius: 6px; padding: 5px 8px; font-size: 12px; cursor: pointer; }
 #viewtoggle button.active { background: var(--coral); color: #fff; border-color: var(--coral); }
+#s-forces summary { font-weight: 600; font-size: 12px; cursor: pointer; margin-bottom: 6px; }
+#s-forces .force { display: block; color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+#s-forces .force input[type="range"] { display: block; width: 100%; margin-top: 4px; accent-color: var(--coral); }
