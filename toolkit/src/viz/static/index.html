@@ -16,12 +16,17 @@
 <body>
   <main>
     <div id="cy"></div>
+    <div id="mermaid-view" class="hidden">
+      <button id="mermaid-copy">Copy</button>
+      <pre id="mermaid-src"></pre>
+    </div>
     <aside id="sidebar">
       <section id="s-head">
         <span class="brand">N1X&nbsp;Cortex</span>
         <div id="viewtoggle">
           <button data-view="graph" class="active">Graph</button>
           <button data-view="tree">Tree</button>
+          <button data-view="mermaid">Mermaid</button>
         </div>
         <input id="search" type="search" placeholder="Search notes…" />
       </section>

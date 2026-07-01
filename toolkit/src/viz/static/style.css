@@ -41,3 +41,9 @@ main { display: flex; height: 100%; }
 #s-forces summary { font-weight: 600; font-size: 12px; cursor: pointer; margin-bottom: 6px; }
 #s-forces .force { display: block; color: var(--muted); font-size: 12px; margin-bottom: 8px; }
 #s-forces .force input[type="range"] { display: block; width: 100%; margin-top: 4px; accent-color: var(--coral); }
+.hidden { display: none; }
+#mermaid-view { flex: 1; height: 100%; min-width: 0; overflow: auto; padding: 12px 16px; position: relative; }
+#mermaid-copy { position: absolute; top: 12px; right: 16px; background: var(--coral); color: #fff;
+  border: none; border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer; }
+#mermaid-src { margin: 0; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--ink); white-space: pre-wrap; word-break: break-word; }
