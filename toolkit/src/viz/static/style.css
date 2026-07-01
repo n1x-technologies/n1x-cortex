@@ -34,3 +34,7 @@ main { display: flex; height: 100%; }
 #legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%;
   vertical-align: middle; margin-right: 5px; }
 #p-links .more { color: var(--muted); font-size: 11px; margin: 2px 0 8px; }
+#viewtoggle { display: flex; gap: 4px; margin-bottom: 8px; }
+#viewtoggle button { flex: 1; background: #2a2a40; color: var(--muted); border: 1px solid var(--line);
+  border-radius: 6px; padding: 5px 8px; font-size: 12px; cursor: pointer; }
+#viewtoggle button.active { background: var(--coral); color: #fff; border-color: var(--coral); }
