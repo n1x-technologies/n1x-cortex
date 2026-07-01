@@ -3,7 +3,7 @@ const TYPE_PALETTE = ['#4F9DDE', '#E94560', '#46C0A0', '#E0A458', '#9B7EDE', '#D
 const FRESH = { gap: '#6e6e80', stale: '#db6d28', draft: '#d29922', verified: '#2ea043', fresh: '#46c0a0' };
 const STATUS_FALLBACK = ['#8a8aa0', '#4F9DDE', '#2ea043', '#E0A458'];
 
-const state = { data: null, mode: 'type', typeColors: {}, statusColors: {} };
+const state = { data: null, mode: 'type', typeColors: {}, statusColors: {}, search: '', hoverNode: null };
 
 function assignColors(values, palette) {
   const map = {};
@@ -60,10 +60,15 @@ function render() {
       { selector: 'node:selected', style: { 'border-width': 3, 'border-color': '#fff', 'border-style': 'solid', 'text-opacity': 1 } },
       { selector: 'edge', style: { 'width': 0.6, 'line-color': '#3a3a55', 'curve-style': 'haystack', 'opacity': 0.6 } },
       { selector: 'edge[?dangling]', style: { 'line-color': '#5a5a70', 'line-style': 'dashed' } },
+      { selector: '.faded', style: { 'opacity': 0.12, 'text-opacity': 0 } },
+      { selector: '.spotlight', style: { 'text-opacity': 1 } },
     ],
   });
   cy.on('tap', 'node', (ev) => { const node = ev.target; focusNode(node); showPanel(node.data()); });
-  cy.on('tap', (ev) => { if (ev.target === cy) hidePanel(); });
+  cy.on('mouseover', 'node', (ev) => { state.hoverNode = ev.target; updateFocus(); });
+  cy.on('mouseout', 'node', () => { state.hoverNode = null; updateFocus(); });
+  cy.on('select unselect', 'node', () => updateFocus());
+  cy.on('tap', (ev) => { if (ev.target === cy) { cy.$(':selected').unselect(); hidePanel(); updateFocus(); } });
 }
 
 function recolor() {
@@ -98,15 +103,36 @@ function showPanel(n) {
 }
 function hidePanel() { document.getElementById('panel').classList.add('hidden'); }
 
-function applySearch(q) {
+function updateFocus() {
   if (!cy) return;
-  const term = q.trim().toLowerCase();
-  cy.batch(() => cy.nodes().forEach(n => {
-    if (n.selected()) { n.style('opacity', 1); n.style('text-opacity', 1); return; }
-    const hit = !term || (n.data('label') || '').toLowerCase().includes(term) || n.id.toLowerCase().includes(term);
-    n.style('opacity', hit ? 1 : 0.12);
-    n.style('text-opacity', hit && term ? 1 : 0);
-  }));
+  const term = (state.search || '').trim().toLowerCase();
+  const hover = state.hoverNode;
+  const selected = cy.$('node:selected');
+
+  let focus = null; // null = keep everything bright
+  if (hover && hover.nonempty()) {
+    focus = hover.closedNeighborhood();
+  } else if (selected.nonempty()) {
+    focus = selected.closedNeighborhood();
+  } else if (term) {
+    const matches = cy.nodes().filter(n =>
+      (n.data('label') || '').toLowerCase().includes(term) || n.id().toLowerCase().includes(term));
+    focus = matches.nonempty() ? matches.closedNeighborhood() : cy.collection();
+  }
+
+  cy.batch(() => {
+    cy.elements().removeClass('faded spotlight');
+    if (focus) {
+      cy.elements().addClass('faded');
+      focus.removeClass('faded');
+      focus.nodes().addClass('spotlight');
+    }
+  });
+}
+
+function applySearch(q) {
+  state.search = q;
+  updateFocus();
 }
 
 async function main() {
