@@ -62,7 +62,7 @@ function render() {
       { selector: 'edge[?dangling]', style: { 'line-color': '#5a5a70', 'line-style': 'dashed' } },
     ],
   });
-  cy.on('tap', 'node', (ev) => showPanel(ev.target.data()));
+  cy.on('tap', 'node', (ev) => { const node = ev.target; focusNode(node); showPanel(node.data()); });
   cy.on('tap', (ev) => { if (ev.target === cy) hidePanel(); });
 }
 
@@ -70,6 +70,15 @@ function recolor() {
   if (!cy) return;
   cy.batch(() => cy.nodes().forEach(n => n.style('background-color', nodeColor(n.data()))));
   buildLegend();
+}
+
+function focusNode(node) {
+  if (!cy || !node || node.empty()) return;
+  const targetZoom = Math.max(cy.zoom(), 1.2); // never zoom out on focus; gently zoom in when far
+  cy.animate(
+    { center: { eles: node }, zoom: targetZoom },
+    { duration: 350, easing: 'ease-out' }
+  );
 }
 
 function showPanel(n) {
@@ -84,7 +93,7 @@ function showPanel(n) {
   document.querySelectorAll('#p-links a').forEach(a => a.addEventListener('click', (ev) => {
     ev.preventDefault();
     const node = cy.getElementById(a.dataset.id);
-    if (node.nonempty()) { cy.center(node); node.select(); showPanel(node.data()); }
+    if (node.nonempty()) { focusNode(node); node.select(); showPanel(node.data()); }
   }));
 }
 function hidePanel() { document.getElementById('panel').classList.add('hidden'); }
