@@ -163,7 +163,7 @@ function render() {
         'shape': 'round-rectangle', 'background-color': '#2a2a40', 'background-opacity': 1,
         'border-width': 1, 'border-color': '#3a3a55', 'border-style': 'solid',
         'width': 'label', 'height': 16, 'padding': '4px',
-        'label': 'data(label)', 'font-size': 8, 'color': '#c9c9de', 'text-opacity': 1, 'text-valign': 'center',
+        'label': 'data(label)', 'font-size': 8, 'color': '#cfcfe6', 'text-opacity': 1, 'text-valign': 'center',
       }},
       { selector: 'edge[?tree]', style: { 'width': 1, 'line-color': '#3a3a55', 'curve-style': 'bezier', 'opacity': 0.7, 'target-arrow-shape': 'none' } },
       { selector: '.faded', style: { 'opacity': 0.12, 'text-opacity': 0 } },
