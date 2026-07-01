@@ -1,26 +1,24 @@
-# Cortex `viz` UX Phase 4 — Force Controls Implementation Plan
+# Cortex `viz` UX Phase 4 — Live Force Controls (d3-force) Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add a collapsible "Forces" section to the `cortex viz` sidebar — four sliders that retune the graph's `cose` layout live (debounced), graph-view only.
+**Goal:** Make the `cortex viz` graph feel alive like Obsidian — a continuous `cytoscape-d3-force` simulation with subtle perpetual motion, four sliders that reshape the physics live, and node dragging that releases.
 
-**Architecture:** Client-only, one task. `state.forces` holds the four `cose` parameters (defaults = today's effective values, so nothing changes until a slider moves). `GRAPH_LAYOUT` becomes a `graphLayout()` function reading `state.forces`; a debounced `relayout()` re-runs the graph layout on slider input; `setView()` uses `graphLayout()` and hides the section in tree view.
+**Architecture:** Two tasks. Task 1 vendors `d3-force` + `cytoscape-d3-force` offline (like the existing `cytoscape.min.js`) and loads them in the page. Task 2 swaps the graph layout from one-shot `cose` to a managed continuous `d3-force` simulation (`startSim`/`stopSim` around a `graphSim` instance), maps the four sliders to d3 forces live, and falls back to static `cose` if the extension is absent.
 
-**Tech Stack:** Vanilla browser JS (`app.js` is a plain `<script>`, not an ES module), Cytoscape (vendored), HTML, CSS.
+**Tech Stack:** Vanilla browser JS (`app.js` is a plain `<script>`, not an ES module), Cytoscape + `cytoscape-d3-force` (vendored), HTML, CSS, Node build script.
 
 ## Global Constraints
 
-- **Files in scope:** ONLY `toolkit/src/viz/static/index.html`, `style.css`, `app.js`. Do not touch `graphData.ts`, `server.ts`, or `/api/graph`.
-- **Engine:** Stay on Cytoscape `cose`. No new libraries. `app.js` stays a plain browser `<script>` (no import/export).
-- **Palette:** existing CSS `:root` vars / hex literals already in the file. Range accent uses `accent-color: var(--coral)`. No new colors.
-- **Defaults reproduce today's layout:** `gravity: 1`, `nodeRepulsion: 6000`, `edgeElasticity: 32`, `idealEdgeLength: 70` (the first two are `cose` defaults in effect today; the last two are today's explicit overrides).
-- **Graph-only:** forces apply to the `cose` graph view; the section is hidden and `relayout()` is a no-op in tree view.
-- **Preserve Phases 1–3a:** focus, highlight, in/out panel, Color-by, filter, search, Graph/Tree toggle unchanged. `relayout` only re-runs the layout (positions) — it must not touch selection, `.hidden`, or `updateFocus`.
-- **Verification is manual QA by design.** No frontend test harness; `app.js` is a non-module browser script. The implementer's gate is `node --check`; functional/visual verification (Playwright on a built `dist` + human sign-off) is done by the controller. The implementer does NOT run a browser.
+- **Files in scope:** `toolkit/src/viz/static/{index.html,app.js}`, `toolkit/scripts/copy-static.mjs`, `toolkit/package.json` (+ lockfile). `style.css` is unchanged (Forces styling already present). Do not touch `graphData.ts`, `server.ts`, `/api/graph`.
+- **Vendoring, not runtime deps:** `cytoscape-d3-force@^1.1.4` and `d3-force@^3` are **devDependencies** copied into `dist/viz/static/vendor/`. They must NOT become runtime `dependencies` — the shipped `@n1x-technologies/cortex` dependency tree stays unchanged.
+- **Engine:** Cytoscape + the d3-force extension. No other new libraries. `app.js` stays a plain browser `<script>` (no import/export).
+- **Palette:** unchanged; no color work in this phase.
+- **Continuous + subtle + drag-releases:** graph uses `{ name:'d3-force', animate:true, infinite:true, fixedAfterDragging:false, alphaTarget: AMBIENT_ALPHA, velocityDecay:0.4 }`. `AMBIENT_ALPHA = 0.02` (tunable). Tree view stays `breadthfirst`; forces are graph-only and the sim is stopped in tree.
+- **Slider → force mapping (step-aligned):** Centre `centre`→`xStrength`&`yStrength` (0.1; 0–1/0.05); Repel `repel`→`manyBodyStrength = -repel` (300; 0–1000/25); Link force `link`→`linkStrength` (0.5; 0–1/0.05); Link distance `distance`→`linkDistance` (40; 10–300/5). Slider `data-force` = the `state.forces` key.
+- **Verification is manual QA by design.** No frontend test harness; `app.js` is a non-module browser script. Task 1's gate is a real build check (vendor files exist); Task 2's gate is `node --check`; functional/visual verification (Playwright on a built `dist` + human sign-off) is done by the controller.
 
-## QA harness (controller runs this; implementer does not)
-
-Sample vault at `…/scratchpad/qa-vault`. Build and serve:
+## QA harness (controller runs this)
 
 ```bash
 cd /Users/wagnersebastian/Documents/0_WSDC-Tech/4_N1X/n1x-cortex/toolkit && npm run build
@@ -29,78 +27,147 @@ cd <qa-vault> && node /Users/wagnersebastian/Documents/0_WSDC-Tech/4_N1X/n1x-cor
 
 ---
 
-## Task 1: Forces section + live cose retuning
+## Task 1: Vendor d3-force + cytoscape-d3-force (deps, build, page load)
 
 **Files:**
-- Modify: `toolkit/src/viz/static/index.html` (add `#s-forces` between `#s-filter` and `#s-stats`)
-- Modify: `toolkit/src/viz/static/style.css` (forces/slider styling)
-- Modify: `toolkit/src/viz/static/app.js` (`state.forces`, `graphLayout()` replacing `GRAPH_LAYOUT`, debounced `relayout()`, `setView` uses `graphLayout()` + hides `#s-forces` in tree, slider wiring)
+- Modify: `toolkit/package.json` (+ `package-lock.json` via install)
+- Modify: `toolkit/scripts/copy-static.mjs`
+- Modify: `toolkit/src/viz/static/index.html` (head scripts + shim)
 
 **Interfaces:**
-- Produces: `state.forces` (`{gravity, nodeRepulsion, edgeElasticity, idealEdgeLength}`), `graphLayout()` → a fresh `cose` options object built from `state.forces`, `relayout()` → debounced graph-only re-run. DOM ids `#s-forces` and four `input[data-force]` range sliders.
+- Produces: browser globals `window.d3` (from `d3-force`), `window['d3-force']` (shim alias), and `window.cytoscapeD3Force` (the extension), all loaded before `app.js`. `dist/viz/static/vendor/` gains `d3-force.min.js` and `cytoscape-d3-force.js`. Task 2 consumes `window.cytoscapeD3Force`.
 
-- [ ] **Step 1: Add the Forces section to `index.html`**
+- [ ] **Step 1: Install the vendored engine as devDependencies**
 
-Replace this exact block (the end of `#s-filter` through the start of `#s-stats`):
+Run (from `toolkit/`):
 
-```html
-        <div id="legend"></div>
-      </section>
-      <section id="s-stats">
+```bash
+npm install --save-dev cytoscape-d3-force@^1.1.4 d3-force@^3
 ```
 
-with:
+Confirm they landed under `devDependencies` (NOT `dependencies`) in `toolkit/package.json`. If npm placed them in `dependencies`, move them to `devDependencies`.
 
-```html
-        <div id="legend"></div>
-      </section>
-      <section id="s-forces">
-        <details open>
-          <summary>Forces</summary>
-          <label class="force">Centre force<input type="range" data-force="gravity" min="0" max="4" step="0.1" value="1"></label>
-          <label class="force">Repel force<input type="range" data-force="nodeRepulsion" min="1000" max="20000" step="500" value="6000"></label>
-          <label class="force">Link force<input type="range" data-force="edgeElasticity" min="0" max="400" step="5" value="32"></label>
-          <label class="force">Link distance<input type="range" data-force="idealEdgeLength" min="20" max="300" step="5" value="70"></label>
-        </details>
-      </section>
-      <section id="s-stats">
-```
+- [ ] **Step 2: Vendor both UMD files in `copy-static.mjs`**
 
-- [ ] **Step 2: Style the Forces section in `style.css`**
-
-Append to `style.css`:
-
-```css
-#s-forces summary { font-weight: 600; font-size: 12px; cursor: pointer; margin-bottom: 6px; }
-#s-forces .force { display: block; color: var(--muted); font-size: 12px; margin-bottom: 8px; }
-#s-forces .force input[type="range"] { display: block; width: 100%; margin-top: 4px; accent-color: var(--coral); }
-```
-
-- [ ] **Step 3: Add `forces` to `state`**
-
-Replace this exact line:
+In `toolkit/scripts/copy-static.mjs`, replace this block:
 
 ```js
-const state = { data: null, mode: 'type', typeColors: {}, statusColors: {}, search: '', hoverNode: null, hidden: new Set(), view: 'graph' };
+// vendor cytoscape's browser UMD build (no CDN, fully offline)
+const cyto = require.resolve('cytoscape/dist/cytoscape.min.js');
+await mkdir(join(distStatic, 'vendor'), { recursive: true });
+await cp(cyto, join(distStatic, 'vendor/cytoscape.min.js'));
+
+console.log('copied static assets + vendored cytoscape to dist/viz/static');
 ```
 
 with:
+
+```js
+// vendor cytoscape + the d3-force physics extension (no CDN, fully offline)
+const vendorDir = join(distStatic, 'vendor');
+await mkdir(vendorDir, { recursive: true });
+await cp(require.resolve('cytoscape/dist/cytoscape.min.js'), join(vendorDir, 'cytoscape.min.js'));
+await cp(require.resolve('d3-force/dist/d3-force.min.js'), join(vendorDir, 'd3-force.min.js'));
+await cp(require.resolve('cytoscape-d3-force/cytoscape-d3-force.js'), join(vendorDir, 'cytoscape-d3-force.js'));
+
+console.log('copied static assets + vendored cytoscape + d3-force to dist/viz/static');
+```
+
+- [ ] **Step 3: Load the scripts + shim in `index.html`**
+
+In `toolkit/src/viz/static/index.html`, replace this line:
+
+```html
+  <script src="vendor/cytoscape.min.js"></script>
+```
+
+with (order matters; the shim bridges the global-name mismatch — `d3-force`'s UMD exposes `d3`, the extension's UMD reads `d3-force`):
+
+```html
+  <script src="vendor/cytoscape.min.js"></script>
+  <script src="vendor/d3-force.min.js"></script>
+  <script>window['d3-force'] = window.d3;</script>
+  <script src="vendor/cytoscape-d3-force.js"></script>
+```
+
+- [ ] **Step 4: Build and verify the vendor files exist**
+
+Run (from `toolkit/`):
+
+```bash
+npm run build && ls dist/viz/static/vendor/
+```
+
+Expected: the listing includes `cytoscape.min.js`, `d3-force.min.js`, and `cytoscape-d3-force.js`, and the build prints `...vendored cytoscape + d3-force...`.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add toolkit/package.json toolkit/package-lock.json toolkit/scripts/copy-static.mjs toolkit/src/viz/static/index.html
+git commit -m "build(viz): vendor d3-force + cytoscape-d3-force offline
+
+Adds the physics extension and d3-force as devDependencies, copies their UMD
+builds into dist/viz/static/vendor/ alongside cytoscape.min.js, and loads them
+in index.html with a window['d3-force']=d3 shim (the extension's UMD reads the
+d3-force global under that name). No runtime dependency change.
+
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
+```
+
+**Controller verification (after this task):** build, launch, Playwright assert `window.cytoscapeD3Force` and `window.d3` and `window['d3-force']` are all defined and console is clean (no 404 for the vendor files). No behavior change yet (graph still uses the current cose `graphLayout`).
+
+---
+
+## Task 2: Continuous d3-force graph + live sliders + drag-release
+
+**Files:**
+- Modify: `toolkit/src/viz/static/index.html` (slider ranges/defaults)
+- Modify: `toolkit/src/viz/static/app.js` (register extension, new `state.forces`, d3-force `graphLayout`, `startSim`/`stopSim`, `setView`, `relayout`, cose fallback)
+
+**Interfaces:**
+- Consumes: `window.cytoscapeD3Force` (Task 1), `setView`/`buildGraphElements`/`buildTreeElements`/`TREE_LAYOUT`/`recolor`/`applyFilter` (Phase 3a).
+- Produces: `AMBIENT_ALPHA`, `d3ForceOk` (bool), `graphLayout()` (d3-force opts or cose fallback), `graphSim` (running layout or null), `startSim()`/`stopSim()`, debounced `relayout()`.
+
+- [ ] **Step 1: Update the slider ranges/defaults in `index.html`**
+
+Replace this exact block:
+
+```html
+          <label class="force">Centre force<input type="range" data-force="gravity" min="0" max="4" step="0.1" value="1"></label>
+          <label class="force">Repel force<input type="range" data-force="nodeRepulsion" min="1000" max="20000" step="500" value="6000"></label>
+          <label class="force">Link force<input type="range" data-force="edgeElasticity" min="0" max="400" step="4" value="32"></label>
+          <label class="force">Link distance<input type="range" data-force="idealEdgeLength" min="20" max="300" step="5" value="70"></label>
+```
+
+with:
+
+```html
+          <label class="force">Centre force<input type="range" data-force="centre" min="0" max="1" step="0.05" value="0.1"></label>
+          <label class="force">Repel force<input type="range" data-force="repel" min="0" max="1000" step="25" value="300"></label>
+          <label class="force">Link force<input type="range" data-force="link" min="0" max="1" step="0.05" value="0.5"></label>
+          <label class="force">Link distance<input type="range" data-force="distance" min="10" max="300" step="5" value="40"></label>
+```
+
+- [ ] **Step 2: Replace the `state.forces` shape in `app.js`**
+
+Replace this exact line:
 
 ```js
 const state = { data: null, mode: 'type', typeColors: {}, statusColors: {}, search: '', hoverNode: null, hidden: new Set(), view: 'graph', forces: { gravity: 1, nodeRepulsion: 6000, edgeElasticity: 32, idealEdgeLength: 70 } };
 ```
 
-- [ ] **Step 4: Replace `GRAPH_LAYOUT` with `graphLayout()` + add `relayout()`**
-
-Replace this exact line:
-
-```js
-const GRAPH_LAYOUT = { name: 'cose', animate: false, nodeRepulsion: 6000, idealEdgeLength: 70 };
-```
-
 with:
 
 ```js
+const state = { data: null, mode: 'type', typeColors: {}, statusColors: {}, search: '', hoverNode: null, hidden: new Set(), view: 'graph', forces: { centre: 0.1, repel: 300, link: 0.5, distance: 40 } };
+```
+
+- [ ] **Step 3: Register the extension + replace `graphLayout()`/`relayout()` with the sim engine**
+
+Replace this exact block:
+
+```js
+let cy;
 function graphLayout() {
   return { name: 'cose', animate: false,
     gravity: state.forces.gravity,
@@ -117,25 +184,53 @@ function relayout() {
 }
 ```
 
-- [ ] **Step 5: `setView()` uses `graphLayout()` and toggles `#s-forces` visibility**
-
-Replace this exact function:
+with:
 
 ```js
-function setView() {
-  if (!cy) return;
-  cy.$(':selected').unselect();
-  hidePanel();
-  cy.elements().remove();
-  cy.add(state.view === 'tree' ? buildTreeElements() : buildGraphElements());
-  if (state.view === 'tree') cy.$('[?isFolder]').unselectify();
-  cy.layout(state.view === 'tree' ? TREE_LAYOUT : GRAPH_LAYOUT).run();
-  recolor();
-  applyFilter();
+let cy;
+const AMBIENT_ALPHA = 0.02; // subtle perpetual motion; tunable
+
+let d3ForceOk = false;
+try {
+  if (window.cytoscapeD3Force) { cytoscape.use(window.cytoscapeD3Force); d3ForceOk = true; }
+} catch (e) { d3ForceOk = false; } // already-registered or missing: fall back to static cose
+
+function graphLayout() {
+  if (!d3ForceOk) {
+    return { name: 'cose', animate: false, nodeRepulsion: 6000, idealEdgeLength: 70 };
+  }
+  return {
+    name: 'd3-force', animate: true, infinite: true, fixedAfterDragging: false,
+    linkId: (d) => d.id,
+    linkDistance: state.forces.distance,
+    linkStrength: state.forces.link,
+    manyBodyStrength: -state.forces.repel,
+    xStrength: state.forces.centre,
+    yStrength: state.forces.centre,
+    alphaTarget: AMBIENT_ALPHA, velocityDecay: 0.4,
+  };
+}
+
+let graphSim = null;
+function stopSim() { if (graphSim) { graphSim.stop(); graphSim = null; } }
+function startSim() {
+  if (!cy || state.view !== 'graph') return;
+  stopSim();
+  graphSim = cy.layout(graphLayout());
+  graphSim.run();
+}
+
+let relayoutTimer;
+function relayout() {
+  if (state.view !== 'graph') return;
+  clearTimeout(relayoutTimer);
+  relayoutTimer = setTimeout(startSim, 120);
 }
 ```
 
-with:
+- [ ] **Step 4: Route `setView()` through `startSim`/`stopSim`**
+
+Replace this exact function:
 
 ```js
 function setView() {
@@ -152,50 +247,57 @@ function setView() {
 }
 ```
 
-- [ ] **Step 6: Wire the sliders in `main()`**
-
-In `main()`, immediately after the view-toggle wiring block (the `document.querySelectorAll('#viewtoggle button').forEach(...)` call that ends with `}));`), add:
+with:
 
 ```js
-  document.querySelectorAll('#s-forces input[data-force]').forEach(sl => sl.addEventListener('input', () => {
-    state.forces[sl.dataset.force] = Number(sl.value);
-    relayout();
-  }));
+function setView() {
+  if (!cy) return;
+  document.getElementById('s-forces').style.display = state.view === 'graph' ? '' : 'none';
+  cy.$(':selected').unselect();
+  hidePanel();
+  stopSim();
+  cy.elements().remove();
+  cy.add(state.view === 'tree' ? buildTreeElements() : buildGraphElements());
+  if (state.view === 'tree') { cy.$('[?isFolder]').unselectify(); cy.layout(TREE_LAYOUT).run(); }
+  else { startSim(); }
+  recolor();
+  applyFilter();
+}
 ```
 
-- [ ] **Step 7: Syntax gate**
+- [ ] **Step 5: Syntax gate**
 
 Run: `node --check /Users/wagnersebastian/Documents/0_WSDC-Tech/4_N1X/n1x-cortex/toolkit/src/viz/static/app.js`
 Expected: clean exit, no output.
 
-- [ ] **Step 8: Self-review**
+(The slider wiring in `main()` — `state.forces[sl.dataset.force] = Number(sl.value); relayout();` — is unchanged and already correct because the slider `data-force` values now equal the new `state.forces` keys. Do NOT edit it.)
 
-`git diff` on the three files. Confirm: `#s-forces` (collapsible `<details>` + four `input[data-force]` sliders with the exact min/max/step/value) sits between `#s-filter` and `#s-stats`; CSS added; `state.forces` present with the four defaults; `GRAPH_LAYOUT` fully replaced by `graphLayout()` (no lingering `GRAPH_LAYOUT` reference); `relayout()` is debounced and guarded to `state.view === 'graph'`; `setView` uses `graphLayout()` and sets `#s-forces` display by view; the slider handler writes `state.forces[dataset.force] = Number(value)` and calls `relayout()`. No Phase 1–3a logic altered beyond these edit sites.
+- [ ] **Step 6: Self-review**
 
-- [ ] **Step 9: Commit**
+`git diff`. Confirm: sliders use `data-force` keys `centre`/`repel`/`link`/`distance` with the step-aligned defaults; `state.forces` matches those keys/defaults; the extension is registered in a guarded `try/catch` with `d3ForceOk`; `graphLayout()` returns d3-force opts (with `manyBodyStrength: -state.forces.repel`, `xStrength`/`yStrength` = `centre`, `linkDistance`/`linkStrength`, `infinite:true`, `fixedAfterDragging:false`, `alphaTarget: AMBIENT_ALPHA`) or the cose fallback when `!d3ForceOk`; `startSim` stops any prior sim then runs a new one; `setView` calls `stopSim()` before swapping, runs `breadthfirst` for tree and `startSim()` for graph; `relayout` is debounced (120 ms) and restarts the sim; no Phase 1–3a note-node logic changed elsewhere.
+
+- [ ] **Step 7: Commit**
 
 ```bash
-git add toolkit/src/viz/static/index.html toolkit/src/viz/static/style.css toolkit/src/viz/static/app.js
-git commit -m "feat(viz): tunable force controls (Centre/Repel/Link force, Link distance)
+git add toolkit/src/viz/static/index.html toolkit/src/viz/static/app.js
+git commit -m "feat(viz): continuous d3-force graph — live forces + drag-release
 
-A collapsible Forces section adds four sliders mapped to cose params
-(gravity/nodeRepulsion/edgeElasticity/idealEdgeLength). Slider input writes
-state.forces and re-runs the graph layout (debounced 200ms). Defaults
-reproduce the current layout; the section is hidden and relayout no-ops in
-tree view. No new dependencies.
+Swaps the graph from one-shot cose to a managed continuous cytoscape-d3-force
+simulation (startSim/stopSim around a graphSim instance): subtle perpetual
+motion (infinite + low alphaTarget), sliders mapped 1:1 to d3 forces and applied
+live (debounced restart), and dragging releases nodes (fixedAfterDragging:false).
+Falls back to static cose if the extension is unavailable. Tree view unchanged.
 
 Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 ```
 
-**Controller verification (after this task):** build `dist`, launch, Playwright assert: the Forces section renders with four sliders at their defaults and the initial graph is unchanged; moving the Repel (`nodeRepulsion`) slider updates `state.forces.nodeRepulsion` and, after the 200 ms debounce, node positions change; switching to Tree sets `#s-forces` `display:none` and `relayout()` no-ops; switching back to Graph shows it and applies current forces; filter/selection persist across a relayout; console clean. Then human visual sign-off.
+**Controller verification (after this task):** build, launch, Playwright assert: the graph runs a `d3-force` sim (node positions change across successive ticks with NO interaction, proving it's alive) and stays gently in motion; sliders match `state.forces` on fresh load and moving Repel updates `state.forces.repel` and visibly reshapes the graph; switching to Tree stops the sim (positions stable + `#s-forces` hidden), back to Graph restarts it; dragging a node then releasing leaves it un-pinned (keeps moving after); filter/selection persist while the sim runs; console clean. Then human visual sign-off on the "alive but subtle" feel.
 
 ---
 
 ## Final: README + PR
 
-- [ ] **Update the README `cortex viz` line** to mention tunable forces. Current line ends:
-  `…, a tri-state group filter, and a Graph/Tree view toggle.`
-  Change the ending to `…, a tri-state group filter, a Graph/Tree view toggle, and tunable force controls.` (keep it one line).
+- [ ] **Update the README `cortex viz` line** — change the ending `…, and a Graph/Tree view toggle.` to `…, a Graph/Tree view toggle, and live force controls (d3-force).` (keep it one line).
 
 ```bash
 grep -n "cortex viz" /Users/wagnersebastian/Documents/0_WSDC-Tech/4_N1X/n1x-cortex/README.md
@@ -208,19 +310,22 @@ git push -u origin feat/viz-phase4-forces
 gh pr create --fill
 ```
 
+(Note: this branch already contains earlier one-shot-`cose` commits for Phase 4; they are superseded by these commits on the same branch and ship together in one PR. The spec revision documents the engine change.)
+
 ---
 
 ## Self-Review (completed by plan author)
 
 **Spec coverage:**
-- Collapsible Forces section, four sliders mapped to `cose` params → Step 1 (HTML), Step 4 (`graphLayout`). ✅
-- Slider moves value + re-runs layout (debounced) → Step 4 (`relayout`), Step 6 (wiring). ✅
-- Defaults reproduce today's layout (`gravity 1`, `nodeRepulsion 6000`, `edgeElasticity 32`, `idealEdgeLength 70`) → Step 3 `state.forces` + Step 1 slider `value`s match. ✅
-- Graph-only (hidden + no-op in tree) → Step 5 (`#s-forces` display toggle), Step 4 (`relayout` guard). ✅
-- Palette (accent-color coral, no new colors) → Step 2. ✅
-- Non-goals (physics engine, persistence, reset button, backend) — none introduced. ✅
-- Edge cases: rapid drag (debounce), returning to graph (`setView` runs `graphLayout()`), out-of-range (slider min/max/step + `Number()`), filter/selection unaffected (`relayout` only re-runs layout). ✅
+- Vendoring (devDeps, copy-static, index.html scripts + shim) → Task 1. ✅
+- Continuous d3-force sim (infinite, animate, subtle alphaTarget) → Task 2 Step 3 (`graphLayout`, `startSim`). ✅
+- Live sliders mapped 1:1 → Task 2 Steps 1–2 (keys/ranges) + unchanged wiring + `relayout`. ✅
+- Drag releases → `fixedAfterDragging:false`. ✅
+- Running-instance management (stop before start; stop on tree) → `startSim`/`stopSim`, `setView`. ✅
+- Fallback to static cose if extension absent → `d3ForceOk` guard in `graphLayout`. ✅
+- Graph-only (hidden section + sim stopped in tree) → `setView`. ✅
+- Non-goals (persistence, reset, pinning, backend) — none introduced. ✅
 
 **Placeholder scan:** No TBD/TODO; every code step shows complete code; verification lists concrete observations. ✅
 
-**Type consistency:** `state.forces`, the four param names (`gravity`/`nodeRepulsion`/`edgeElasticity`/`idealEdgeLength`) match between `state`, `graphLayout()`, the slider `data-force` attrs, and the handler; `graphLayout()` replaces every `GRAPH_LAYOUT` use (only site is `setView`); `relayout`/`relayoutTimer`/`#s-forces` named consistently. ✅
+**Type consistency:** `state.forces` keys (`centre`/`repel`/`link`/`distance`) match the slider `data-force` attrs and every read in `graphLayout()`; `d3ForceOk`/`AMBIENT_ALPHA`/`graphSim`/`startSim`/`stopSim`/`relayout` named consistently across Task 2; `graphLayout()` used by `startSim` (and the cose fallback path) with no lingering `cose`-shape `state.forces` reference. ✅
