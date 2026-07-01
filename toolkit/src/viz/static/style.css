@@ -30,3 +30,4 @@ main { position: relative; height: calc(100% - 49px); }
   color: var(--ink); display: flex; flex-wrap: wrap; gap: 4px 12px; max-width: 60%; }
 #legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%;
   vertical-align: middle; margin-right: 5px; }
+#p-links .more { color: var(--muted); font-size: 11px; margin: 2px 0 8px; }
