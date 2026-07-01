@@ -3,7 +3,7 @@ const TYPE_PALETTE = ['#4F9DDE', '#E94560', '#46C0A0', '#E0A458', '#9B7EDE', '#D
 const FRESH = { gap: '#6e6e80', stale: '#db6d28', draft: '#d29922', verified: '#2ea043', fresh: '#46c0a0' };
 const STATUS_FALLBACK = ['#8a8aa0', '#4F9DDE', '#2ea043', '#E0A458'];
 
-const state = { data: null, mode: 'type', typeColors: {}, statusColors: {}, search: '', hoverNode: null };
+const state = { data: null, mode: 'type', typeColors: {}, statusColors: {}, search: '', hoverNode: null, hidden: new Set() };
 
 function assignColors(values, palette) {
   const map = {};
@@ -18,17 +18,77 @@ function nodeColor(n) {
   return state.typeColors[n.type] || '#8a8aa0';
 }
 
-function buildLegend() {
-  const el = document.getElementById('legend');
-  let entries;
+function groupKey(n) {
+  if (!n.exists) return '__gap__';
+  if (state.mode === 'freshness') return n.freshness || 'fresh';
+  const v = state.mode === 'status' ? n.status : n.type;
+  return v || '__none__';
+}
+
+function groupColor(key) {
+  if (key === '__gap__') return FRESH.gap;
+  if (key === '__none__') return '#8a8aa0';
+  if (state.mode === 'freshness') return FRESH[key] || FRESH.fresh;
+  return (state.mode === 'status' ? state.statusColors : state.typeColors)[key] || '#8a8aa0';
+}
+
+const FRESH_LABEL = { verified: 'verified & in sync', draft: 'draft', stale: 'stale', fresh: 'fresh' };
+function groupLabel(key) {
+  if (key === '__gap__') return 'gap (missing)';
+  if (key === '__none__') return '—';
+  if (state.mode === 'freshness') return FRESH_LABEL[key] || key;
+  return key;
+}
+
+function currentGroups() {
+  const cnt = {};
+  for (const n of state.data.nodes) { const k = groupKey(n); cnt[k] = (cnt[k] || 0) + 1; }
+  let keys;
   if (state.mode === 'freshness') {
-    entries = [['verified & in sync', FRESH.verified], ['draft', FRESH.draft], ['stale', FRESH.stale], ['fresh', FRESH.fresh], ['gap (missing)', FRESH.gap]];
-  } else if (state.mode === 'status') {
-    entries = Object.entries(state.statusColors);
+    keys = ['verified', 'draft', 'stale', 'fresh', '__gap__'].filter(k => k in cnt);
   } else {
-    entries = Object.entries(state.typeColors);
+    keys = Object.keys(cnt).filter(k => k !== '__gap__' && k !== '__none__').sort()
+      .concat(['__none__', '__gap__'].filter(k => k in cnt));
   }
-  el.innerHTML = entries.map(([k, c]) => `<span><span class="dot" style="background:${c}"></span>${k || '—'}</span>`).join('');
+  return keys.map(k => ({ key: k, label: groupLabel(k), color: groupColor(k), count: cnt[k] }));
+}
+
+function buildFilter() {
+  const el = document.getElementById('legend');
+  const groups = currentGroups();
+  const noneHidden = state.hidden.size === 0;
+  const allHidden = groups.length > 0 && groups.every(g => state.hidden.has(g.key));
+  const rows = groups.map(g =>
+    `<label class="frow"><input type="checkbox" data-key="${esc(g.key)}" ${state.hidden.has(g.key) ? '' : 'checked'}>`
+    + `<span class="dot" style="background:${g.color}"></span>`
+    + `<span class="flabel">${esc(g.label)}</span>`
+    + `<span class="fcount">${g.count}</span></label>`).join('');
+  el.innerHTML =
+    `<label class="frow fall"><input type="checkbox" id="filter-all" ${noneHidden ? 'checked' : ''}>`
+    + `<span class="flabel">All</span></label>` + rows;
+  const allBox = document.getElementById('filter-all');
+  allBox.indeterminate = !noneHidden && !allHidden;
+  allBox.addEventListener('change', () => {
+    if (allHidden) state.hidden.clear();
+    else groups.forEach(g => state.hidden.add(g.key));
+    buildFilter(); applyFilter();
+  });
+  el.querySelectorAll('input[data-key]').forEach(cb => cb.addEventListener('change', () => {
+    if (cb.checked) state.hidden.delete(cb.dataset.key); else state.hidden.add(cb.dataset.key);
+    buildFilter(); applyFilter();
+  }));
+}
+
+function applyFilter() {
+  if (!cy) return;
+  cy.batch(() => cy.nodes().forEach(n => {
+    if (state.hidden.has(groupKey(n.data()))) n.addClass('hidden'); else n.removeClass('hidden');
+  }));
+  // If the selected node was just hidden, drop the stale selection/panel so the
+  // graph doesn't stay dimmed around an invisible spotlight center.
+  const hiddenSelected = cy.$('node:selected').filter('.hidden');
+  if (hiddenSelected.nonempty()) { hiddenSelected.unselect(); hidePanel(); }
+  updateFocus();
 }
 
 let cy;
@@ -62,6 +122,7 @@ function render() {
       { selector: 'edge[?dangling]', style: { 'line-color': '#5a5a70', 'line-style': 'dashed' } },
       { selector: '.faded', style: { 'opacity': 0.12, 'text-opacity': 0 } },
       { selector: '.spotlight', style: { 'text-opacity': 1 } },
+      { selector: '.hidden', style: { 'display': 'none' } },
     ],
   });
   cy.on('tap', 'node', (ev) => { const node = ev.target; focusNode(node); showPanel(node.data()); });
@@ -74,7 +135,7 @@ function render() {
 function recolor() {
   if (!cy) return;
   cy.batch(() => cy.nodes().forEach(n => n.style('background-color', nodeColor(n.data()))));
-  buildLegend();
+  buildFilter();
 }
 
 function focusNode(node) {
@@ -105,6 +166,7 @@ function linkList(label, ids) {
 }
 
 function showPanel(n) {
+  document.getElementById('info-empty').style.display = 'none';
   document.getElementById('panel').classList.remove('hidden');
   document.getElementById('p-title').textContent = n.label || n.id;
   const meta = [['id', n.id], ['type', n.type], ['status', n.status], ['folder', n.folder], ['freshness', n.freshness], ['links', n.degree]];
@@ -119,7 +181,10 @@ function showPanel(n) {
     if (node.nonempty()) { cy.$(':selected').unselect(); focusNode(node); node.select(); showPanel(node.data()); }
   }));
 }
-function hidePanel() { document.getElementById('panel').classList.add('hidden'); }
+function hidePanel() {
+  document.getElementById('panel').classList.add('hidden');
+  document.getElementById('info-empty').style.display = '';
+}
 
 function updateFocus() {
   if (!cy) return;
@@ -174,10 +239,11 @@ async function main() {
     `${s.total} notes · ${s.orphans} gaps · ${s.draftsPending} drafts · ${s.missingCitations} uncited`;
 
   render();
-  buildLegend();
+  buildFilter();
 
-  document.getElementById('colorby').addEventListener('change', (e) => { state.mode = e.target.value; recolor(); });
+  document.getElementById('colorby').addEventListener('change', (e) => {
+    state.mode = e.target.value; state.hidden.clear(); recolor(); applyFilter();
+  });
   document.getElementById('search').addEventListener('input', (e) => applySearch(e.target.value));
-  document.getElementById('panel-close').addEventListener('click', hidePanel);
 }
 main();
