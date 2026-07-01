@@ -6,6 +6,12 @@
   <title>Cortex Viewer</title>
   <link rel="stylesheet" href="style.css" />
   <script src="vendor/cytoscape.min.js"></script>
+  <script src="vendor/d3-dispatch.min.js"></script>
+  <script src="vendor/d3-quadtree.min.js"></script>
+  <script src="vendor/d3-timer.min.js"></script>
+  <script src="vendor/d3-force.min.js"></script>
+  <script>window['d3-force'] = window.d3;</script>
+  <script src="vendor/cytoscape-d3-force.js"></script>
 </head>
 <body>
   <main>
@@ -36,6 +42,15 @@
           </select>
         </label>
         <div id="legend"></div>
+      </section>
+      <section id="s-forces">
+        <details open>
+          <summary>Forces</summary>
+          <label class="force">Centre force<input type="range" data-force="centre" min="0" max="1" step="0.05" value="0.1"></label>
+          <label class="force">Repel force<input type="range" data-force="repel" min="0" max="1000" step="25" value="300"></label>
+          <label class="force">Link force<input type="range" data-force="link" min="0" max="1" step="0.05" value="0.5"></label>
+          <label class="force">Link distance<input type="range" data-force="distance" min="10" max="300" step="5" value="40"></label>
+        </details>
       </section>
       <section id="s-stats">
         <span id="stats" class="stats">loading…</span>

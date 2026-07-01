@@ -3,7 +3,7 @@ const TYPE_PALETTE = ['#4F9DDE', '#E94560', '#46C0A0', '#E0A458', '#9B7EDE', '#D
 const FRESH = { gap: '#6e6e80', stale: '#db6d28', draft: '#d29922', verified: '#2ea043', fresh: '#46c0a0' };
 const STATUS_FALLBACK = ['#8a8aa0', '#4F9DDE', '#2ea043', '#E0A458'];
 
-const state = { data: null, mode: 'type', typeColors: {}, statusColors: {}, search: '', hoverNode: null, hidden: new Set(), view: 'graph' };
+const state = { data: null, mode: 'type', typeColors: {}, statusColors: {}, search: '', hoverNode: null, hidden: new Set(), view: 'graph', forces: { centre: 0.1, repel: 300, link: 0.5, distance: 40 } };
 
 function assignColors(values, palette) {
   const map = {};
@@ -93,7 +93,44 @@ function applyFilter() {
 }
 
 let cy;
-const GRAPH_LAYOUT = { name: 'cose', animate: false, nodeRepulsion: 6000, idealEdgeLength: 70 };
+const AMBIENT_ALPHA = 0.02; // subtle perpetual motion; tunable
+
+let d3ForceOk = false;
+try {
+  if (window.cytoscapeD3Force) { cytoscape.use(window.cytoscapeD3Force); d3ForceOk = true; }
+} catch (e) { d3ForceOk = false; } // already-registered or missing: fall back to static cose
+
+function graphLayout() {
+  if (!d3ForceOk) {
+    return { name: 'cose', animate: false, nodeRepulsion: 6000, idealEdgeLength: 70 };
+  }
+  return {
+    name: 'd3-force', animate: true, infinite: true, fixedAfterDragging: false,
+    linkId: (d) => d.id,
+    linkDistance: state.forces.distance,
+    linkStrength: state.forces.link,
+    manyBodyStrength: -state.forces.repel,
+    xStrength: state.forces.centre,
+    yStrength: state.forces.centre,
+    alphaTarget: AMBIENT_ALPHA, velocityDecay: 0.4,
+  };
+}
+
+let graphSim = null;
+function stopSim() { if (graphSim) { graphSim.stop(); graphSim = null; } }
+function startSim() {
+  if (!cy || state.view !== 'graph') return;
+  stopSim();
+  graphSim = cy.layout(graphLayout());
+  graphSim.run();
+}
+
+let relayoutTimer;
+function relayout() {
+  if (state.view !== 'graph') return;
+  clearTimeout(relayoutTimer);
+  relayoutTimer = setTimeout(startSim, 120);
+}
 
 function buildGraphElements() {
   const nodeIds = new Set(state.data.nodes.map(n => n.id));
@@ -131,12 +168,14 @@ function buildTreeElements() {
 
 function setView() {
   if (!cy) return;
+  document.getElementById('s-forces').style.display = state.view === 'graph' ? '' : 'none';
   cy.$(':selected').unselect();
   hidePanel();
+  stopSim();
   cy.elements().remove();
   cy.add(state.view === 'tree' ? buildTreeElements() : buildGraphElements());
-  if (state.view === 'tree') cy.$('[?isFolder]').unselectify();
-  cy.layout(state.view === 'tree' ? TREE_LAYOUT : GRAPH_LAYOUT).run();
+  if (state.view === 'tree') { cy.$('[?isFolder]').unselectify(); cy.layout(TREE_LAYOUT).run(); }
+  else { startSim(); }
   recolor();
   applyFilter();
 }
@@ -297,6 +336,10 @@ async function main() {
     state.view = b.dataset.view;
     document.querySelectorAll('#viewtoggle button').forEach(x => x.classList.toggle('active', x.dataset.view === state.view));
     setView();
+  }));
+  document.querySelectorAll('#s-forces input[data-force]').forEach(sl => sl.addEventListener('input', () => {
+    state.forces[sl.dataset.force] = Number(sl.value);
+    relayout();
   }));
 }
 main();
