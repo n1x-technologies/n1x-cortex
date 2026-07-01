@@ -118,18 +118,39 @@ function graphLayout() {
 
 let graphSim = null;
 function stopSim() { if (graphSim) { graphSim.stop(); graphSim = null; } }
+let recenterTimer;
+function recenter() {
+  if (cy && state.view === 'graph' && cy.nodes().nonempty()) {
+    cy.animate({ fit: { eles: cy.nodes(), padding: 40 } }, { duration: 350, easing: 'ease-out' });
+  }
+}
+
 function startSim() {
   if (!cy || state.view !== 'graph') return;
   stopSim();
   graphSim = cy.layout(graphLayout());
   graphSim.run();
+  clearTimeout(recenterTimer);
+  recenterTimer = setTimeout(recenter, 700); // frame the graph once it has spread
 }
 
 let relayoutTimer;
 function relayout() {
   if (state.view !== 'graph') return;
-  clearTimeout(relayoutTimer);
-  relayoutTimer = setTimeout(startSim, 120);
+  const sim = d3ForceOk && graphSim && graphSim.simulation;
+  if (!sim) { clearTimeout(relayoutTimer); relayoutTimer = setTimeout(startSim, 120); return; }
+  // Update the LIVE simulation's forces in place + a gentle reheat, so nodes ease
+  // from their current spots instead of the whole graph re-laying-out and flinging
+  // to a corner. No viewport move while dragging.
+  const f = state.forces;
+  if (sim.force('many-body')) sim.force('many-body').strength(-f.repel);
+  if (sim.force('link')) sim.force('link').distance(f.distance).strength(f.link);
+  if (sim.force('x')) sim.force('x').strength(f.centre);
+  if (sim.force('y')) sim.force('y').strength(f.centre);
+  sim.alpha(0.12).restart();
+  // Re-frame once the user pauses (not on every tick — that would jump the view).
+  clearTimeout(recenterTimer);
+  recenterTimer = setTimeout(recenter, 700);
 }
 
 function buildGraphElements() {
