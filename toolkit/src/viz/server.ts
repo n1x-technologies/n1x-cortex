@@ -5,7 +5,9 @@ import { join, extname, dirname, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildGraphData } from './graphData.js';
 import { loadConfig } from '../config.js';
-import { collectFrontmatterKeys } from '../vault.js';
+import { collectFrontmatterKeys, scanVault } from '../vault.js';
+import { parseFrontmatter } from '../frontmatter.js';
+import { renderNotePage, renderMarkdown, renderNotFound } from './notePage.js';
 
 const STATIC_DIR = join(dirname(fileURLToPath(import.meta.url)), 'static');
 const MIME: Record<string, string> = {
@@ -13,6 +15,7 @@ const MIME: Record<string, string> = {
   '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  '.woff2': 'font/woff2',
 };
 
 export function createServer(vaultDir: string): Server {
@@ -29,6 +32,25 @@ export function createServer(vaultDir: string): Server {
         const data = buildGraphData(vaultDir, config);
         res.writeHead(200, { 'content-type': MIME['.json'] });
         res.end(JSON.stringify(data));
+        return;
+      }
+      if (url.pathname.startsWith('/note/')) {
+        const id = decodeURIComponent(url.pathname.slice('/note/'.length));
+        const config = loadConfig(vaultDir, collectFrontmatterKeys(vaultDir));
+        const note = scanVault(vaultDir, config).find((n) => n.id === id);
+        if (!note) {
+          res.writeHead(404, { 'content-type': MIME['.html'] });
+          res.end(renderNotFound(id));
+          return;
+        }
+        const abs = normalize(join(vaultDir, note.path));
+        if (abs !== vaultDir && !abs.startsWith(vaultDir + sep)) {
+          res.writeHead(403); res.end('forbidden'); return;
+        }
+        const raw = await readFile(abs, 'utf8');
+        const { body } = parseFrontmatter(raw);
+        res.writeHead(200, { 'content-type': MIME['.html'] });
+        res.end(renderNotePage(note, renderMarkdown(body)));
         return;
       }
       const rel = url.pathname === '/' ? '/index.html' : url.pathname;
