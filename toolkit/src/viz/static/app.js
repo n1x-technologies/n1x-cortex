@@ -249,7 +249,7 @@ function render() {
         'label': 'data(label)', 'font-size': 6, 'color': '#c8c8c8',
         'text-opacity': 0, 'min-zoomed-font-size': 8,
         'border-width': (n) => n.data('exists') ? 1 : 2,
-        'border-style': 'dashed', 'border-color': '#565656',
+        'border-style': (n) => n.data('exists') ? 'solid' : 'dashed', 'border-color': '#565656',
         'background-opacity': (n) => n.data('exists') ? 1 : 0.25,
       }},
       { selector: 'node:selected', style: { 'border-width': 3, 'border-color': '#e5e5e5', 'border-style': 'solid', 'text-opacity': 1 } },
