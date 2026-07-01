@@ -1,7 +1,9 @@
 /* Cortex Viewer — fetches /api/graph and renders it with Cytoscape. */
-const TYPE_PALETTE = ['#5a5a5a', '#727272', '#8a8a8a', '#a2a2a2', '#bababa', '#d2d2d2', '#666666', '#9e9e9e'];
-const FRESH = { gap: '#4d4d4d', stale: '#6b6b6b', draft: '#8f8f8f', verified: '#bcbcbc', fresh: '#e8e8e8' };
-const STATUS_FALLBACK = ['#6e6e6e', '#8f8f8f', '#bcbcbc', '#a2a2a2'];
+/* Node fills use a refined, dark-friendly categorical palette (the graph is functional
+   data-viz — the only place color is allowed; all UI chrome stays monochrome N1X). */
+const TYPE_PALETTE = ['#6ea8fe', '#5fd0ac', '#f4c15d', '#e8785a', '#a98fe0', '#5fc4e0', '#f0946a', '#d987c0'];
+const FRESH = { gap: '#6e6e80', stale: '#e8785a', draft: '#f4c15d', verified: '#5fd08a', fresh: '#57c9c0' };
+const STATUS_FALLBACK = ['#8a8aa0', '#6ea8fe', '#5fd08a', '#f4c15d'];
 
 const state = { data: null, mode: 'type', typeColors: {}, statusColors: {}, search: '', hoverNode: null, hidden: new Set(), view: 'graph', forces: { centre: 0.5, repel: 500, link: 0.5, distance: 155 } };
 
