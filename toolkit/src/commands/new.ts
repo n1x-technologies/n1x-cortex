@@ -41,10 +41,9 @@ export function runNew(vaultDir: string, type: string, id: string, opts: NewOpti
     return { created: false, reason: `no template at ${tplRel} — add one (placeholders: {{id}} {{title}} {{module}} {{date}} {{status}})` };
   }
 
-  // Templates live under templatesDir and are scanned as notes — exclude them
-  // so they don't count as collisions or skew the learned destination folder.
-  const tplPrefix = `${config.templatesDir}/`;
-  const notes = scanVault(vaultDir, config).filter(n => !n.path.startsWith(tplPrefix));
+  // scanVault already excludes templatesDir, so templates never appear here as
+  // collisions or skew the learned destination folder.
+  const notes = scanVault(vaultDir, config);
   if (notes.some(n => n.id === id)) {
     return { created: false, reason: `a note with id "${id}" already exists` };
   }
