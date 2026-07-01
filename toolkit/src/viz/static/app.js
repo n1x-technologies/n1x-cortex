@@ -105,6 +105,7 @@ function linkList(label, ids) {
 }
 
 function showPanel(n) {
+  document.getElementById('info-empty').style.display = 'none';
   document.getElementById('panel').classList.remove('hidden');
   document.getElementById('p-title').textContent = n.label || n.id;
   const meta = [['id', n.id], ['type', n.type], ['status', n.status], ['folder', n.folder], ['freshness', n.freshness], ['links', n.degree]];
@@ -119,7 +120,10 @@ function showPanel(n) {
     if (node.nonempty()) { cy.$(':selected').unselect(); focusNode(node); node.select(); showPanel(node.data()); }
   }));
 }
-function hidePanel() { document.getElementById('panel').classList.add('hidden'); }
+function hidePanel() {
+  document.getElementById('panel').classList.add('hidden');
+  document.getElementById('info-empty').style.display = '';
+}
 
 function updateFocus() {
   if (!cy) return;
@@ -178,6 +182,5 @@ async function main() {
 
   document.getElementById('colorby').addEventListener('change', (e) => { state.mode = e.target.value; recolor(); });
   document.getElementById('search').addEventListener('input', (e) => applySearch(e.target.value));
-  document.getElementById('panel-close').addEventListener('click', hidePanel);
 }
 main();
