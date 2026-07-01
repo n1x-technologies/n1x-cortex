@@ -1,134 +1,139 @@
-# Cortex `viz` — UX Phase 4: Force controls (design)
+# Cortex `viz` — UX Phase 4: Live force controls (design)
 
-**Date:** 2026-06-30
+**Date:** 2026-06-30 (revised — switched engine from one-shot `cose` to continuous `d3-force`)
 **Status:** Approved for planning
-**Scope:** `toolkit/src/viz/static/index.html`, `style.css`, `app.js` only. No backend, server, or `/api/graph` change. Builds on Phases 1–3a (sidebar, filter, Graph/Tree toggle), now on `main`.
+**Scope:** `toolkit/src/viz/static/index.html`, `style.css`, `app.js`, plus `toolkit/scripts/copy-static.mjs` (vendoring) and `toolkit/package.json` (dev deps). No backend/server/`/api/graph` change.
 
-## Background
+## Background & decision
 
-The graph view uses a Cytoscape `cose` force layout with fixed parameters (`nodeRepulsion: 6000`, `idealEdgeLength: 70`; `gravity` and `edgeElasticity` at `cose` defaults). Users can't tune how the graph spreads. Obsidian's graph view exposes four "Forces" sliders (Centre / Repel / Link force / Link distance); this phase adds the equivalent so the layout can be tuned live.
+An earlier revision of this phase tuned a one-shot `cose` layout via four sliders. On review it felt **jerky** — `cose` re-lays-out and the graph *jumps* to the new positions. The desired feel is Obsidian's graph: **alive** (never static), where sliders reshape the graph smoothly in real time and nodes can be dragged.
 
-Per the agreed decision, this uses the **one-shot `cose`** approach — sliders adjust `cose` parameters and re-run the layout (debounced) — with **no new dependency**. A continuous physics engine (fcose/cola) was considered and rejected to keep the install light; the graph re-settles on each adjustment rather than flowing continuously.
+Obsidian's graph is powered by **d3-force**. The revised design adopts the same engine via **`cytoscape-d3-force`** (a Cytoscape layout extension wrapping `d3-force`). This is a continuous simulation: nodes have gentle perpetual motion, slider changes are applied live, and dragging perturbs the system elastically. The four sliders map 1:1 to d3 forces.
+
+**Dependency note:** `cytoscape-d3-force` (~18 KB) and its `d3-force` peer (~8 KB min) are **vendored offline** into `dist/viz/static/vendor/`, exactly like the existing `cytoscape.min.js` — they are build-time devDependencies copied into the shipped viewer assets, NOT runtime dependencies a consumer installs. This preserves the light-install property (the base `@n1x-technologies/cortex` dependency tree is unchanged).
 
 ## Goals
 
-1. A collapsible **"Forces"** section in the sidebar with four sliders mapped to `cose` parameters.
-2. Moving a slider updates the parameter, shows its value, and re-runs the graph layout (debounced) so the change is visible.
-3. Defaults reproduce today's layout exactly — nothing changes until a slider moves.
-4. Forces apply only to the graph view; the section is hidden in tree view.
+1. Graph view runs a **continuous d3-force simulation** — subtle perpetual motion, never frozen.
+2. Four sliders in a collapsible "Forces" section map to d3 forces and are applied **live**.
+3. **Dragging a node releases it** back into the simulation (no pin) so the graph reacts elastically.
+4. Everything else (tree view, filter, color-by, search, panel) keeps working; forces are graph-only.
 
 ## Non-goals (deferred)
 
-- Continuous/live physics simulation (fcose/cola) — rejected; one-shot `cose` only.
-- Persisting slider values across reloads (no storage).
-- A reset-to-defaults button (possible cheap follow-up; out of scope here).
-- Any `graphData.ts` / `server.ts` / `/api/graph` change; no engine change (stays Cytoscape `cose`).
-- Tree-view layout tuning (tree uses `breadthfirst`; forces are graph-only).
+- Persisting slider values across reloads.
+- A reset-to-defaults button.
+- Any `graphData.ts` / `server.ts` / `/api/graph` change.
+- Tree-view physics (tree stays `breadthfirst`).
+- Pinning dragged nodes (explicitly the opposite: drag releases).
 
 ## Design
 
-### Slider → parameter mapping and ranges
+### Vendoring (`copy-static.mjs` + `package.json` + `index.html`)
 
-`state.forces` holds the four values; defaults equal the effective current layout, so the initial render is unchanged:
+- Add devDependencies `cytoscape-d3-force@^1.1.4` and `d3-force@^3`.
+- `copy-static.mjs` copies two more UMD files into `vendor/`: `d3-force.min.js` (from `d3-force/dist/d3-force.min.js`) and `cytoscape-d3-force.js` (from `cytoscape-d3-force/cytoscape-d3-force.js`).
+- `index.html` `<head>` loads, **in order**, after `cytoscape.min.js`:
+  ```html
+  <script src="vendor/d3-force.min.js"></script>
+  <script>window['d3-force'] = window.d3;</script>
+  <script src="vendor/cytoscape-d3-force.js"></script>
+  ```
+  The shim is required because `cytoscape-d3-force`'s UMD browser branch reads `root["d3-force"]`, whereas `d3-force`'s UMD exposes the global as `d3`.
+- `app.js` registers the extension once at startup: `cytoscape.use(window.cytoscapeD3Force)` (guarded if already registered).
 
-| Sidebar label | `cose` param | Default | min | max | step |
-|---|---|---|---|---|---|
-| Centre force | `gravity` | 1 | 0 | 4 | 0.1 |
-| Repel force | `nodeRepulsion` | 6000 | 1000 | 20000 | 500 |
-| Link force | `edgeElasticity` | 32 | 0 | 400 | 5 |
-| Link distance | `idealEdgeLength` | 70 | 20 | 300 | 5 |
+### Slider → d3 force mapping
 
-(`gravity: 1` and `edgeElasticity: 32` are the `cose` defaults in effect today; `nodeRepulsion: 6000` and `idealEdgeLength: 70` are today's explicit overrides. So the default slider positions reproduce the current graph exactly.)
+`state.forces` (new shape; defaults chosen to give a pleasant Obsidian-like spread):
 
-### Markup (`index.html`)
+| Sidebar label | `state.forces` key | d3-force option | Applied as | Default | min | max | step |
+|---|---|---|---|---|---|---|---|
+| Centre force | `centre` | `xStrength` & `yStrength` | both = `centre` | 0.1 | 0 | 1 | 0.05 |
+| Repel force | `repel` | `manyBodyStrength` | `-repel` (negative = repulsion) | 300 | 0 | 1000 | 25 |
+| Link force | `link` | `linkStrength` | `link` | 0.5 | 0 | 1 | 0.05 |
+| Link distance | `distance` | `linkDistance` | `distance` | 40 | 10 | 300 | 5 |
 
-A new sidebar section between `#s-filter` and `#s-stats`, collapsible via native `<details>`:
+Slider `data-force` attributes use the `state.forces` keys (`centre`/`repel`/`link`/`distance`), and each slider's `value`/`min`/`max`/`step` matches this table (step-aligned so the thumb reflects the true value).
 
-```html
-<section id="s-forces">
-  <details open>
-    <summary>Forces</summary>
-    <label class="force">Centre force<input type="range" data-force="gravity" min="0" max="4" step="0.1" value="1"></label>
-    <label class="force">Repel force<input type="range" data-force="nodeRepulsion" min="1000" max="20000" step="500" value="6000"></label>
-    <label class="force">Link force<input type="range" data-force="edgeElasticity" min="0" max="400" step="5" value="32"></label>
-    <label class="force">Link distance<input type="range" data-force="idealEdgeLength" min="20" max="300" step="5" value="70"></label>
-  </details>
-</section>
-```
+### Continuous layout (`app.js`)
 
-### Layout construction (`app.js`)
-
-`state` gains `forces: { gravity: 1, nodeRepulsion: 6000, edgeElasticity: 32, idealEdgeLength: 70 }`.
-
-The `GRAPH_LAYOUT` constant is replaced by a function that builds `cose` options from `state.forces`:
+`graphLayout()` returns the d3-force options built from `state.forces`:
 
 ```js
 function graphLayout() {
-  return { name: 'cose', animate: false,
-    gravity: state.forces.gravity,
-    nodeRepulsion: state.forces.nodeRepulsion,
-    edgeElasticity: state.forces.edgeElasticity,
-    idealEdgeLength: state.forces.idealEdgeLength };
+  return {
+    name: 'd3-force', animate: true, infinite: true, fixedAfterDragging: false,
+    linkId: (d) => d.id, linkDistance: state.forces.distance, linkStrength: state.forces.link,
+    manyBodyStrength: -state.forces.repel,
+    xStrength: state.forces.centre, yStrength: state.forces.centre,
+    alphaTarget: AMBIENT_ALPHA, velocityDecay: 0.4,
+  };
 }
 ```
 
-`setView()` uses `graphLayout()` (call, not const) for the graph branch; the tree branch keeps `TREE_LAYOUT`.
+- `infinite: true` keeps the simulation running (never auto-ends) → the graph stays alive.
+- `alphaTarget: AMBIENT_ALPHA` (a small constant, start `0.02`, tunable in QA) keeps a **subtle** perpetual motion instead of freezing; `velocityDecay: 0.4` keeps it calm rather than jittery.
+- `fixedAfterDragging: false` → **drag releases** the node.
 
-### Re-layout on slider change (`app.js`)
+**Running-instance management** (the key difference from a one-shot layout): the simulation is a persistent, long-running layout that must be explicitly stopped, or multiple simulations stack and the graph thrashes.
 
-A debounced `relayout()` re-runs only the graph layout:
+- A module var `graphSim` holds the current running `d3-force` layout (or `null`).
+- `startSim()`: if `state.view === 'graph'`, stop any existing `graphSim`, then `graphSim = cy.layout(graphLayout()); graphSim.run();`.
+- `stopSim()`: if `graphSim`, `graphSim.stop(); graphSim = null;`.
+- `setView()`: for graph → run tree/graph elements as today, then `startSim()` (instead of the old one-shot `cose` run) and show `#s-forces`; for tree → `stopSim()`, run `TREE_LAYOUT` (`breadthfirst`, unchanged), hide `#s-forces`.
+
+### Live slider updates (`app.js`)
+
+Slider `input` writes `state.forces[key] = Number(value)` and calls a debounced `relayout()` that, **graph-view only**, restarts the sim with the new forces:
 
 ```js
 let relayoutTimer;
 function relayout() {
-  if (!cy || state.view !== 'graph') return;
+  if (state.view !== 'graph') return;
   clearTimeout(relayoutTimer);
-  relayoutTimer = setTimeout(() => cy.layout(graphLayout()).run(), 200);
+  relayoutTimer = setTimeout(() => startSim(), 120);
 }
 ```
 
-Each slider's `input` handler writes `state.forces[param] = Number(value)`, updates the shown value, and calls `relayout()`. Because `relayout` is debounced (~200 ms) and guarded to graph view, dragging is responsive without thrashing, and it is inert in tree view.
+`startSim()` stops the prior sim and starts a fresh one with updated forces; because it's a continuous animated simulation the transition reads as a smooth live reshaping, not a jump. The 120 ms debounce collapses a drag burst.
 
-### Graph-only visibility (`app.js`)
+### Interplay with Phases 1–3a
 
-`setView()` shows/hides `#s-forces` by `state.view`: visible in graph, `display:none` in tree. (The section is inert in tree anyway via the `relayout` guard; hiding it avoids a control that does nothing.)
-
-### Styling (`style.css`)
-
-- `#s-forces .force`: block label + full-width range input, small label text, spacing between sliders (mirrors Obsidian's stacked layout).
-- `<summary>` styled as a section header consistent with the sidebar; `<details>` open by default.
-- Range inputs themed to the palette (accent thumb via `accent-color: var(--coral)`), no new colors.
+- **Continuous ticks + selection/fade/filter:** the sim only moves node *positions*; `.faded`/`.spotlight`/`.hidden` classes and selection are position-independent, so highlight/filter persist while the graph moves. `updateFocus`/`applyFilter`/`recolor` are unchanged.
+- **Tree view:** unchanged `breadthfirst`; `stopSim()` ensures no d3-force sim runs in tree.
+- **Focus animation (`focusNode`)** still pans/zooms; it composes with the running sim (sim moves nodes, `focusNode` moves the viewport).
+- **Node dragging:** provided by `cytoscape-d3-force`'s drag handlers; with `fixedAfterDragging: false` the node rejoins the simulation on release.
 
 ## Error handling & edge cases
 
-- **Tree view:** `#s-forces` hidden and `relayout()` no-ops (guarded on `state.view === 'graph'`), so sliders can't trigger a `breadthfirst`-incompatible layout.
-- **Rapid dragging:** the 200 ms debounce collapses a burst of `input` events into one relayout.
-- **Returning to graph view:** `setView`'s graph branch already runs `graphLayout()` with the current `state.forces`, so any values set earlier are applied on the next graph render without needing a separate relayout.
-- **Out-of-range:** the `min`/`max`/`step` attributes clamp values; `Number()` parses the slider string.
-- **Filter/selection unaffected:** `relayout` only re-runs the layout (positions); it does not touch `.hidden`/selection/`updateFocus`, so filtering and highlighting persist across a relayout.
+- **Extension load failure** (vendor file missing): guard `cytoscape.use` and fall back — if `window.cytoscapeD3Force` is undefined, log and keep the graph static (nodes still render at their last positions via a one-shot `cose` fallback layout). This keeps the viewer usable if vendoring regresses.
+- **Leaving graph view:** `stopSim()` on switching to tree prevents a background simulation from burning CPU.
+- **Rapid dragging of sliders:** 120 ms debounce + stop-before-start (no stacked sims).
+- **Empty/tiny graph:** d3-force handles any node count; a single node just sits centered.
+- **Filter/selection across a relayout:** unaffected (relayout only restarts positions).
 
 ## Components touched
 
 | File | Change |
 |---|---|
-| `index.html` | Add `#s-forces` (collapsible `<details>` with four range inputs) between `#s-filter` and `#s-stats`. |
-| `style.css` | `#s-forces` / `.force` / `<summary>` / range-input styling (palette accent). |
-| `app.js` | Add `state.forces`; replace `GRAPH_LAYOUT` const with `graphLayout()`; use it in `setView`; add debounced `relayout()`; wire the four sliders; toggle `#s-forces` visibility in `setView`. |
-
-No backend or data-shape change.
+| `package.json` | Add devDeps `cytoscape-d3-force`, `d3-force`. |
+| `scripts/copy-static.mjs` | Vendor `d3-force.min.js` + `cytoscape-d3-force.js` into `vendor/`. |
+| `index.html` | Load the two vendor scripts + the `window['d3-force']` shim after `cytoscape.min.js`; keep the `#s-forces` section (slider ranges/defaults per the table). |
+| `style.css` | (Unchanged from the current Forces styling — already present.) |
+| `app.js` | Register the extension; `state.forces` new shape; `graphLayout()` → d3-force options; `startSim()`/`stopSim()` + `graphSim` var; `setView` runs/stops the sim and toggles `#s-forces`; debounced `relayout()` restarts the sim; slider wiring; `cose` fallback if the extension is absent. |
 
 ## Verification
 
 No frontend test harness (`app.js` is a non-module browser script), so verification is:
 
 1. **Playwright on a built `dist`** against the sample vault, asserting:
-   - Default render matches the current graph (slider defaults = current params).
-   - Moving a slider updates `state.forces[param]` (e.g. `nodeRepulsion`) and re-runs the layout — node positions change after the debounce.
-   - The shown value updates with the slider.
-   - Switching to tree hides `#s-forces` and makes `relayout()` a no-op; switching back to graph shows it and applies the current forces.
-   - Filter/selection persist across a relayout; console clean.
-2. **User visual sign-off** on the Forces controls and how the graph responds.
+   - The extension registered; graph view runs a `d3-force` sim — node positions **change over successive ticks with no interaction** (proves it's alive), then remain gently in motion.
+   - Sliders match `state.forces` on fresh load (step-aligned) and moving one (e.g. Repel) updates `state.forces.repel` and visibly reshapes the graph.
+   - Switching to tree stops the sim (positions stable, `#s-forces` hidden); back to graph restarts it and shows the section.
+   - Dragging a node then releasing leaves it un-pinned (it keeps moving with the sim afterwards).
+   - Filter/selection persist while the sim runs; console clean.
+2. **User visual sign-off** on the "alive but subtle" motion and drag feel.
 
 ## Rollout
 
-Single PR on `feat/viz-phase4-forces`, stacked on merged Phase 3a. Per repo convention, update the `README.md` `cortex viz` line to mention tunable force controls. Phase 3b (Mermaid architecture view) is specced separately afterward.
+Single PR on `feat/viz-phase4-forces` (supersedes the earlier one-shot `cose` commits on the same branch). Per repo convention, update the `README.md` `cortex viz` line to mention live/tunable force controls. Phase 3b (Mermaid) is specced separately afterward.
