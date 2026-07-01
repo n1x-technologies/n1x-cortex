@@ -114,7 +114,7 @@ function graphLayout() {
     manyBodyStrength: -state.forces.repel,
     xStrength: state.forces.centre,
     yStrength: state.forces.centre,
-    alphaTarget: AMBIENT_ALPHA, velocityDecay: 0.4,
+    alphaTarget: AMBIENT_ALPHA, alpha: 0.7, alphaDecay: 0.045, velocityDecay: 0.5,
   };
 }
 
@@ -130,10 +130,19 @@ function recenter() {
 function startSim() {
   if (!cy || state.view !== 'graph') return;
   stopSim();
+  // Warm up the layout HIDDEN so the initial high-energy reorganization (nodes start
+  // scattered, then the centering force snaps them into a cluster) is never seen. We
+  // reveal — already framed — with a short fade once it has mostly settled.
+  const box = cy.container();
+  if (box) { box.style.transition = 'none'; box.style.opacity = '0'; }
   graphSim = cy.layout(graphLayout());
   graphSim.run();
   clearTimeout(recenterTimer);
-  [500, 1200, 2200, 3400].forEach(ms => setTimeout(recenter, ms)); // re-frame repeatedly as the layout expands (big vaults open framed, not tiny)
+  setTimeout(() => {
+    if (cy && state.view === 'graph' && cy.nodes().nonempty()) cy.fit(cy.nodes(), 40); // frame instantly (no pan), then fade in
+    if (box) { box.style.transition = 'opacity .3s ease'; box.style.opacity = '1'; }
+  }, 420);
+  [900, 1700, 2800].forEach(ms => setTimeout(recenter, ms)); // keep re-framing as big vaults keep expanding
 }
 
 let relayoutTimer;
