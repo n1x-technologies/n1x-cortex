@@ -19,6 +19,7 @@ function nodeColor(n) {
 }
 
 function groupKey(n) {
+  if (n.isFolder) return '__folder__';
   if (!n.exists) return '__gap__';
   if (state.mode === 'freshness') return n.freshness || 'fresh';
   const v = state.mode === 'status' ? n.status : n.type;
@@ -107,13 +108,35 @@ function buildGraphElements() {
   return elements;
 }
 
+const TREE_LAYOUT = { name: 'breadthfirst', directed: true, roots: '#__root__', animate: false, spacingFactor: 1.1 };
+
+function buildTreeElements() {
+  const elements = [{ data: { id: '__root__', label: 'vault', isFolder: true } }];
+  const folders = new Set();
+  for (const n of state.data.nodes) {
+    const f = n.folder || '';
+    if (f && !folders.has(f)) {
+      folders.add(f);
+      elements.push({ data: { id: `__folder__:${f}`, label: f, isFolder: true } });
+      elements.push({ data: { id: `__fedge__:${f}`, source: '__root__', target: `__folder__:${f}`, tree: true } });
+    }
+  }
+  for (const n of state.data.nodes) {
+    elements.push({ data: { id: n.id, label: n.title, ...n } });
+    const parent = n.folder ? `__folder__:${n.folder}` : '__root__';
+    elements.push({ data: { id: `__tedge__:${n.id}`, source: parent, target: n.id, tree: true } });
+  }
+  return elements;
+}
+
 function setView() {
   if (!cy) return;
   cy.$(':selected').unselect();
   hidePanel();
   cy.elements().remove();
-  cy.add(buildGraphElements());
-  cy.layout(GRAPH_LAYOUT).run();
+  cy.add(state.view === 'tree' ? buildTreeElements() : buildGraphElements());
+  if (state.view === 'tree') cy.$('[?isFolder]').unselectify();
+  cy.layout(state.view === 'tree' ? TREE_LAYOUT : GRAPH_LAYOUT).run();
   recolor();
   applyFilter();
 }
@@ -136,12 +159,19 @@ function render() {
       { selector: 'node:selected', style: { 'border-width': 3, 'border-color': '#fff', 'border-style': 'solid', 'text-opacity': 1 } },
       { selector: 'edge', style: { 'width': 0.6, 'line-color': '#3a3a55', 'curve-style': 'haystack', 'opacity': 0.6 } },
       { selector: 'edge[?dangling]', style: { 'line-color': '#5a5a70', 'line-style': 'dashed' } },
+      { selector: 'node[?isFolder]', style: {
+        'shape': 'round-rectangle', 'background-color': '#2a2a40', 'background-opacity': 1,
+        'border-width': 1, 'border-color': '#3a3a55', 'border-style': 'solid',
+        'width': 'label', 'height': 16, 'padding': '4px',
+        'label': 'data(label)', 'font-size': 8, 'color': '#c9c9de', 'text-opacity': 1, 'text-valign': 'center',
+      }},
+      { selector: 'edge[?tree]', style: { 'width': 1, 'line-color': '#3a3a55', 'curve-style': 'bezier', 'opacity': 0.7, 'target-arrow-shape': 'none' } },
       { selector: '.faded', style: { 'opacity': 0.12, 'text-opacity': 0 } },
       { selector: '.spotlight', style: { 'text-opacity': 1 } },
       { selector: '.hidden', style: { 'display': 'none' } },
     ],
   });
-  cy.on('tap', 'node', (ev) => { const node = ev.target; focusNode(node); showPanel(node.data()); });
+  cy.on('tap', 'node', (ev) => { const node = ev.target; if (node.data('isFolder')) return; focusNode(node); showPanel(node.data()); });
   cy.on('mouseover', 'node', (ev) => { state.hoverNode = ev.target; updateFocus(); });
   cy.on('mouseout', 'node', () => { state.hoverNode = null; updateFocus(); });
   cy.on('select unselect', 'node', () => updateFocus());
@@ -151,7 +181,7 @@ function render() {
 
 function recolor() {
   if (!cy) return;
-  cy.batch(() => cy.nodes().forEach(n => n.style('background-color', nodeColor(n.data()))));
+  cy.batch(() => cy.nodes().forEach(n => { if (n.data('isFolder')) return; n.style('background-color', nodeColor(n.data())); }));
   buildFilter();
 }
 
@@ -262,5 +292,11 @@ async function main() {
     state.mode = e.target.value; state.hidden.clear(); recolor(); applyFilter();
   });
   document.getElementById('search').addEventListener('input', (e) => applySearch(e.target.value));
+  document.querySelectorAll('#viewtoggle button').forEach(b => b.addEventListener('click', () => {
+    if (b.dataset.view === state.view) return;
+    state.view = b.dataset.view;
+    document.querySelectorAll('#viewtoggle button').forEach(x => x.classList.toggle('active', x.dataset.view === state.view));
+    setView();
+  }));
 }
 main();
