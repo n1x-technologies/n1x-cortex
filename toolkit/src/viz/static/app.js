@@ -86,15 +86,33 @@ function focusNode(node) {
   );
 }
 
+function neighborsOf(edges, id) {
+  const outgoing = edges.filter(e => e.source === id).map(e => e.target);
+  const incoming = edges.filter(e => e.target === id).map(e => e.source);
+  return { outgoing, incoming };
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+function linkList(label, ids) {
+  if (!ids.length) return '';
+  const shown = ids.slice(0, 25);
+  const links = shown.map(t => `<a href="#" data-id="${esc(t)}">${esc(state.titleById.get(t) || t)}</a>`).join('');
+  const more = ids.length > 25 ? `<div class="more">+${ids.length - 25} more</div>` : '';
+  return `<dt>${label}</dt>${links}${more}`;
+}
+
 function showPanel(n) {
   document.getElementById('panel').classList.remove('hidden');
   document.getElementById('p-title').textContent = n.label || n.id;
   const meta = [['id', n.id], ['type', n.type], ['status', n.status], ['folder', n.folder], ['freshness', n.freshness], ['links', n.degree]];
   document.getElementById('p-meta').innerHTML = meta.filter(([, v]) => v != null && v !== '')
     .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
-  const outgoing = state.data.edges.filter(e => e.source === n.id).map(e => e.target);
-  document.getElementById('p-links').innerHTML = outgoing.length
-    ? '<dt>connects to</dt>' + outgoing.slice(0, 25).map(t => `<a href="#" data-id="${t}">${t}</a>`).join('') : '';
+  const { outgoing, incoming } = neighborsOf(state.data.edges, n.id);
+  document.getElementById('p-links').innerHTML =
+    linkList('connects to', outgoing) + linkList('linked from', incoming);
   document.querySelectorAll('#p-links a').forEach(a => a.addEventListener('click', (ev) => {
     ev.preventDefault();
     const node = cy.getElementById(a.dataset.id);
@@ -149,6 +167,7 @@ async function main() {
   const statuses = Object.keys(state.data.stats.byStatus);
   state.typeColors = assignColors(types, TYPE_PALETTE);
   state.statusColors = assignColors(statuses, STATUS_FALLBACK);
+  state.titleById = new Map(state.data.nodes.map(n => [n.id, n.title || n.id]));
 
   const s = state.data.stats;
   document.getElementById('stats').textContent =
