@@ -3,7 +3,7 @@ const TYPE_PALETTE = ['#4F9DDE', '#E94560', '#46C0A0', '#E0A458', '#9B7EDE', '#D
 const FRESH = { gap: '#6e6e80', stale: '#db6d28', draft: '#d29922', verified: '#2ea043', fresh: '#46c0a0' };
 const STATUS_FALLBACK = ['#8a8aa0', '#4F9DDE', '#2ea043', '#E0A458'];
 
-const state = { data: null, mode: 'type', typeColors: {}, statusColors: {}, search: '', hoverNode: null, hidden: new Set(), view: 'graph', forces: { centre: 0.1, repel: 300, link: 0.5, distance: 40 } };
+const state = { data: null, mode: 'type', typeColors: {}, statusColors: {}, search: '', hoverNode: null, hidden: new Set(), view: 'graph', forces: { centre: 0.5, repel: 500, link: 0.5, distance: 155 } };
 
 function assignColors(values, palette) {
   const map = {};
@@ -131,7 +131,7 @@ function startSim() {
   graphSim = cy.layout(graphLayout());
   graphSim.run();
   clearTimeout(recenterTimer);
-  recenterTimer = setTimeout(recenter, 700); // frame the graph once it has spread
+  [500, 1200, 2200, 3400].forEach(ms => setTimeout(recenter, ms)); // re-frame repeatedly as the layout expands (big vaults open framed, not tiny)
 }
 
 let relayoutTimer;
