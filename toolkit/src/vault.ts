@@ -29,10 +29,14 @@ export function collectFrontmatterKeys(vaultDir: string): string[] {
 
 export function scanVault(vaultDir: string, config: CortexConfig): Note[] {
   const sources = config.sourcesDir.replace(/\/$/, '');
+  const templates = config.templatesDir.replace(/\/$/, '');
   const notes: Note[] = [];
   for (const full of walk(vaultDir)) {
     const rel = relPosix(vaultDir, full);
+    // Raw sources and templates are never notes — excluding templates here keeps
+    // their frontmatter and placeholder [[links]] out of the graph, status, etc.
     if (rel === `${sources}` || rel.startsWith(`${sources}/`)) continue;
+    if (rel === `${templates}` || rel.startsWith(`${templates}/`)) continue;
     notes.push(buildNote(rel, readFileSync(full, 'utf8'), config.fields));
   }
   return notes.sort((a, b) => a.path.localeCompare(b.path));
