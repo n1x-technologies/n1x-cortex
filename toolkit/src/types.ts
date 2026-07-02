@@ -159,6 +159,8 @@ export interface AtomizeEmitPlan {
   knownFolders: string[];
   existing: EmitExistingNote[];
   segments: Segment[];
+  /** The portable distillation methodology (DISTILL_METHODOLOGY) — the rules every distiller follows. */
+  instructions: string;
 }
 export interface DistilledNote {
   title: string;

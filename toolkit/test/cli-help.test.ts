@@ -42,6 +42,16 @@ describe('cli --version / --help', () => {
     expect(code).toBe(1);
   });
 
+  // Regression guard: a bare trailing `--model` (no value) must error, not silently
+  // fall through to the plain local dry-run atomize path.
+  it('atomize --model with no value errors and exits 1 without distilling', async () => {
+    const { lines, restore } = captureLog();
+    const code = await main(['atomize', 'somesource.md', '--model']);
+    restore();
+    expect(code).toBe(1);
+    expect(lines.join('\n')).toContain('Usage: cortex atomize');
+  });
+
   // Regression guard: `cortex mcp --help` must NOT start the stdio server (which hangs).
   it('mcp --help prints MCP help and exits 0 without hanging', async () => {
     const { lines, restore } = captureLog();

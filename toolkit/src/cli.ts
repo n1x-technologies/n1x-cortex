@@ -8,7 +8,7 @@ import { runStatus } from './commands/status.js';
 import { runOrphans } from './commands/orphans.js';
 import { runViz, openBrowser } from './commands/viz.js';
 import { runQuery, runQuerySemantic, formatQuery, formatQueryJson } from './commands/query.js';
-import { runAtomize, formatPlan, runEmit, runApply, formatDistilledPlan, runUndo } from './commands/atomize.js';
+import { runAtomize, formatPlan, runEmit, runApply, formatDistilledPlan, runUndo, runDistillLlm } from './commands/atomize.js';
 import { runPromote, formatPromote, runSetStatus } from './commands/promote.js';
 import { runHookCommand } from './commands/hook.js';
 import { runPause, runResume } from './commands/pause.js';
@@ -116,7 +116,20 @@ export async function main(argv: string[]): Promise<number> {
       const emit = rest.includes('--emit-json');
       const apply = rest.includes('--apply');
       const undo = rest.includes('--undo');
-      const positional = rest.filter(a => !a.startsWith('--'));
+      const mi = rest.indexOf('--model');
+      const model = mi >= 0 ? rest[mi + 1] : undefined;
+      const bi = rest.indexOf('--base-url');
+      const baseUrl = bi >= 0 ? rest[bi + 1] : undefined;
+      if (mi >= 0 && (model === undefined || model.startsWith('--'))) {
+        console.log('Usage: cortex atomize <source.md> --model <provider:model> [--base-url <url>] [--write]');
+        return 1;
+      }
+      if (bi >= 0 && (baseUrl === undefined || baseUrl.startsWith('--'))) {
+        console.log('Usage: cortex atomize <source.md> --model <provider:model> [--base-url <url>] [--write]');
+        return 1;
+      }
+      const flagValues = new Set([model, baseUrl].filter(Boolean) as string[]);
+      const positional = rest.filter(a => !a.startsWith('--') && !flagValues.has(a));
       if (undo) {
         const { restored, reverted } = runUndo(cwd);
         const n = restored.length + reverted.length;
@@ -129,8 +142,14 @@ export async function main(argv: string[]): Promise<number> {
         console.log(formatDistilledPlan(runApply(cwd, specs, { write, force })));
         return 0;
       }
+      if (model) {
+        const src = positional[0];
+        if (!src) { console.log('Usage: cortex atomize <source.md> --model <provider:model> [--base-url <url>] [--write]'); return 1; }
+        console.log(formatDistilledPlan(await runDistillLlm(cwd, src, { model, baseUrl, write, force })));
+        return 0;
+      }
       const source = positional[0];
-      if (!source) { console.log('Usage: cortex atomize <source.md> [--emit-json | --write]'); return 1; }
+      if (!source) { console.log('Usage: cortex atomize <source.md> [--emit-json | --write | --model <provider:model> [--base-url <url>]]'); return 1; }
       if (emit) { console.log(runEmit(cwd, source)); return 0; }
       console.log(formatPlan(runAtomize(cwd, source, { write })));
       return 0;

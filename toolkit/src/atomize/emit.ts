@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { basename } from 'node:path';
 import { segmentSource } from './segment.js';
 import { scanVault } from '../vault.js';
+import { DISTILL_METHODOLOGY } from './methodology.js';
 import type { AtomizeEmitPlan, EmitExistingNote, CortexConfig } from '../types.js';
 
 const INBOX = '_inbox';
@@ -35,5 +36,6 @@ export function emitPlan(vaultDir: string, sourcePath: string, config: CortexCon
     knownFolders,
     existing,
     segments,
+    instructions: DISTILL_METHODOLOGY,
   };
 }

@@ -35,6 +35,11 @@ describe('read companions', () => {
     const dir = vault();
     expect(() => atomizeEmitTool(dir, { source: '../../etc/passwd' })).toThrow(/escapes the vault/);
   });
+  it('cortex_atomize_emit hands the agent the distillation methodology', () => {
+    const dir = vault();
+    const plan = atomizeEmitTool(dir, { source: 'Markdown/spec.md' });
+    expect(plan.instructions.toLowerCase()).toContain('one idea per note');
+  });
   it('gapsTool reports a gaps structure', () => {
     const dir = vault();
     const r = gapsTool(dir);
