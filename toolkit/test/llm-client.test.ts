@@ -72,4 +72,8 @@ describe('OpenAiCompatClient.complete', () => {
     const body = JSON.parse((init as RequestInit).body as string);
     expect(body.messages).toEqual([{ role: 'system', content: 'sys' }, { role: 'user', content: 'usr' }]);
   });
+  it('throws a clean error on a non-2xx response', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('bad', { status: 401 })));
+    await expect(new OpenAiCompatClient('http://host/v1', 'k', 'm').complete('s', 'u')).rejects.toThrow(/openai-compatible api error 401/i);
+  });
 });
