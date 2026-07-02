@@ -159,6 +159,7 @@ export interface AtomizeEmitPlan {
   knownFolders: string[];
   existing: EmitExistingNote[];
   segments: Segment[];
+  instructions: string;
 }
 export interface DistilledNote {
   title: string;
