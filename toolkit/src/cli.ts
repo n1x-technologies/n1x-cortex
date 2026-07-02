@@ -173,7 +173,7 @@ export async function main(argv: string[]): Promise<number> {
         const spec = parseModelSpec(model);
         if (baseUrl) spec.baseUrl = baseUrl;
         const client = makeLlmClient(spec, process.env);
-        console.log(formatBootstrap(await runBootstrap(root, client, { write, force })));
+        console.log(formatBootstrap(await runBootstrap(root, client, { write, force, onProgress: (l) => console.log(l) })));
         return 0;
       } catch (e) {
         console.log((e as Error).message);

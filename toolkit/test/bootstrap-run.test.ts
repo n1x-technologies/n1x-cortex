@@ -27,12 +27,21 @@ function pickyClient(): LlmClient {
 }
 
 describe('runBootstrap', () => {
-  it('dry-runs by default — writes nothing', async () => {
+  it('dry-runs by default — never calls the model, writes nothing', async () => {
     const dir = repo();
-    const res = await runBootstrap(dir, pickyClient());
+    const throwingClient: LlmClient = { complete: async () => { throw new Error('must not be called in dry-run'); } };
+    const res = await runBootstrap(dir, throwingClient);
     expect(res.dryRun).toBe(true);
     expect(res.notes).toBe(0);
+    expect(res.perFile.length).toBe(2); // manifest of files it WOULD distill
     expect(existsSync(join(dir, '_inbox'))).toBe(false);
+  });
+
+  it('streams onProgress once per processed file on --write', async () => {
+    const dir = repo();
+    const lines: string[] = [];
+    const res = await runBootstrap(dir, pickyClient(), { write: true, onProgress: (l) => lines.push(l) });
+    expect(lines.length).toBe(res.files);
   });
 
   it('continue-on-error: one bad file fails but the run completes and drafts the good ones', async () => {

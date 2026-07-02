@@ -204,9 +204,11 @@ cortex bootstrap . --model anthropic:claude-3-5-sonnet --write
 
 It respects `.gitignore`, skips binaries and vendored folders, streams progress
 per file, and writes `status: draft` notes into `_inbox/`. Dry-run by default —
-run without `--write` to preview the file manifest first. The whole run is one
-reversible unit: `cortex undo` reverses the entire bootstrap. Then open the
-graph with `cortex viz`. Works with any OpenAI-compatible endpoint too
+run without `--write` to list the files it *would* distill, calling no model at
+all: a free preview before you spend a single token. `cortex undo` removes
+every draft the run created in one step; if a re-run also updated existing
+notes, run `cortex undo` again to restore those too. Then open the graph with
+`cortex viz`. Works with any OpenAI-compatible endpoint too
 (`--model openai-compat:llama3 --base-url http://localhost:11434/v1`).
 
 ## Semantic search (optional)

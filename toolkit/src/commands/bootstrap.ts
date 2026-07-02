@@ -34,12 +34,27 @@ function makeRunId(): string {
 export async function runBootstrap(
   root: string,
   client: LlmClient,
-  opts: { write?: boolean; force?: boolean; runId?: string } = {},
+  opts: { write?: boolean; force?: boolean; runId?: string; onProgress?: (line: string) => void } = {},
 ): Promise<BootstrapResult> {
   const write = opts.write ?? false;
   const runId = opts.runId ?? makeRunId();
   const config = loadConfig(root, collectFrontmatterKeys(root));
   const { files, skipped } = discover(root, config);
+
+  if (!write) {
+    // Dry-run is a free preview: list what WOULD be distilled, but never call
+    // the model. On a repo with hundreds of files, a "dry-run" that still
+    // fires hundreds of billed LLM calls is a cost footgun.
+    return {
+      files: files.length,
+      notes: 0,
+      skipped: skipped.length,
+      failures: [],
+      perFile: files.map(f => ({ path: f.path, notes: 0 })),
+      dryRun: true,
+      runId,
+    };
+  }
 
   const failures: { path: string; error: string }[] = [];
   const perFile: { path: string; notes: number }[] = [];
@@ -51,14 +66,17 @@ export async function runBootstrap(
       const res = await distillWorksheetWithLlm(root, worksheet, config, client, { write, force: opts.force, runId });
       perFile.push({ path: file.path, notes: res.written.length });
       allCreated.push(...res.written);
+      opts.onProgress?.(`  • ${file.path} → ${res.written.length} note(s)`);
     } catch (e) {
-      failures.push({ path: file.path, error: e instanceof Error ? e.message : String(e) });
+      const message = e instanceof Error ? e.message : String(e);
+      failures.push({ path: file.path, error: message });
+      opts.onProgress?.(`  ✗ ${file.path}: ${message.split('\n')[0]}`);
     }
   }
 
   // Journal ALL created drafts under the one runId exactly once (recordCreations
   // overwrites its {runId}.json, so it must be called a single time).
-  if (write && allCreated.length) recordCreations(root, allCreated, runId);
+  if (allCreated.length) recordCreations(root, allCreated, runId);
 
   return {
     files: files.length,
@@ -66,17 +84,21 @@ export async function runBootstrap(
     skipped: skipped.length,
     failures,
     perFile,
-    dryRun: !write,
+    dryRun: false,
     runId,
   };
 }
 
 export function formatBootstrap(r: BootstrapResult): string {
   const lines: string[] = [];
+  if (r.dryRun) {
+    lines.push(`Bootstrap (dry-run): ${r.files} file(s) would be distilled · ${r.skipped} skipped · calls no model`);
+    for (const f of r.perFile) lines.push(`  • ${f.path}`);
+    lines.push('Pass --write to distill and draft notes into _inbox/.');
+    return lines.join('\n');
+  }
   lines.push(`Bootstrap: ${r.files} file(s) · ${r.notes} note(s) · ${r.skipped} skipped · ${r.failures.length} failed`);
-  lines.push(r.dryRun ? '(dry-run — nothing written; pass --write to apply)' : `wrote ${r.notes} draft(s) to _inbox/`);
-  for (const f of r.perFile) if (f.notes) lines.push(`  • ${f.path} → ${f.notes} note(s)`);
   for (const f of r.failures) lines.push(`  ✗ ${f.path}: ${f.error.split('\n')[0]}`);
-  if (!r.dryRun && r.notes) lines.push('Next: open the graph with `cortex viz`  ·  undo the run with `cortex undo`');
+  lines.push('Next: open the graph with `cortex viz`  ·  undo with `cortex undo`');
   return lines.join('\n');
 }
