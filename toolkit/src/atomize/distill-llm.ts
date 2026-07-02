@@ -45,7 +45,21 @@ function extractJsonObject(text: string): string | null {
   return body.slice(start, end + 1);
 }
 
-/** emit → prompt → model → parse → reversible apply. Dry-run by default. */
+/** Distill an already-built worksheet (doc OR code). The seam bootstrap reuses. Dry-run by default. */
+export async function distillWorksheetWithLlm(
+  vaultDir: string,
+  worksheet: AtomizeEmitPlan,
+  config: CortexConfig,
+  client: LlmClient,
+  opts: { write?: boolean; force?: boolean; runId?: string } = {},
+): Promise<DistilledApplyResult> {
+  const { system, user } = buildDistillPrompt(worksheet);
+  const reply = await client.complete(system, user);
+  const input = parseDistilledResponse(reply, worksheet.source);
+  return applyDistilledInput(vaultDir, input, config, { dryRun: !opts.write, force: opts.force, runId: opts.runId });
+}
+
+/** emit → distill the markdown worksheet. Thin wrapper over distillWorksheetWithLlm. */
 export async function distillWithLlm(
   vaultDir: string,
   sourcePath: string,
@@ -53,9 +67,6 @@ export async function distillWithLlm(
   client: LlmClient,
   opts: { write?: boolean; force?: boolean } = {},
 ): Promise<DistilledApplyResult> {
-  const plan = emitPlan(vaultDir, sourcePath, config);
-  const { system, user } = buildDistillPrompt(plan);
-  const reply = await client.complete(system, user);
-  const input = parseDistilledResponse(reply, plan.source);
-  return applyDistilledInput(vaultDir, input, config, { dryRun: !opts.write, force: opts.force });
+  const worksheet = emitPlan(vaultDir, sourcePath, config);
+  return distillWorksheetWithLlm(vaultDir, worksheet, config, client, opts);
 }

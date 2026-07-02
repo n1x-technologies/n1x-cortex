@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { buildDistillPrompt, parseDistilledResponse, distillWithLlm } from '../src/atomize/distill-llm.js';
+import { buildDistillPrompt, parseDistilledResponse, distillWithLlm, distillWorksheetWithLlm } from '../src/atomize/distill-llm.js';
 import { emitPlan } from '../src/atomize/emit.js';
 import { loadConfig } from '../src/config.js';
 import type { LlmClient } from '../src/atomize/llm-client.js';
@@ -67,5 +67,25 @@ describe('distillWithLlm', () => {
     expect(res.written.length).toBeGreaterThan(0);
     expect(existsSync(join(dir, res.written[0]))).toBe(true);
     expect(res.written[0].startsWith('_inbox/')).toBe(true);
+  });
+});
+
+describe('distillWorksheetWithLlm', () => {
+  it('distills a prebuilt worksheet and honors the passed runId + dry-run default', async () => {
+    const dir = vault();
+    const cfg = loadConfig(dir, []);
+    const worksheet = emitPlan(dir, join(dir, 'Markdown', 'src.md'), cfg);
+    const client = fakeClient(JSON.stringify({ source: 'ignored', notes: [cannedNote] }));
+    const res = await distillWorksheetWithLlm(dir, worksheet, cfg, client, { write: true, runId: 'run-fixed-1' });
+    expect(res.plan.dryRun).toBe(false);
+    expect(res.written.length).toBeGreaterThan(0);
+  });
+  it('defaults to dry-run when write is omitted', async () => {
+    const dir = vault();
+    const cfg = loadConfig(dir, []);
+    const worksheet = emitPlan(dir, join(dir, 'Markdown', 'src.md'), cfg);
+    const res = await distillWorksheetWithLlm(dir, worksheet, cfg, fakeClient(JSON.stringify({ source: 'x', notes: [cannedNote] })));
+    expect(res.plan.dryRun).toBe(true);
+    expect(res.written).toHaveLength(0);
   });
 });

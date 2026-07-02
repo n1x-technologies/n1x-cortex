@@ -10,7 +10,7 @@
 // Shared contract for write handlers: dry-run by default; an explicit `write`
 // commits. They return { dryRun, runId, data } so the server can count committed
 // writes and record the run id in the audit trail.
-import { resolve, sep } from 'node:path';
+import { resolve } from 'node:path';
 import { loadConfig } from '../config.js';
 import { collectFrontmatterKeys } from '../vault.js';
 import { loadState } from '../hooks/state.js';
@@ -23,6 +23,7 @@ import { undoLatestRun, recordCreations } from '../atomize/backup.js';
 import { computeDupes } from '../curate/dupes.js';
 import { computeGaps } from '../curate/gaps.js';
 import { mintMcpRunId } from './audit.js';
+import { assertInVault } from './paths.js';
 import type { DistilledNote, CortexConfig } from '../types.js';
 
 export interface WriteToolOut<T> {
@@ -33,13 +34,6 @@ export interface WriteToolOut<T> {
 
 function cfg(vaultDir: string): CortexConfig {
   return loadConfig(vaultDir, collectFrontmatterKeys(vaultDir));
-}
-
-/** Reject any vault-relative path that resolves outside the vault. */
-function assertInVault(vaultDir: string, rel: string, label = 'path'): void {
-  const abs = resolve(vaultDir, rel);
-  const root = resolve(vaultDir);
-  if (abs !== root && !abs.startsWith(root + sep)) throw new Error(`${label} escapes the vault: ${rel}`);
 }
 
 // ── Read companions (the curate loop needs them) ───────────────────

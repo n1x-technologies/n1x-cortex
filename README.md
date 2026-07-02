@@ -113,6 +113,7 @@ The server is long-running, so it loads the embedding model **once** and stays w
 | `cortex_atomize_apply` (draft) | Write its distilled notes as `draft`s in `_inbox/`. Dry-run unless `write:true`. |
 | `cortex_set_status` (draft) | Advance a note's lifecycle status. |
 | `cortex_dupes` / `cortex_gaps` (draft) | Read companions — find merge candidates / thin spots. |
+| `cortex_bootstrap_plan` / `cortex_bootstrap_emit` (draft) | Drive a repo bootstrap over MCP: get the file manifest, then per-file worksheets to distill and write via `cortex_atomize_apply`. |
 | `cortex_promote` (curate) | Graduate ready drafts out of `_inbox/` into curated folders. |
 | `cortex_merge` (curate) | Fold a near-duplicate pair into one note, redirecting links. |
 | `cortex_undo` (any write) | Reverse the latest write run — the escape hatch, never capped. |
@@ -168,6 +169,7 @@ flowchart TB
 | `cortex mcp` | **Run the MCP server** for agents (stdio). Read-only by default; `--write[=draft\|curate]` exposes reversible capture/curation tools. |
 | `cortex embed` | Build the local embedding store (enables semantic search). |
 | `cortex atomize <src>` | AI-distill a source into draft notes (dry-run; `--write`). `--model <provider:model>` runs distillation without an agent, BYO-key ([see below](#distill-without-an-agent-byo-key)). |
+| `cortex bootstrap [path]` | Distill an **entire undocumented repo** — every eligible file, code included — into connected draft notes, BYO-key ([see below](#bootstrap-an-undocumented-repo)). |
 | `cortex gaps` / `dupes` / `verify` | Curation diagnostics. `dupes` compares within a type by default (`--cross-type` to widen); `verify --all` sweeps the whole vault for incomplete notes. |
 | `cortex merge <keep> <drop>` | Fold a near-duplicate pair into one note, redirecting inbound links (via the `/dupes-merge` skill). Dry-run; `--write`, reversible. |
 | `cortex moc` / `doc` | Generate a Map-of-Content note / a branded Typst PDF. |
@@ -190,6 +192,25 @@ cortex atomize Markdown/spec.md --model openai-compat:llama3 --base-url http://l
 ```
 
 The same distillation methodology drives every path — the Claude `/atomize` skill, any MCP agent, and this CLI — so notes come out consistent no matter who distills. Dry-run by default; add `--write` to commit. Every write is reversible with `cortex undo`.
+
+### Bootstrap an undocumented repo
+
+Point Cortex at a codebase with no docs and it reads every file — code included —
+and distills the project's concepts into connected atomic notes:
+
+```bash
+export ANTHROPIC_API_KEY=...        # or OPENAI_API_KEY
+cortex bootstrap . --model anthropic:claude-3-5-sonnet --write
+```
+
+It respects `.gitignore`, skips binaries and vendored folders, streams progress
+per file, and writes `status: draft` notes into `_inbox/`. Dry-run by default —
+run without `--write` to list the files it *would* distill, calling no model at
+all: a free preview before you spend a single token. `cortex undo` removes
+every draft the run created in one step; if a re-run also updated existing
+notes, run `cortex undo` again to restore those too. Then open the graph with
+`cortex viz`. Works with any OpenAI-compatible endpoint too
+(`--model openai-compat:llama3 --base-url http://localhost:11434/v1`).
 
 ## Semantic search (optional)
 
