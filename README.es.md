@@ -189,7 +189,7 @@ Luego `cortex query` y `cortex dupes` se vuelven híbridos (léxico + semántico
 Cortex hoy es el **motor local y de código abierto** — gratis, tuyo, en tu máquina. Es el núcleo abierto de una idea más grande:
 
 - **Un cerebro confiable para software autónomo.** A medida que los equipos delegan más trabajo a agentes, esos agentes necesitan una *única fuente de verdad* en la que puedan confiar y a la que puedan citar. Cortex es esa capa — el **cerebro de una fábrica de software agéntica / autónoma**, donde muchos agentes leen de, y (pronto) escriben en, una base de conocimiento compartida y verificable.
-- **Local-first, siempre.** Cortex sigue siendo el motor abierto que corre en tu máquina — ningún contenido del vault sale nunca de tu equipo. El roadmap de abajo es todo Cortex; crece profundizando el motor local y su ciclo de agentes, no encerrando nada detrás de un servicio.
+- **Local-first, siempre.** Cortex sigue siendo el motor abierto que corre en tu máquina — ningún contenido del vault sale nunca de tu máquina. El roadmap de abajo es todo Cortex; crece profundizando el motor local y su ciclo de agentes, no encerrando nada detrás de un servicio.
 
 El camino es incremental, así que nada se descarta en el trayecto.
 
