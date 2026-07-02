@@ -7,7 +7,7 @@
 // vendored, oversized, and Cortex's own output folders).
 
 import { execFileSync } from 'node:child_process';
-import { readFileSync, statSync, readdirSync, existsSync } from 'node:fs';
+import { openSync, readSync, closeSync, statSync, readdirSync } from 'node:fs';
 import { join, relative, extname, basename, sep } from 'node:path';
 import type { CortexConfig } from '../../types.js';
 
@@ -49,10 +49,17 @@ function listFiles(root: string): string[] {
 
 /** First 4 KB contains a NUL byte → treat as binary. */
 function looksBinary(abs: string): boolean {
+  let fd: number | undefined;
   try {
-    const buf = readFileSync(abs).subarray(0, 4096);
-    return buf.includes(0);
-  } catch { return true; }
+    fd = openSync(abs, 'r');
+    const buf = Buffer.alloc(4096);
+    const n = readSync(fd, buf, 0, 4096, 0);
+    return buf.subarray(0, n).includes(0);
+  } catch {
+    return true;
+  } finally {
+    if (fd !== undefined) closeSync(fd);
+  }
 }
 
 export function discover(root: string, config: CortexConfig): DiscoverResult {
