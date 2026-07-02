@@ -113,6 +113,7 @@ The server is long-running, so it loads the embedding model **once** and stays w
 | `cortex_atomize_apply` (draft) | Write its distilled notes as `draft`s in `_inbox/`. Dry-run unless `write:true`. |
 | `cortex_set_status` (draft) | Advance a note's lifecycle status. |
 | `cortex_dupes` / `cortex_gaps` (draft) | Read companions — find merge candidates / thin spots. |
+| `cortex_bootstrap_plan` / `cortex_bootstrap_emit` (draft) | Drive a repo bootstrap over MCP: get the file manifest, then per-file worksheets to distill and write via `cortex_atomize_apply`. |
 | `cortex_promote` (curate) | Graduate ready drafts out of `_inbox/` into curated folders. |
 | `cortex_merge` (curate) | Fold a near-duplicate pair into one note, redirecting links. |
 | `cortex_undo` (any write) | Reverse the latest write run — the escape hatch, never capped. |
