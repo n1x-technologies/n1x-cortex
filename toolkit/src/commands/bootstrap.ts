@@ -1,9 +1,13 @@
 // toolkit/src/commands/bootstrap.ts
 //
 // The CLI bootstrap engine: discover every eligible repo file, distill each
-// into concept drafts, and journal the whole run under ONE shared runId so
-// `cortex undo` reverses it in a single call. Continue-on-error — one bad file
-// never aborts the run. Dry-run by default.
+// into concept drafts, and journal the whole run under ONE shared runId.
+// Reversibility guarantee: a single `cortex undo` reverses every draft this
+// run CREATED (the primary "document from zero" case). If the run also
+// UPDATED existing notes, those backups are journaled under the same runId
+// but as a separate record, so a second `cortex undo` may be needed to
+// restore them too. Continue-on-error — one bad file never aborts the run.
+// Dry-run by default.
 
 import { loadConfig } from '../config.js';
 import { collectFrontmatterKeys } from '../vault.js';
@@ -48,7 +52,7 @@ export async function runBootstrap(
       perFile.push({ path: file.path, notes: res.written.length });
       allCreated.push(...res.written);
     } catch (e) {
-      failures.push({ path: file.path, error: (e as Error).message });
+      failures.push({ path: file.path, error: e instanceof Error ? e.message : String(e) });
     }
   }
 
