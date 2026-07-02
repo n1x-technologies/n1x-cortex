@@ -3,6 +3,17 @@ import type { NoteLink } from './types.js';
 const LINK_RE = /\[\[([^\]]+)\]\]/g;
 const HEADING_RE = /^#{1,6}\s+(.+?)\s*$/;
 
+// Removes `[[target]]` / `[[target|alias]]` markup, keeping the alias text
+// (real prose the author wrote) but dropping the link target slug — a
+// filename-derived string like "reunion-directorio-2026-q1" that should not
+// be scored as if it were content of the note that contains the link.
+export function stripLinkSyntax(body: string): string {
+  return body.replace(/\[\[([^\]]+)\]\]/g, (_m, inner: string) => {
+    const alias = inner.split(/\\?\|/)[1];
+    return alias ? alias.trim() : '';
+  });
+}
+
 export function extractLinks(body: string): NoteLink[] {
   const links: NoteLink[] = [];
   let currentHeading: string | null = null;

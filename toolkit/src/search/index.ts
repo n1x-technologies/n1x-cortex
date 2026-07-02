@@ -1,4 +1,5 @@
 import { tokenize } from './tokenize.js';
+import { stripLinkSyntax } from '../wikilinks.js';
 import type { Note } from '../types.js';
 
 export interface SearchIndex {
@@ -17,7 +18,7 @@ export function buildIndex(notes: Note[]): SearchIndex {
     };
     add(n.title, 3);
     add(n.tags.join(' '), 2);
-    add(n.body, 1);
+    add(stripLinkSyntax(n.body), 1);
     tf.set(i, terms);
     for (const t of terms.keys()) df.set(t, (df.get(t) ?? 0) + 1);
   });

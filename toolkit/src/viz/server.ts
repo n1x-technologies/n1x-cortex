@@ -1,7 +1,7 @@
 import { createServer as createHttpServer } from 'node:http';
 import type { Server } from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { join, extname, dirname, normalize } from 'node:path';
+import { join, extname, dirname, normalize, relative, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildGraphData } from './graphData.js';
 import { loadConfig } from '../config.js';
@@ -33,7 +33,8 @@ export function createServer(vaultDir: string): Server {
       }
       const rel = url.pathname === '/' ? '/index.html' : url.pathname;
       const filePath = normalize(join(STATIC_DIR, rel));
-      if (filePath !== STATIC_DIR && !filePath.startsWith(STATIC_DIR + '/')) {
+      const rebased = relative(STATIC_DIR, filePath);
+      if (rebased.startsWith('..') || isAbsolute(rebased)) {
         res.writeHead(403); res.end('forbidden'); return;
       }
       const body = await readFile(filePath);

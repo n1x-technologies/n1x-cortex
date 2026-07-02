@@ -27,4 +27,26 @@ describe('searchIndex', () => {
     expect(ids).not.toContain('OTHER');
     expect(r[0].score).toBeGreaterThanOrEqual(r[r.length - 1].score);
   });
+
+  it('does not let a wikilink target slug outrank the note it names', () => {
+    // Regression test: several notes merely *reference* the meeting note via
+    // [[reunion-directorio-2026-q1]]. Before the fix, that raw slug was
+    // tokenized as prose ("reunion", "directorio", "2026", "q1") in every
+    // referencing note, drowning out the actual meeting note in the ranking.
+    const referencing = [
+      note({ id: 'REF-1', title: 'Marketing', body: 'Resumen trimestral en [[reunion-directorio-2026-q1]].' }),
+      note({ id: 'REF-2', title: 'Ventas', body: 'Aprobado en [[reunion-directorio-2026-q1]].' }),
+      note({ id: 'REF-3', title: 'Producto', body: 'Presentado en [[reunion-directorio-2026-q1]].' }),
+    ];
+    const target = note({
+      id: 'reunion-directorio-2026-q1',
+      title: 'Reunión de Directorio — Q1 2026',
+      body: 'CEO, VP de Ingeniería, VP de Ventas y directora de Marketing.',
+    });
+    const all = [...referencing, target];
+    const idx = buildIndex(all);
+    const r = searchIndex(idx, 'cuando fue la ultima reunion');
+    expect(r.length).toBeGreaterThan(0);
+    expect(all[r[0].index].id).toBe('reunion-directorio-2026-q1');
+  });
 });

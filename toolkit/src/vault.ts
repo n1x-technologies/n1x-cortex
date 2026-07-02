@@ -4,9 +4,11 @@ import { parseFrontmatter } from './frontmatter.js';
 import { buildNote } from './note.js';
 import type { Note, CortexConfig } from './types.js';
 
+const IGNORED_DIRS = new Set(['node_modules']);
+
 function walk(dir: string, acc: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
-    if (entry.startsWith('.')) continue;
+    if (entry.startsWith('.') || IGNORED_DIRS.has(entry)) continue;
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) walk(full, acc);
     else if (entry.toLowerCase().endsWith('.md')) acc.push(full);
