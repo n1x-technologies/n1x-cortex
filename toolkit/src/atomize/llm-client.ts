@@ -35,6 +35,7 @@ export function parseModelSpec(spec: string): LlmModelSpec {
 /** Build the right client from a spec + the process environment (keys never come from flags). */
 export function makeLlmClient(spec: LlmModelSpec, env: NodeJS.ProcessEnv): LlmClient {
   if (spec.provider === 'anthropic') {
+    if (spec.baseUrl) throw new Error('anthropic provider ignores --base-url; use an openai-compat model for a custom endpoint');
     const key = env.ANTHROPIC_API_KEY;
     if (!key) throw new Error('Missing ANTHROPIC_API_KEY environment variable');
     return new AnthropicClient(key, spec.model);

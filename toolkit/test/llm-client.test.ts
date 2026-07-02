@@ -27,6 +27,10 @@ describe('makeLlmClient', () => {
     expect(() => makeLlmClient({ provider: 'anthropic', model: 'm' }, {} as NodeJS.ProcessEnv))
       .toThrow(/ANTHROPIC_API_KEY/);
   });
+  it('errors instead of silently ignoring --base-url for anthropic', () => {
+    expect(() => makeLlmClient({ provider: 'anthropic', model: 'm', baseUrl: 'http://host/v1' }, { ANTHROPIC_API_KEY: 'k' } as NodeJS.ProcessEnv))
+      .toThrow(/base-url/);
+  });
   it('requires --base-url for openai-compat', () => {
     expect(() => makeLlmClient({ provider: 'openai-compat', model: 'm' }, {} as NodeJS.ProcessEnv))
       .toThrow(/base-url/);

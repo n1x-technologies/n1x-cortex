@@ -12,7 +12,8 @@ import type { AtomizeEmitPlan, DistilledInput, DistilledApplyResult, CortexConfi
 
 /** System = the portable methodology; user = the worksheet as JSON. */
 export function buildDistillPrompt(plan: AtomizeEmitPlan): { system: string; user: string } {
-  return { system: plan.instructions, user: JSON.stringify(plan) };
+  const { instructions, ...worksheet } = plan;
+  return { system: instructions, user: JSON.stringify(worksheet) };
 }
 
 /**
