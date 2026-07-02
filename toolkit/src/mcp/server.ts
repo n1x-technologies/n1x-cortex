@@ -129,7 +129,7 @@ export function createMcpServer(vaultDir: string, writeScope: WriteScope = 'none
     {
       title: 'Cortex atomize — emit worksheet',
       description:
-        'Read a source under the vault and return the distillation worksheet (segments + existing-note context) so YOU, the calling agent, can distill it into note specs to pass to cortex_atomize_apply. Read-only.',
+        'Read a source under the vault and return the distillation worksheet (segments + existing-note context) so YOU, the calling agent, can distill it into note specs to pass to cortex_atomize_apply. Follow the `instructions` field in the returned worksheet to distill with quality. Read-only.',
       inputSchema: { source: z.string().describe('Vault-relative source path, e.g. Markdown/spec.md') },
     },
     async ({ source }) => {

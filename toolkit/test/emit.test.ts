@@ -36,4 +36,13 @@ describe('emitPlan', () => {
     expect(plan.existing.some(n => n.path === '_inbox/old.md')).toBe(true);
     expect(plan.existing.some(n => n.path.startsWith('Markdown/'))).toBe(false);
   });
+
+  it('carries the portable distillation methodology in instructions', () => {
+    const dir = vault();
+    const cfg = loadConfig(dir, []);
+    const plan = emitPlan(dir, join(dir, 'Markdown', 'src.md'), cfg);
+    expect(plan.instructions).toBeTypeOf('string');
+    expect(plan.instructions.length).toBeGreaterThan(400);
+    expect(plan.instructions.toLowerCase()).toContain('one idea per note');
+  });
 });

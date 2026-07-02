@@ -167,12 +167,29 @@ flowchart TB
 | `cortex mcp install` | **One-command hookup** to Claude Code (`uninstall` to remove; `--write[=curate]` to register a writer). |
 | `cortex mcp` | **Run the MCP server** for agents (stdio). Read-only by default; `--write[=draft\|curate]` exposes reversible capture/curation tools. |
 | `cortex embed` | Build the local embedding store (enables semantic search). |
-| `cortex atomize <src>` | AI-distill a source into draft notes (dry-run; `--write`). |
+| `cortex atomize <src>` | AI-distill a source into draft notes (dry-run; `--write`). `--model <provider:model>` runs distillation without an agent, BYO-key ([see below](#distill-without-an-agent-byo-key)). |
 | `cortex gaps` / `dupes` / `verify` | Curation diagnostics. `dupes` compares within a type by default (`--cross-type` to widen); `verify --all` sweeps the whole vault for incomplete notes. |
 | `cortex merge <keep> <drop>` | Fold a near-duplicate pair into one note, redirecting inbound links (via the `/dupes-merge` skill). Dry-run; `--write`, reversible. |
 | `cortex moc` / `doc` | Generate a Map-of-Content note / a branded Typst PDF. |
 | `cortex hook` · `pause` · `resume` | Claude Code autonomy hooks. With `autonomy: auto-draft`/`full`, the Stop hook captures changed sources into the graph **in the background** (reversible); `pause` is the kill switch. |
 | `cortex undo` | Reverse the last write. Everything is reversible. |
+
+### Distill without an agent (BYO-key)
+
+Anyone can atomize with their own model — no Claude Code, no MCP client:
+
+```bash
+export ANTHROPIC_API_KEY=...        # or OPENAI_API_KEY
+cortex atomize Markdown/spec.md --model anthropic:claude-3-5-sonnet --write
+```
+
+Works with any OpenAI-compatible endpoint too, including a local model:
+
+```bash
+cortex atomize Markdown/spec.md --model openai-compat:llama3 --base-url http://localhost:11434/v1 --write
+```
+
+The same distillation methodology drives every path — the Claude `/atomize` skill, any MCP agent, and this CLI — so notes come out consistent no matter who distills. Dry-run by default; add `--write` to commit. Every write is reversible with `cortex undo`.
 
 ## Semantic search (optional)
 
