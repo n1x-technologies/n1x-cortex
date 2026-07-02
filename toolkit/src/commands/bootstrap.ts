@@ -98,7 +98,6 @@ export function formatBootstrap(r: BootstrapResult): string {
     return lines.join('\n');
   }
   lines.push(`Bootstrap: ${r.files} file(s) · ${r.notes} note(s) · ${r.skipped} skipped · ${r.failures.length} failed`);
-  for (const f of r.failures) lines.push(`  ✗ ${f.path}: ${f.error.split('\n')[0]}`);
-  lines.push('Next: open the graph with `cortex viz`  ·  undo with `cortex undo`');
+  if (r.notes > 0) lines.push('Next: open the graph with `cortex viz`  ·  undo with `cortex undo`');
   return lines.join('\n');
 }

@@ -26,4 +26,13 @@ describe('bootstrap MCP tools', () => {
     expect(w.source).toBe('src/a.ts');
     expect(w.instructions).toBe(DISTILL_METHODOLOGY_CODE);
   });
+  it('bootstrap_emit rejects a vault-escape path', () => {
+    const dir = repo();
+    expect(() => bootstrapEmitTool(dir, { path: '../outside', kind: 'code' })).toThrow(/escape/i);
+  });
+  it('bootstrap_emit rejects a non-manifest / excluded file', () => {
+    const dir = repo();
+    writeFileSync(join(dir, '.env'), 'SECRET=1\n');
+    expect(() => bootstrapEmitTool(dir, { path: '.env', kind: 'doc' })).toThrow(/not a bootstrap-eligible file/i);
+  });
 });
