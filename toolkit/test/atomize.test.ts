@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { runAtomize, formatPlan } from '../src/commands/atomize.js';
-import { runEmit, runApply, formatDistilledPlan, runUndo } from '../src/commands/atomize.js';
+import { runEmit, runApply, formatDistilledPlan, runUndo, runDistillLlm } from '../src/commands/atomize.js';
 import { runPromote, formatPromote, runSetStatus } from '../src/commands/promote.js';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -108,5 +108,16 @@ describe('runSetStatus + runPromote + runUndo (3.3)', () => {
     expect(u.reverted).toEqual(['_inbox/01-Concepts/n.md']);
     expect(existsSync(inbox)).toBe(true);
     expect(existsSync(join(dir, '01-Concepts', 'n.md'))).toBe(false);
+  });
+});
+
+describe('runDistillLlm (BYO-key CLI wiring)', () => {
+  it('surfaces the named env var when the key is missing', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cortex-byok-'));
+    mkdirSync(join(dir, 'Markdown'));
+    writeFileSync(join(dir, 'Markdown', 'src.md'), '# S\n\n## A\n\nBody.');
+    await expect(
+      runDistillLlm(dir, join(dir, 'Markdown', 'src.md'), { model: 'anthropic:claude-x', env: {} as NodeJS.ProcessEnv }),
+    ).rejects.toThrow(/ANTHROPIC_API_KEY/);
   });
 });
