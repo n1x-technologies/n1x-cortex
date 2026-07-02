@@ -120,6 +120,14 @@ export async function main(argv: string[]): Promise<number> {
       const model = mi >= 0 ? rest[mi + 1] : undefined;
       const bi = rest.indexOf('--base-url');
       const baseUrl = bi >= 0 ? rest[bi + 1] : undefined;
+      if (mi >= 0 && (model === undefined || model.startsWith('--'))) {
+        console.log('Usage: cortex atomize <source.md> --model <provider:model> [--base-url <url>] [--write]');
+        return 1;
+      }
+      if (bi >= 0 && (baseUrl === undefined || baseUrl.startsWith('--'))) {
+        console.log('Usage: cortex atomize <source.md> --model <provider:model> [--base-url <url>] [--write]');
+        return 1;
+      }
       const flagValues = new Set([model, baseUrl].filter(Boolean) as string[]);
       const positional = rest.filter(a => !a.startsWith('--') && !flagValues.has(a));
       if (undo) {
