@@ -11,6 +11,7 @@ import {
   atomizeApplyTool, setStatusTool, promoteTool, mergeTool, undoTool,
   type WriteToolOut,
 } from './tools-write.js';
+import { bootstrapPlanTool, bootstrapEmitTool } from './tools-bootstrap.js';
 import { appendWriteAudit, type WriteScope } from './audit.js';
 
 const json = (v: unknown) => ({ content: [{ type: 'text' as const, text: JSON.stringify(v, null, 2) }] });
@@ -173,6 +174,33 @@ export function createMcpServer(vaultDir: string, writeScope: WriteScope = 'none
       } catch (e) {
         return fail(e);
       }
+    },
+  );
+
+  server.registerTool(
+    'cortex_bootstrap_plan',
+    {
+      title: 'Cortex bootstrap — plan',
+      description: 'Walk the repo and return the manifest of files to distill (code + docs), respecting .gitignore and skipping binaries/vendored. Read-only. Iterate it, then call cortex_bootstrap_emit per file.',
+      inputSchema: {},
+    },
+    async () => {
+      try { return json(bootstrapPlanTool(vaultDir)); } catch (e) { return fail(e); }
+    },
+  );
+
+  server.registerTool(
+    'cortex_bootstrap_emit',
+    {
+      title: 'Cortex bootstrap — emit worksheet',
+      description: 'Return the distillation worksheet for one repo file (from cortex_bootstrap_plan). Follow its `instructions` field to distill, then write with cortex_atomize_apply. Read-only.',
+      inputSchema: {
+        path: z.string().describe('Repo-relative file path from the bootstrap plan'),
+        kind: z.enum(['doc', 'code']).describe('The file kind reported by the plan'),
+      },
+    },
+    async ({ path, kind }) => {
+      try { return json(bootstrapEmitTool(vaultDir, { path, kind })); } catch (e) { return fail(e); }
     },
   );
 
