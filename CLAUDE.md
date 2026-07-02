@@ -28,7 +28,7 @@ Where to start: the engine and its commands are in `toolkit/`; design specs and 
 
 1. **Fixed attribution:** deliverables carry the **N1X Technologies** attribution with the current year's ©. No personal names, no contact email.
 2. **🔒 Confidentiality — hard rule:** this repo is **generic and public**. **NEVER** include data from any client or real project: company names, real metrics, real note IDs, proprietary flow or product names, specific entities. If asked to incorporate a real case, anonymize it completely or refuse.
-3. **Own brand palette:** N1X Cortex uses its own palette — navy `1A1A2E` / coral `E94560`. Don't mix it with any client project's palette.
+3. **Brand — real N1X identity (monochrome):** N1X Cortex uses the canonical N1X brand — **strictly monochrome `#292929` (charcoal) / `#e5e5e5` (light), no accent hue, no gradient, no glow.** Hierarchy comes from weight/size/tracking/spacing/borders, never color. Source of truth: the `n1x-brand-identity` repo. For OSS deliverables use the libre fonts **Space Grotesk** (display) / **Inter** (body) — never bundle MONTECHV02 (not redistributable). The old ad-hoc navy/coral palette is retired.
 4. **Releases:** the package is published by pushing a `vX.Y.Z` git tag, which triggers `.github/workflows/release.yml` (test → build → publish via the `NPM_TOKEN` secret). Bump `toolkit/package.json` version in the PR that precedes the tag.
 
 ## Collaboration (branch → PR) — read this before you start working here
