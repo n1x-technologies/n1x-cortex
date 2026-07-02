@@ -21,8 +21,10 @@ import { runMoc, formatMoc } from './commands/moc.js';
 import { runDoc, formatDoc } from './commands/doc.js';
 import { runMcp, runMcpInstall, runMcpUninstall, parseWriteScope } from './commands/mcp.js';
 import { runNew, formatNew } from './commands/new.js';
+import { parseModelSpec, makeLlmClient } from './atomize/llm-client.js';
+import { runBootstrap, formatBootstrap } from './commands/bootstrap.js';
 
-const USAGE = 'Usage: cortex <init|new|status|orphans|viz|query|atomize|promote|undo|set-status|hook|pause|resume|embed|mcp|gaps|dupes|merge|verify|moc|doc>';
+const USAGE = 'Usage: cortex <init|new|status|orphans|viz|query|atomize|bootstrap|promote|undo|set-status|hook|pause|resume|embed|mcp|gaps|dupes|merge|verify|moc|doc>';
 
 const MCP_HELP = `Usage: cortex mcp [install|uninstall] [--write[=draft|curate]] [--vault <path>] [--scope local|project|user]
 
@@ -153,6 +155,30 @@ export async function main(argv: string[]): Promise<number> {
       if (emit) { console.log(runEmit(cwd, source)); return 0; }
       console.log(formatPlan(runAtomize(cwd, source, { write })));
       return 0;
+    }
+    case 'bootstrap': {
+      const rest = argv.slice(1);
+      const write = rest.includes('--write');
+      const force = rest.includes('--force');
+      const mi = rest.indexOf('--model');
+      const model = mi >= 0 ? rest[mi + 1] : undefined;
+      const bi = rest.indexOf('--base-url');
+      const baseUrl = bi >= 0 ? rest[bi + 1] : undefined;
+      const usage = 'Usage: cortex bootstrap [path] --model <provider:model> [--base-url <url>] [--write]';
+      if (mi < 0 || model === undefined || model.startsWith('--')) { console.log(usage); return 1; }
+      if (bi >= 0 && (baseUrl === undefined || baseUrl.startsWith('--'))) { console.log(usage); return 1; }
+      const flagValues = new Set([model, baseUrl].filter(Boolean) as string[]);
+      const root = rest.find(a => !a.startsWith('--') && !flagValues.has(a)) ?? '.';
+      try {
+        const spec = parseModelSpec(model);
+        if (baseUrl) spec.baseUrl = baseUrl;
+        const client = makeLlmClient(spec, process.env);
+        console.log(formatBootstrap(await runBootstrap(root, client, { write, force })));
+        return 0;
+      } catch (e) {
+        console.log((e as Error).message);
+        return 1;
+      }
     }
     case 'promote': {
       const write = argv.includes('--write');

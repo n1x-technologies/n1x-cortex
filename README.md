@@ -168,6 +168,7 @@ flowchart TB
 | `cortex mcp` | **Run the MCP server** for agents (stdio). Read-only by default; `--write[=draft\|curate]` exposes reversible capture/curation tools. |
 | `cortex embed` | Build the local embedding store (enables semantic search). |
 | `cortex atomize <src>` | AI-distill a source into draft notes (dry-run; `--write`). `--model <provider:model>` runs distillation without an agent, BYO-key ([see below](#distill-without-an-agent-byo-key)). |
+| `cortex bootstrap [path]` | Distill an **entire undocumented repo** — every eligible file, code included — into connected draft notes, BYO-key ([see below](#bootstrap-an-undocumented-repo)). |
 | `cortex gaps` / `dupes` / `verify` | Curation diagnostics. `dupes` compares within a type by default (`--cross-type` to widen); `verify --all` sweeps the whole vault for incomplete notes. |
 | `cortex merge <keep> <drop>` | Fold a near-duplicate pair into one note, redirecting inbound links (via the `/dupes-merge` skill). Dry-run; `--write`, reversible. |
 | `cortex moc` / `doc` | Generate a Map-of-Content note / a branded Typst PDF. |
@@ -190,6 +191,23 @@ cortex atomize Markdown/spec.md --model openai-compat:llama3 --base-url http://l
 ```
 
 The same distillation methodology drives every path — the Claude `/atomize` skill, any MCP agent, and this CLI — so notes come out consistent no matter who distills. Dry-run by default; add `--write` to commit. Every write is reversible with `cortex undo`.
+
+### Bootstrap an undocumented repo
+
+Point Cortex at a codebase with no docs and it reads every file — code included —
+and distills the project's concepts into connected atomic notes:
+
+```bash
+export ANTHROPIC_API_KEY=...        # or OPENAI_API_KEY
+cortex bootstrap . --model anthropic:claude-3-5-sonnet --write
+```
+
+It respects `.gitignore`, skips binaries and vendored folders, streams progress
+per file, and writes `status: draft` notes into `_inbox/`. Dry-run by default —
+run without `--write` to preview the file manifest first. The whole run is one
+reversible unit: `cortex undo` reverses the entire bootstrap. Then open the
+graph with `cortex viz`. Works with any OpenAI-compatible endpoint too
+(`--model openai-compat:llama3 --base-url http://localhost:11434/v1`).
 
 ## Semantic search (optional)
 
