@@ -68,11 +68,13 @@ Reads every file — code included — and distills the project's concepts into 
 
 ## Use cases
 
-- **Onboard a legacy or undocumented repo** — point Cortex at it and ask *"how does auth work?"* instead of grepping. Every answer cites the exact file.
-- **Give your AI agent real memory** — a local, cited, reversible long-term brain any MCP agent (Claude Code, Copilot, Cursor…) can read from and write back to.
-- **A team's single source of truth** — one verifiable knowledge base many people and agents share, instead of scattered docs nobody trusts.
-- **A codebase that documents itself** — living docs that regenerate as the code moves, so they never drift out of date.
-- **An always-on ambient agent** — Cortex installs into a repo, scans the code, and keeps a cited brain of it in sync as you work → see **[Symbiont](docs/use-cases/symbiont.md)**.
+- **[Onboard a legacy or undocumented repo](docs/use-cases/onboard-a-repo.md)** — point Cortex at it and ask *"how does auth work?"* instead of grepping. Every answer cites the exact file.
+- **[Give your AI agent real memory](docs/use-cases/agent-memory.md)** — a local, cited, reversible long-term brain any MCP agent (Claude Code, Copilot, Cursor…) can read from and write back to.
+- **[A team's single source of truth](docs/use-cases/team-knowledge-base.md)** — one verifiable knowledge base many people and agents share, instead of scattered docs nobody trusts.
+- **[A codebase that documents itself](docs/use-cases/self-documenting-codebase.md)** — living docs that regenerate as the code moves, so they never drift out of date.
+- **[An always-on ambient agent → Symbiont](docs/use-cases/symbiont.md)** — Cortex installs into a repo, scans the code, and keeps a cited brain of it in sync as you work.
+
+Each links to a short walkthrough — see all [use cases](docs/use-cases/).
 
 ## Quickstart (30 seconds)
 
