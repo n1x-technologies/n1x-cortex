@@ -8,6 +8,5 @@ _img/
 .cortex/
 
 # Scratch / tooling working dirs (not part of the repo)
-.design/
 .playwright-mcp/
 __pycache__/

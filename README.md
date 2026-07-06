@@ -209,7 +209,7 @@ cd n1x-cortex/toolkit && npm install && npm run build
 npm test
 ```
 
-The engine lives in [`toolkit/`](toolkit/); design specs and plans are in [`docs/design/`](docs/design/). Contributions go through PRs — see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+The engine lives in [`toolkit/`](toolkit/). Contributions go through PRs — see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## License
 
