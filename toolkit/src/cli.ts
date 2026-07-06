@@ -3,10 +3,12 @@ import { fileURLToPath } from 'node:url';
 import { realpathSync } from 'node:fs';
 import { resolve as resolvePath } from 'node:path';
 import { createRequire } from 'node:module';
+import { loadConfig } from './config.js';
+import { collectFrontmatterKeys } from './vault.js';
 import { runInit } from './commands/init.js';
 import { runStatus } from './commands/status.js';
 import { runOrphans } from './commands/orphans.js';
-import { runViz, openBrowser } from './commands/viz.js';
+import { runViz, openBrowser, resolveVizPort } from './commands/viz.js';
 import { runQuery, runQuerySemantic, formatQuery, formatQueryJson } from './commands/query.js';
 import { runAtomize, formatPlan, runEmit, runApply, formatDistilledPlan, runUndo, runDistillLlm } from './commands/atomize.js';
 import { runPromote, formatPromote, runSetStatus } from './commands/promote.js';
@@ -42,6 +44,34 @@ Options:
 Write is reversible: every change is backed up; cortex_undo / \`cortex undo\` reverses the latest run.
 Verify with: claude mcp list`;
 
+// Per-command usage. Keyed by the command token; `cortex <cmd> --help` prints
+// the matching entry instead of running the command (which, for side-effecting
+// commands like init/viz/embed, used to mutate state or hang on `--help`).
+const HELP: Record<string, string> = {
+  init: 'Usage: cortex init   — create .cortex.json, seed a starter _templates/, and add .cortex/ to .gitignore',
+  new: 'Usage: cortex new <type> <id> [--title "..."] [--module "..."] [--dir <folder>]\n  The first note of a type needs --dir; after that the folder is learned. status: draft, reversible with `cortex undo`.',
+  status: 'Usage: cortex status   — note and orphan counts, broken down by type and status',
+  orphans: 'Usage: cortex orphans   — dangling wikilink targets (atomize-next priority)',
+  viz: 'Usage: cortex viz [--port <n>]   — start the local web viewer (port: --port > viz.port config > 4317)',
+  query: 'Usage: cortex query <question> [--json]   — cited hybrid (lexical + semantic) retrieval over your notes',
+  atomize: 'Usage: cortex atomize <source.md> [--emit-json | --write | --model <provider:model> [--base-url <url>]]\n       cortex atomize --apply <specs.json> [--write] [--force]\n  Dry-run by default; --write drafts to _inbox/. Reversible with `cortex undo`.',
+  bootstrap: 'Usage: cortex bootstrap [path] --model <provider:model> [--base-url <url>] [--write] [--force]\n  Document a whole repo from zero. Dry-run by default (calls no model); reversible with `cortex undo`.',
+  promote: 'Usage: cortex promote [--write]   — graduate status-advanced drafts out of _inbox/ into curated folders',
+  undo: 'Usage: cortex undo   — reverse the latest write run (creations, in-place updates, promotions)',
+  'set-status': 'Usage: cortex set-status <note.md> <status> [--write]   — advance a note through its lifecycle',
+  hook: 'Usage: cortex hook <event>   — Claude Code lifecycle hook entry point',
+  pause: 'Usage: cortex pause   — disable atomize autonomy for this vault',
+  resume: 'Usage: cortex resume   — re-enable atomize autonomy for this vault',
+  embed: 'Usage: cortex embed [--force] [--model <provider:model>]   — build the local on-device embedding store',
+  mcp: MCP_HELP,
+  gaps: 'Usage: cortex gaps   — thin, stale, or uncited notes worth capturing next',
+  dupes: 'Usage: cortex dupes [--threshold <n>] [--cross-type] [--json]   — near-duplicate note pairs',
+  merge: 'Usage: cortex merge <keep.md> <drop.md> --content-file <merged.md> [--write]   — fold a duplicate pair into one',
+  verify: 'Usage: cortex verify <note.md> [--hops N]  |  cortex verify --all [--hops N]',
+  moc: 'Usage: cortex moc <topic> [--write]   — write a reversible Map-of-Content note',
+  doc: 'Usage: cortex doc <topic> [--pdf]   — consolidate a topic\'s notes into a branded doc (Typst PDF with --pdf)',
+};
+
 function pkgVersion(): string {
   return (createRequire(import.meta.url)('../package.json') as { version: string }).version;
 }
@@ -51,13 +81,20 @@ export async function main(argv: string[]): Promise<number> {
   const cwd = process.cwd();
   if (cmd === '--version' || cmd === '-v') { console.log(pkgVersion()); return 0; }
   if (cmd === '--help' || cmd === '-h' || cmd === 'help' || !cmd) { console.log(USAGE); return 0; }
+  // `cortex <cmd> --help|-h` prints that command's usage instead of running it.
+  // (mcp keeps its own richer handling inside the case for the `help` subcommand.)
+  if (HELP[cmd] && argv.slice(1).some(a => a === '--help' || a === '-h')) {
+    console.log(HELP[cmd]);
+    return 0;
+  }
   switch (cmd) {
     case 'init': {
-      const { created, gitignoreUpdated, config } = runInit(cwd);
+      const { created, gitignoreUpdated, templateSeeded, config } = runInit(cwd);
       console.log(created
         ? `Created .cortex.json (type=${config.fields.type}, status=${config.fields.status})`
         : '.cortex.json already exists — left unchanged');
       if (gitignoreUpdated) console.log('Added .cortex/ to .gitignore (generated cache — not committed).');
+      if (templateSeeded) console.log(`Seeded ${config.templatesDir}/note.md — try: cortex new note my-first --dir notes`);
       return 0;
     }
     case 'new': {
@@ -90,8 +127,15 @@ export async function main(argv: string[]): Promise<number> {
       return 0;
     }
     case 'viz': {
+      const rest = argv.slice(1);
+      const config = loadConfig(cwd, collectFrontmatterKeys(cwd));
+      const port = resolveVizPort(rest, config.viz?.port);
+      if (port === 'invalid') {
+        console.error('Invalid --port: expected an integer between 1 and 65535.');
+        return 1;
+      }
       try {
-        const { url } = await runViz(cwd);
+        const { url } = await runViz(cwd, port);
         console.log(`Cortex viewer running at ${url}`);
         console.log('Press Ctrl+C to stop.');
         openBrowser(url);
