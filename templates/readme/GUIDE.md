@@ -38,5 +38,5 @@ Format: `![Label](https://img.shields.io/badge/label-value-COLOR)`. Spaces → `
 
 ## Living references (examples of this standard)
 
-- `n1x-cortex/README.md` — methodology repo (open source).
-- `n1x-transport/README.md` — project/product (private).
+- `n1x-cortex/README.md` — this methodology repo (open source).
+- Your own `README.md` — apply the same standard to a project/product repo.

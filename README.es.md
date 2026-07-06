@@ -132,7 +132,7 @@ Respeta `.gitignore`, salta binarios y carpetas de dependencias externas, muestr
 | Comando | Qué hace |
 |---------|--------------|
 | `cortex init` | Detecta los campos de frontmatter, escribe `.cortex.json`, agrega `.cortex/` al gitignore. |
-| `cortex new <type> <id>` | Crea una nota a partir de `_templates/<type>.md` en la carpeta correspondiente (`--title`/`--module`/`--dir`). |
+| `cortex new <type> <id>` | Crea una nota a partir de `_templates/<type>.md` (`init` siembra una plantilla `note` inicial) en la carpeta del tipo — la primera nota de un tipo necesita `--dir`, luego se aprende (`--title`/`--module`). |
 | `cortex status` / `orphans` | Notas por tipo/estado; enlaces rotos ordenados como "siguiente a atomizar". |
 | `cortex query "..."` | Respuesta citada a partir de tus notas (recuperación híbrida). `--json` (o la skill `/query`) para salida legible por máquina. |
 | `cortex viz` | Visor web local con la identidad de marca de N1X: grafo interactivo — búsqueda, color por categoría, foco animado, resaltado de vecinos, un panel de enlaces bidireccional (entrantes/salientes), un filtro de grupo tri-estado, un selector de vista Grafo/Árbol, controles de fuerza en vivo (d3-force), y exportación de arquitectura en Mermaid. Haz clic en **Open note** de un nodo para leer su markdown renderizado en una nueva pestaña (`/note/<id>`). |
@@ -142,8 +142,10 @@ Respeta `.gitignore`, salta binarios y carpetas de dependencias externas, muestr
 | `cortex atomize <src>` | Destila una fuente con IA en notas borrador (dry-run; `--write`). `--model <provider:model>` corre la destilación sin agente, BYO-key ([ver arriba](#distila-o-haz-bootstrap-sin-agente-byo-key)). |
 | `cortex bootstrap [path]` | Destila un **repositorio entero sin documentar** — cada archivo elegible, código incluido — en notas borrador conectadas, BYO-key ([ver arriba](#distila-o-haz-bootstrap-sin-agente-byo-key)). |
 | `cortex gaps` / `dupes` / `verify` | Diagnósticos de curación. `dupes` compara dentro de un mismo tipo por defecto (`--cross-type` para ampliar); `verify --all` recorre todo el vault en busca de notas incompletas. |
-| `cortex merge <keep> <drop>` | Fusiona un par casi-duplicado en una sola nota, redirigiendo los enlaces entrantes (vía la skill `/dupes-merge`). Dry-run; `--write`, reversible. |
-| `cortex moc` / `doc` | Genera una nota Map-of-Content / un PDF con Typst y marca propia. |
+| `cortex merge <keep> <drop> --content-file <merged.md>` | Fusiona un par casi-duplicado en una sola nota, redirigiendo los enlaces entrantes (vía la skill `/dupes-merge`). Dry-run; `--write`, reversible. |
+| `cortex moc` / `doc` | Genera una nota Map-of-Content / un PDF con Typst y marca propia (`doc --pdf`). |
+| `cortex set-status <note> <status>` | Avanza una nota por su ciclo de vida (la compuerta que lee `promote`). Dry-run; `--write`. |
+| `cortex promote` | Gradúa borradores con estado avanzado fuera de `_inbox/` hacia carpetas curadas. Dry-run; `--write`, reversible. |
 | `cortex hook` · `pause` · `resume` | Hooks de autonomía para Claude Code. Con `autonomy: auto-draft`/`full`, el hook Stop captura las fuentes modificadas hacia el grafo **en segundo plano** (reversible); `pause` es el interruptor de apagado. |
 | `cortex undo` | Revierte la última escritura. Todo es reversible. |
 

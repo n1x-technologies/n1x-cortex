@@ -130,7 +130,7 @@ It respects `.gitignore`, skips binaries and vendored folders, streams progress 
 | Command | What it does |
 |---------|--------------|
 | `cortex init` | Detect frontmatter fields, write `.cortex.json`, gitignore the `.cortex/` cache. |
-| `cortex new <type> <id>` | Scaffold a note from `_templates/<type>.md` in the right folder (`--title`/`--module`/`--dir`). |
+| `cortex new <type> <id>` | Scaffold a note from `_templates/<type>.md` (`init` seeds a starter `note` template) into the type's folder — the first note of a type needs `--dir`, then it's learned (`--title`/`--module`). |
 | `cortex status` / `orphans` | Notes by type/status; dangling links ranked "atomize-next". |
 | `cortex query "..."` | Cited answer from your notes (hybrid retrieval). `--json` (or the `/query` skill) for machine-readable output. |
 | `cortex viz` | Local web viewer in the N1X brand identity: interactive graph — search, color-by, animated focus, neighbor highlighting, a bidirectional (in/out) link panel, a tri-state group filter, a Graph/Tree view toggle, live force controls (d3-force), and a Mermaid architecture export. Click a node's **Open note** to read its rendered markdown in a new tab (`/note/<id>`). |
@@ -140,8 +140,10 @@ It respects `.gitignore`, skips binaries and vendored folders, streams progress 
 | `cortex atomize <src>` | AI-distill a source into draft notes (dry-run; `--write`). `--model <provider:model>` runs distillation without an agent, BYO-key ([see above](#distill-or-bootstrap-without-an-agent-byo-key)). |
 | `cortex bootstrap [path]` | Distill an **entire undocumented repo** — every eligible file, code included — into connected draft notes, BYO-key ([see above](#distill-or-bootstrap-without-an-agent-byo-key)). |
 | `cortex gaps` / `dupes` / `verify` | Curation diagnostics. `dupes` compares within a type by default (`--cross-type` to widen); `verify --all` sweeps the whole vault for incomplete notes. |
-| `cortex merge <keep> <drop>` | Fold a near-duplicate pair into one note, redirecting inbound links (via the `/dupes-merge` skill). Dry-run; `--write`, reversible. |
-| `cortex moc` / `doc` | Generate a Map-of-Content note / a branded Typst PDF. |
+| `cortex merge <keep> <drop> --content-file <merged.md>` | Fold a near-duplicate pair into one note, redirecting inbound links (via the `/dupes-merge` skill). Dry-run; `--write`, reversible. |
+| `cortex moc` / `doc` | Generate a Map-of-Content note / a branded Typst PDF (`doc --pdf`). |
+| `cortex set-status <note> <status>` | Advance a note through its lifecycle (the gate `promote` reads). Dry-run; `--write`. |
+| `cortex promote` | Graduate status-advanced drafts out of `_inbox/` into curated folders. Dry-run; `--write`, reversible. |
 | `cortex hook` · `pause` · `resume` | Claude Code autonomy hooks. With `autonomy: auto-draft`/`full`, the Stop hook captures changed sources into the graph **in the background** (reversible); `pause` is the kill switch. |
 | `cortex undo` | Reverse the last write. Everything is reversible. |
 

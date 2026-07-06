@@ -38,10 +38,7 @@ gh pr merge --squash --delete-branch
 
 ## Maintainers
 
-| Person | GitHub |
-|---|---|
-| Sebastian Dominguez | `wagnersebastiandc` |
-| Santiago Anticona | `otakusimao` |
+Maintained by **N1X Technologies** ([`n1x-technologies`](https://github.com/n1x-technologies)).
 
 **The team can grow.** A new maintainer gets access to the repo (org `n1x-technologies`); when they clone, they run `setup.sh` — which detects their account automatically — and then follow the flow above. Nothing is tied to any one person.
 

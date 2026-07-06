@@ -1,6 +1,6 @@
 # Cortex Sync — keep consumer projects up to date
 
-Cortex is the **source of truth** for the shared templates (Typst document engine, collaboration workflow, README standard). Projects that use Cortex — like `n1x-transport` — shouldn't re-do template upgrades by hand every time Cortex changes. `cortex-sync` lets a consumer **pull the latest with one command**.
+Cortex is the **source of truth** for the shared templates (Typst document engine, collaboration workflow, README standard). Projects that use Cortex — any downstream repo — shouldn't re-do template upgrades by hand every time Cortex changes. `cortex-sync` lets a consumer **pull the latest with one command**.
 
 ## The one idea: engine vs instance
 
