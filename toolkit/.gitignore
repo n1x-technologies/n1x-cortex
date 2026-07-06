@@ -1,0 +1,5 @@
+node_modules/
+dist/
+# generated copies of repo-root docs (produced by scripts/copy-meta.mjs at build/prepack time)
+/README.md
+/LICENSE
