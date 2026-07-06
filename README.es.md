@@ -101,6 +101,8 @@ La escritura es **opt-in en el arranque** — un agente no puede autohabilitarse
 
 Cada escritura queda respaldada y es reversible (`cortex_undo`), las fuentes bajo `Markdown/` nunca se tocan, y una traza de auditoría queda en `.cortex/mcp-writes.log`.
 
+> **Yendo más lejos:** [**Symbiont**](docs/use-cases/symbiont.md) — el patrón de agente ambiental donde Cortex se instala en un repo, escanea el código, y mantiene sincronizado un cerebro citado de él mientras trabajas.
+
 ## Distila o haz bootstrap sin agente (BYO-key)
 
 Cualquiera puede atomizar con su propio modelo — sin Claude Code, sin cliente MCP:

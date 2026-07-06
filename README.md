@@ -99,6 +99,8 @@ Write is **opt-in at launch** — an agent can't self-enable or escalate its own
 
 Every write is backed up and reversible (`cortex_undo`), sources under `Markdown/` are never touched, and an audit trail lands in `.cortex/mcp-writes.log`.
 
+> **Going further:** [**Symbiont**](docs/use-cases/symbiont.md) — the ambient-agent pattern where Cortex installs into a repo, scans the code, and keeps a cited brain of it in sync as you work.
+
 ## Distill or bootstrap without an agent (BYO-key)
 
 Anyone can atomize with their own model — no Claude Code, no MCP client:
