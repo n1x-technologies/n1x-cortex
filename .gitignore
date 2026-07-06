@@ -10,3 +10,7 @@ _img/
 # Scratch / tooling working dirs (not part of the repo)
 .playwright-mcp/
 __pycache__/
+
+# Internal design docs & agent tooling — never published (portable rule, was in .git/info/exclude)
+docs/superpowers/
+.superpowers/
