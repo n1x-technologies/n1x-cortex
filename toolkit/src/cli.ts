@@ -2,33 +2,78 @@
 import { fileURLToPath } from 'node:url';
 import { realpathSync } from 'node:fs';
 import { resolve as resolvePath } from 'node:path';
+import { createRequire } from 'node:module';
 import { runInit } from './commands/init.js';
 import { runStatus } from './commands/status.js';
 import { runOrphans } from './commands/orphans.js';
 import { runViz, openBrowser } from './commands/viz.js';
-import { runQuery, runQuerySemantic, formatQuery } from './commands/query.js';
-import { runAtomize, formatPlan, runEmit, runApply, formatDistilledPlan, runUndo } from './commands/atomize.js';
+import { runQuery, runQuerySemantic, formatQuery, formatQueryJson } from './commands/query.js';
+import { runAtomize, formatPlan, runEmit, runApply, formatDistilledPlan, runUndo, runDistillLlm } from './commands/atomize.js';
 import { runPromote, formatPromote, runSetStatus } from './commands/promote.js';
 import { runHookCommand } from './commands/hook.js';
 import { runPause, runResume } from './commands/pause.js';
 import { runEmbed, formatEmbed } from './commands/embed.js';
 import { runGaps, formatGaps } from './commands/gaps.js';
-import { runDupes, formatDupes } from './commands/dupes.js';
-import { runVerify, formatVerify } from './commands/verify.js';
+import { runDupes, formatDupes, formatDupesJson } from './commands/dupes.js';
+import { runMerge, formatMerge } from './commands/merge.js';
+import { runVerify, formatVerify, runVerifyAll, formatVerifyAll } from './commands/verify.js';
 import { runMoc, formatMoc } from './commands/moc.js';
 import { runDoc, formatDoc } from './commands/doc.js';
-import { runMcp } from './commands/mcp.js';
+import { runMcp, runMcpInstall, runMcpUninstall, parseWriteScope } from './commands/mcp.js';
+import { runNew, formatNew } from './commands/new.js';
+import { parseModelSpec, makeLlmClient } from './atomize/llm-client.js';
+import { runBootstrap, formatBootstrap } from './commands/bootstrap.js';
+
+const USAGE = 'Usage: cortex <init|new|status|orphans|viz|query|atomize|bootstrap|promote|undo|set-status|hook|pause|resume|embed|mcp|gaps|dupes|merge|verify|moc|doc>';
+
+const MCP_HELP = `Usage: cortex mcp [install|uninstall] [--write[=draft|curate]] [--vault <path>] [--scope local|project|user]
+
+  cortex mcp                  Start the stdio MCP server, read-only (vault = positional arg or cwd)
+  cortex mcp --write          Start with write tools (draft scope: atomize→_inbox, set-status, undo)
+  cortex mcp --write=curate   Also expose promote + merge (structural, still reversible)
+  cortex mcp install          Register the Cortex MCP server with Claude Code
+  cortex mcp uninstall        Remove the Cortex MCP registration
+
+Options:
+  --write[=draft|curate]      Enable agent write/curate tools (default: read-only)
+  --vault <path>              Vault directory (default: current directory)
+  --scope local|project|user  Registration scope (default: local)
+
+Write is reversible: every change is backed up; cortex_undo / \`cortex undo\` reverses the latest run.
+Verify with: claude mcp list`;
+
+function pkgVersion(): string {
+  return (createRequire(import.meta.url)('../package.json') as { version: string }).version;
+}
 
 export async function main(argv: string[]): Promise<number> {
   const [cmd] = argv;
   const cwd = process.cwd();
+  if (cmd === '--version' || cmd === '-v') { console.log(pkgVersion()); return 0; }
+  if (cmd === '--help' || cmd === '-h' || cmd === 'help' || !cmd) { console.log(USAGE); return 0; }
   switch (cmd) {
     case 'init': {
-      const { created, config } = runInit(cwd);
+      const { created, gitignoreUpdated, config } = runInit(cwd);
       console.log(created
         ? `Created .cortex.json (type=${config.fields.type}, status=${config.fields.status})`
         : '.cortex.json already exists — left unchanged');
+      if (gitignoreUpdated) console.log('Added .cortex/ to .gitignore (generated cache — not committed).');
       return 0;
+    }
+    case 'new': {
+      const rest = argv.slice(1);
+      const ti = rest.indexOf('--title');
+      const title = ti >= 0 ? rest[ti + 1] : undefined;
+      const mi = rest.indexOf('--module');
+      const module = mi >= 0 ? rest[mi + 1] : undefined;
+      const di = rest.indexOf('--dir');
+      const dir = di >= 0 ? rest[di + 1] : undefined;
+      const flagVals = new Set([title, module, dir].filter(Boolean) as string[]);
+      const [type, id] = rest.filter(a => !a.startsWith('--') && !flagVals.has(a));
+      if (!type || !id) { console.log('Usage: cortex new <type> <id> [--title "..."] [--module "..."] [--dir <folder>]'); return 1; }
+      const r = runNew(cwd, type, id, { title, module, dir });
+      console.log(formatNew(r));
+      return r.created ? 0 : 1;
     }
     case 'status': {
       const s = runStatus(cwd);
@@ -58,9 +103,12 @@ export async function main(argv: string[]): Promise<number> {
       }
     }
     case 'query': {
-      const question = argv.slice(1).join(' ').trim();
-      if (!question) { console.log('Usage: cortex query <question>'); return 1; }
-      console.log(formatQuery(await runQuerySemantic(cwd, question)));
+      const rest = argv.slice(1);
+      const json = rest.includes('--json');
+      const question = rest.filter(a => a !== '--json').join(' ').trim();
+      if (!question) { console.log('Usage: cortex query <question> [--json]'); return 1; }
+      const result = await runQuerySemantic(cwd, question);
+      console.log(json ? formatQueryJson(result) : formatQuery(result));
       return 0;
     }
     case 'atomize': {
@@ -70,7 +118,20 @@ export async function main(argv: string[]): Promise<number> {
       const emit = rest.includes('--emit-json');
       const apply = rest.includes('--apply');
       const undo = rest.includes('--undo');
-      const positional = rest.filter(a => !a.startsWith('--'));
+      const mi = rest.indexOf('--model');
+      const model = mi >= 0 ? rest[mi + 1] : undefined;
+      const bi = rest.indexOf('--base-url');
+      const baseUrl = bi >= 0 ? rest[bi + 1] : undefined;
+      if (mi >= 0 && (model === undefined || model.startsWith('--'))) {
+        console.log('Usage: cortex atomize <source.md> --model <provider:model> [--base-url <url>] [--write]');
+        return 1;
+      }
+      if (bi >= 0 && (baseUrl === undefined || baseUrl.startsWith('--'))) {
+        console.log('Usage: cortex atomize <source.md> --model <provider:model> [--base-url <url>] [--write]');
+        return 1;
+      }
+      const flagValues = new Set([model, baseUrl].filter(Boolean) as string[]);
+      const positional = rest.filter(a => !a.startsWith('--') && !flagValues.has(a));
       if (undo) {
         const { restored, reverted } = runUndo(cwd);
         const n = restored.length + reverted.length;
@@ -83,11 +144,41 @@ export async function main(argv: string[]): Promise<number> {
         console.log(formatDistilledPlan(runApply(cwd, specs, { write, force })));
         return 0;
       }
+      if (model) {
+        const src = positional[0];
+        if (!src) { console.log('Usage: cortex atomize <source.md> --model <provider:model> [--base-url <url>] [--write]'); return 1; }
+        console.log(formatDistilledPlan(await runDistillLlm(cwd, src, { model, baseUrl, write, force })));
+        return 0;
+      }
       const source = positional[0];
-      if (!source) { console.log('Usage: cortex atomize <source.md> [--emit-json | --write]'); return 1; }
+      if (!source) { console.log('Usage: cortex atomize <source.md> [--emit-json | --write | --model <provider:model> [--base-url <url>]]'); return 1; }
       if (emit) { console.log(runEmit(cwd, source)); return 0; }
       console.log(formatPlan(runAtomize(cwd, source, { write })));
       return 0;
+    }
+    case 'bootstrap': {
+      const rest = argv.slice(1);
+      const write = rest.includes('--write');
+      const force = rest.includes('--force');
+      const mi = rest.indexOf('--model');
+      const model = mi >= 0 ? rest[mi + 1] : undefined;
+      const bi = rest.indexOf('--base-url');
+      const baseUrl = bi >= 0 ? rest[bi + 1] : undefined;
+      const usage = 'Usage: cortex bootstrap [path] --model <provider:model> [--base-url <url>] [--write]';
+      if (mi < 0 || model === undefined || model.startsWith('--')) { console.log(usage); return 1; }
+      if (bi >= 0 && (baseUrl === undefined || baseUrl.startsWith('--'))) { console.log(usage); return 1; }
+      const flagValues = new Set([model, baseUrl].filter(Boolean) as string[]);
+      const root = rest.find(a => !a.startsWith('--') && !flagValues.has(a)) ?? '.';
+      try {
+        const spec = parseModelSpec(model);
+        if (baseUrl) spec.baseUrl = baseUrl;
+        const client = makeLlmClient(spec, process.env);
+        console.log(formatBootstrap(await runBootstrap(root, client, { write, force, onProgress: (l) => console.log(l) })));
+        return 0;
+      } catch (e) {
+        console.log((e as Error).message);
+        return 1;
+      }
     }
     case 'promote': {
       const write = argv.includes('--write');
@@ -135,8 +226,20 @@ export async function main(argv: string[]): Promise<number> {
       return 0;
     }
     case 'mcp': {
-      const dir = argv.slice(1).filter(a => !a.startsWith('--'))[0];
-      await runMcp(dir ? resolvePath(cwd, dir) : cwd);
+      const rest = argv.slice(1);
+      const positionals = rest.filter(a => !a.startsWith('--'));
+      const sub = positionals[0];
+      if (rest.includes('--help') || rest.includes('-h') || sub === 'help') { console.log(MCP_HELP); return 0; }
+      if (sub === 'install') return runMcpInstall(cwd, rest);
+      if (sub === 'uninstall') return runMcpUninstall(cwd, rest);
+      const writeScope = parseWriteScope(rest);
+      if (writeScope === 'invalid') {
+        console.error('Invalid --write value. Use --write (=draft), --write=draft, or --write=curate.');
+        return 1;
+      }
+      // Bare vault path (or nothing) → start the stdio server. Only the literal
+      // keywords install/uninstall/help are subcommands; anything else is a vault.
+      await runMcp(sub ? resolvePath(cwd, sub) : cwd, writeScope);
       return 0;
     }
     case 'gaps': {
@@ -146,15 +249,35 @@ export async function main(argv: string[]): Promise<number> {
     case 'dupes': {
       const ti = argv.indexOf('--threshold');
       const threshold = ti >= 0 ? Number(argv[ti + 1]) : undefined;
-      console.log(formatDupes(runDupes(cwd, { threshold })));
+      const crossType = argv.includes('--cross-type');
+      const pairs = runDupes(cwd, { threshold, crossType });
+      console.log(argv.includes('--json') ? formatDupesJson(pairs) : formatDupes(pairs));
+      return 0;
+    }
+    case 'merge': {
+      const rest = argv.slice(1);
+      const write = rest.includes('--write');
+      const fi = rest.indexOf('--content-file');
+      const contentFile = fi >= 0 ? rest[fi + 1] : undefined;
+      const positional = rest.filter(a => !a.startsWith('--') && a !== contentFile);
+      const [keep, drop] = positional;
+      if (!keep || !drop || !contentFile) {
+        console.log('Usage: cortex merge <keep.md> <drop.md> --content-file <merged.md> [--write]');
+        return 1;
+      }
+      console.log(formatMerge(runMerge(cwd, keep, drop, contentFile, { write })));
       return 0;
     }
     case 'verify': {
       const rest = argv.slice(1);
       const hi = rest.indexOf('--hops');
       const hops = hi >= 0 ? Number(rest[hi + 1]) : undefined;
+      if (rest.includes('--all')) {
+        console.log(formatVerifyAll(runVerifyAll(cwd, { hops })));
+        return 0;
+      }
       const note = rest.filter(a => !a.startsWith('--') && a !== String(hops))[0];
-      if (!note) { console.log('Usage: cortex verify <note.md> [--hops N]'); return 1; }
+      if (!note) { console.log('Usage: cortex verify <note.md> [--hops N]  |  cortex verify --all [--hops N]'); return 1; }
       console.log(formatVerify(runVerify(cwd, note, { hops })));
       return 0;
     }
@@ -175,8 +298,8 @@ export async function main(argv: string[]): Promise<number> {
       return 0;
     }
     default:
-      console.log('Usage: cortex <init|status|orphans|viz|query|atomize|promote|undo|set-status|hook|pause|resume|embed|mcp|gaps|dupes|verify|moc|doc>');
-      return cmd ? 1 : 0;
+      console.log(USAGE);
+      return 1;
   }
 }
 

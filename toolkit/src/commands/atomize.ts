@@ -4,6 +4,8 @@ import { planAtomize, applyAtomize } from '../atomize/plan.js';
 import { emitPlan } from '../atomize/emit.js';
 import { applyDistilled } from '../atomize/apply-distilled.js';
 import { undoLatestRun } from '../atomize/backup.js';
+import { parseModelSpec, makeLlmClient } from '../atomize/llm-client.js';
+import { distillWithLlm } from '../atomize/distill-llm.js';
 import type { AtomizePlan, DistilledApplyResult } from '../types.js';
 
 export function runAtomize(vaultDir: string, sourcePath: string, opts: { write?: boolean }): { plan: AtomizePlan; written: string[] } {
@@ -38,6 +40,19 @@ export function runApply(vaultDir: string, specsPath: string, opts: { write?: bo
 
 export function runUndo(vaultDir: string): { restored: string[]; reverted: string[] } {
   return undoLatestRun(vaultDir);
+}
+
+/** No-agent BYO-key distillation: parseModelSpec → makeLlmClient (env-only key) → distillWithLlm. */
+export async function runDistillLlm(
+  vaultDir: string,
+  sourcePath: string,
+  opts: { model: string; baseUrl?: string; write?: boolean; force?: boolean; env?: NodeJS.ProcessEnv },
+): Promise<DistilledApplyResult> {
+  const config = loadConfig(vaultDir, collectFrontmatterKeys(vaultDir));
+  const spec = parseModelSpec(opts.model);
+  if (opts.baseUrl) spec.baseUrl = opts.baseUrl;
+  const client = makeLlmClient(spec, opts.env ?? process.env);
+  return distillWithLlm(vaultDir, sourcePath, config, client, { write: opts.write, force: opts.force });
 }
 
 export function formatDistilledPlan(r: DistilledApplyResult): string {

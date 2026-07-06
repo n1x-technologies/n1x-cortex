@@ -15,31 +15,21 @@ cited answers, and shows it in a live local viewer.
 
 ## 1. Context & positioning
 
-There are two distinct N1X things; this spec is about the second:
+**N1X Cortex** is a **generic, lightweight, personal tool**: point it at any project and
+it works locally, single-user, on your own files — no live connectors, no multi-tenant,
+no hosted portal, no auth.
 
-- **N1X Brain** — the **commercial product**. A multi-tenant platform that sits on top
-  of a company's systems (live connectors, ingestion pipeline, web portal with auth,
-  graph viewer, mechanical retrieval). Org-oriented.
-- **N1X Cortex** — this repo. Meant to be a **generic, lightweight, personal tool** that
-  anyone can drop into any project, **without** Brain's heavy machinery (no connectors,
-  no multi-tenant, no hosted portal).
+**Why open source.** Cortex is open on purpose: the free, universal "taste of the N1X
+magic" that anyone running any project can feel locally.
 
-**Strategic intent — open-core funnel.** Cortex is open source on purpose: the free,
-universal "taste of the N1X magic" that anyone running any project can feel locally,
-which builds reputation and funnels toward the paid Brain product.
-
-**The open-core boundary (must hold):**
-- Free / Cortex line: local, single-user, your own files, no live integrations.
-- Paid / Brain line: live connectors, multi-tenant, org memory, hosted portal.
-- Cortex hints at Brain; it must never cannibalize it. Do **not** add connectors or
-  multi-tenant to Cortex.
+**The boundary (must hold):** local, single-user, your own files, no live integrations.
+Do **not** add connectors, multi-tenant, or a hosted service to Cortex.
 
 **The "wow" loop Cortex optimizes for:** point it at any project →
 **atomize → connect → see the graph → ask with citations**. Fast, local, shareable.
 
-Brain is used here only as a reference for **proven patterns** (mechanical retrieval
-beats embeddings even in the product; typed graph; citation-first; a local web viz
-server), never as an integration target.
+**Proven patterns it leans on:** mechanical retrieval (beats opaque embeddings as the
+trust layer), a typed wikilink graph, citation-first answers, and a local web viz server.
 
 ## 2. Goals & non-goals
 
@@ -51,7 +41,7 @@ server), never as an integration target.
 - Native in Claude Code (skill + slash commands + optional hooks) **and** a standalone CLI.
 
 **Non-goals**
-- No live source connectors (Gmail/Drive/Teams) — that is Brain's moat.
+- No live source connectors (Gmail/Drive/Teams).
 - No multi-tenant, no auth, no hosted service.
 - No semantic/vector search in v1 (see §6 — the wikilink graph is the curated semantic index).
 - Not an Obsidian plugin; Obsidian-**compatible** (wikilinks) but not Obsidian-**dependent**.
@@ -97,8 +87,8 @@ the truth) → engine indexes → consumed by the CLI, the viewer, and the Claud
 All local, single-user, no network.
 
 **Runtime: Node / TypeScript** — frictionless `npx`-style install (key for universal open
-source) and a native web viewer. (Python would reuse Brain's patterns but needs a venv →
-more friction.) A model-provider seam exists for the standalone CLI (Anthropic / OpenRouter
+source) and a native web viewer. (Python would need a venv → more friction.) A
+model-provider seam exists for the standalone CLI (Anthropic / OpenRouter
 / Ollama), but the default runtime is "Claude Code is the model" (see §5).
 
 ## 5. Ontology & note model
@@ -213,8 +203,8 @@ optional provider seam.)
 
 The query layer is **structured filters + full-text**, not semantic. Rationale: in Cortex the
 **wikilink graph + MOCs + tags are the curated, citable semantic index** — exactly what
-embeddings approximate, but hand-built and traceable. Even Brain uses mechanical retrieval, not
-vectors. Structured+FTS is local, deterministic, citable, dependency-light. The query interface
+embeddings approximate, but hand-built and traceable. Mechanical retrieval over vectors:
+structured+FTS is local, deterministic, citable, dependency-light. The query interface
 is designed so a semantic layer could be added later behind it without rework. Where a query
 misses, the fix is "add a wikilink" (improves the graph permanently) rather than a fuzzy patch.
 
@@ -343,7 +333,7 @@ claude-mem), with a standalone CLI. Open source, Node/TS, local.
 - **Search:** structured + full-text in v1; semantic layer deferred behind the same interface.
 - **Runtime:** Node / TypeScript.
 - **Language:** the tool is English; vault **content** follows a declared/inferred `lang`.
-- **Boundary:** no connectors, no multi-tenant — those stay in Brain.
+- **Boundary:** no connectors, no multi-tenant — Cortex stays local-first.
 
 ## 12. Open questions (for the implementation plan)
 

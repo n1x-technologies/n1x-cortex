@@ -3,7 +3,7 @@
 > **Status:** approved direction, pending implementation plan.
 > **Builds on:** the published engine — `runQuerySemantic` (hybrid lexical+semantic cited query), `scanVault`, `buildGraph`, the semantic layer (`semanticQueryRanking`, the embedding store), and the existing local-server pattern in `viz/server.ts`. No new engine concepts; the MCP layer reuses what exists.
 > **Branch:** `feat/cortex-mcp`.
-> **Product context:** This makes **Cortex** (the open-source, local engine) a first-class **knowledge source for AI agents** — the read half of the living-cortex loop. The **write/curate half** (`cortex_capture` + curation tools, "agent as curator") is the planned **next slice**. Networked/multi-tenant MCP (HTTP transport, auth) is the seed of the commercial **Brain** product and is explicitly out of scope here.
+> **Product context:** This makes **Cortex** (the open-source, local engine) a first-class **knowledge source for AI agents** — the read half of the living-cortex loop. The **write/curate half** (`cortex_capture` + curation tools, "agent as curator") is the planned **next slice**. Networked/multi-tenant MCP (HTTP transport, auth) is explicitly out of scope — Cortex stays local-first.
 
 ## 1. Goal
 
@@ -21,7 +21,7 @@ Because the server is a long-running process, the embedding model loads **once**
 - **Warm model, local-first, private.** stdio keeps the model loaded for the session; no vault content leaves the machine; no network at query time beyond the one-time model download performed by `cortex embed`.
 - **Semantic never breaks a tool.** No store, no optional peer dep, or a model-load failure → degrade to lexical and still return. A bad tool input → a clean MCP error, never a server crash.
 - **Always current.** The server re-scans the vault per query so the agent sees the live state of the notes; the heavy embedding work is hash-cached in the store.
-- **Transport-agnostic core.** The tool handlers are independent of stdio; adding an HTTP transport later (the Brain direction) reuses them unchanged.
+- **Transport-agnostic core.** The tool handlers are independent of stdio; if an HTTP transport is ever added, it reuses them unchanged.
 
 ## 3. Architecture
 
@@ -113,6 +113,6 @@ The handlers are pure and testable with **no MCP transport and no network**:
 ## 9. Out of scope (deferred)
 
 - **Write/curate tools** (`cortex_capture`, atomize-over-MCP, curation) — the next slice ("agent as curator"), built on the existing reversible safety barriers (`_inbox` drafts, `cortex undo`, immutable sources).
-- **HTTP/SSE transport, auth, multi-tenant** — the networked shared brain; the seed of the commercial **Brain** product.
+- **HTTP/SSE transport, auth, multi-tenant** — out of scope; Cortex stays a local-first, single-user engine.
 - **MCP resources** (browsable note list / overview) and a `cortex_overview` orientation tool — a fast-follow if agents need to explore the brain's shape before querying.
 - **Per-query vault-scan caching** — re-scan per query is correct and fine at current scale; add an invalidating cache only if large vaults make it necessary.

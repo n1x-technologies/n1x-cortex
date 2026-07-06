@@ -30,12 +30,20 @@ export interface CortexConfig {
   immutableStatus: string | null;
   autonomy: 'off' | 'suggest' | 'auto-draft' | 'full';
   mocDir: string;
+  templatesDir: string;
   dupeThreshold: number;
   embedModel: string;
   embedDir: string;
   semanticDupeThreshold: number;
   rrfK: number;
   outDir: string;
+  // Phase 7 — autonomous background capture
+  captureCooldownMs: number;      // min gap between background captures
+  maxCapturesPerSession: number;  // per-session spawn cap
+  captureMaxRunMs: number;        // stale-lock reclaim age
+  claudeBin: string;              // headless binary (overridable for tests/portability)
+  // MCP write/curate — bound a remote writer
+  mcpMaxWritesPerSession: number; // per-session committed-write cap over MCP
   viz: { port: number };
 }
 
@@ -151,6 +159,8 @@ export interface AtomizeEmitPlan {
   knownFolders: string[];
   existing: EmitExistingNote[];
   segments: Segment[];
+  /** The portable distillation methodology (DISTILL_METHODOLOGY) — the rules every distiller follows. */
+  instructions: string;
 }
 export interface DistilledNote {
   title: string;

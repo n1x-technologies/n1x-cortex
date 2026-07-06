@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { emitPlan } from '../src/atomize/emit.js';
+import { emitPlan, gatherVaultContext } from '../src/atomize/emit.js';
 import { loadConfig } from '../src/config.js';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -35,5 +35,25 @@ describe('emitPlan', () => {
     // existing includes ALL scanned notes (incl. the _inbox draft) for dup-awareness
     expect(plan.existing.some(n => n.path === '_inbox/old.md')).toBe(true);
     expect(plan.existing.some(n => n.path.startsWith('Markdown/'))).toBe(false);
+  });
+
+  it('carries the portable distillation methodology in instructions', () => {
+    const dir = vault();
+    const cfg = loadConfig(dir, []);
+    const plan = emitPlan(dir, join(dir, 'Markdown', 'src.md'), cfg);
+    expect(plan.instructions).toBeTypeOf('string');
+    expect(plan.instructions.length).toBeGreaterThan(400);
+    expect(plan.instructions.toLowerCase()).toContain('one idea per note');
+  });
+});
+
+describe('gatherVaultContext', () => {
+  it('returns curated types/folders and all existing notes', () => {
+    const dir = vault(); // existing helper: creates 01-Concepts, 03-Rules, _inbox notes + Markdown/src.md
+    const ctx = gatherVaultContext(dir, loadConfig(dir, []));
+    expect(ctx.knownTypes.sort()).toEqual(['concept', 'rule']); // _inbox 'draftish' excluded
+    expect(ctx.knownFolders.sort()).toEqual(['01-Concepts', '03-Rules']);
+    expect(ctx.existing.some(n => n.path === '_inbox/old.md')).toBe(true);
+    expect(ctx.existing.some(n => n.path.startsWith('Markdown/'))).toBe(false);
   });
 });
