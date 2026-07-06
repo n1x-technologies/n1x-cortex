@@ -65,7 +65,7 @@ export async function distillWithLlm(
   sourcePath: string,
   config: CortexConfig,
   client: LlmClient,
-  opts: { write?: boolean; force?: boolean } = {},
+  opts: { write?: boolean; force?: boolean; runId?: string } = {},
 ): Promise<DistilledApplyResult> {
   const worksheet = emitPlan(vaultDir, sourcePath, config);
   return distillWorksheetWithLlm(vaultDir, worksheet, config, client, opts);

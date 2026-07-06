@@ -3,7 +3,7 @@ import { collectFrontmatterKeys } from '../vault.js';
 import { planAtomize, applyAtomize } from '../atomize/plan.js';
 import { emitPlan } from '../atomize/emit.js';
 import { applyDistilled } from '../atomize/apply-distilled.js';
-import { undoLatestRun } from '../atomize/backup.js';
+import { undoLatestRun, recordCreations } from '../atomize/backup.js';
 import { parseModelSpec, makeLlmClient } from '../atomize/llm-client.js';
 import { distillWithLlm } from '../atomize/distill-llm.js';
 import type { AtomizePlan, DistilledApplyResult } from '../types.js';
@@ -33,9 +33,26 @@ export function runEmit(vaultDir: string, sourcePath: string): string {
   return JSON.stringify(emitPlan(vaultDir, sourcePath, config), null, 2);
 }
 
+function makeRunId(): string {
+  return new Date().toISOString().replace(/[:.]/g, '-');
+}
+
+/**
+ * Journal freshly-created drafts under `runId` so `cortex undo` deletes them.
+ * The bootstrap and MCP write paths already do this; the plain CLI apply/distill
+ * paths did not, so their creations survived undo — this closes that gap and
+ * keeps the "every write is reversible" guarantee true for every entry point.
+ */
+function journalCreations(vaultDir: string, result: DistilledApplyResult, write: boolean, runId: string): void {
+  if (write && result.written.length) recordCreations(vaultDir, result.written, runId);
+}
+
 export function runApply(vaultDir: string, specsPath: string, opts: { write?: boolean; force?: boolean }): DistilledApplyResult {
   const config = loadConfig(vaultDir, collectFrontmatterKeys(vaultDir));
-  return applyDistilled(vaultDir, specsPath, config, { dryRun: !opts.write, force: opts.force });
+  const runId = makeRunId();
+  const result = applyDistilled(vaultDir, specsPath, config, { dryRun: !opts.write, force: opts.force, runId });
+  journalCreations(vaultDir, result, !!opts.write, runId);
+  return result;
 }
 
 export function runUndo(vaultDir: string): { restored: string[]; reverted: string[] } {
@@ -52,7 +69,10 @@ export async function runDistillLlm(
   const spec = parseModelSpec(opts.model);
   if (opts.baseUrl) spec.baseUrl = opts.baseUrl;
   const client = makeLlmClient(spec, opts.env ?? process.env);
-  return distillWithLlm(vaultDir, sourcePath, config, client, { write: opts.write, force: opts.force });
+  const runId = makeRunId();
+  const result = await distillWithLlm(vaultDir, sourcePath, config, client, { write: opts.write, force: opts.force, runId });
+  journalCreations(vaultDir, result, !!opts.write, runId);
+  return result;
 }
 
 export function formatDistilledPlan(r: DistilledApplyResult): string {
