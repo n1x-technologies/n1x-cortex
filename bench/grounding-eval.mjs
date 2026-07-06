@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Grounded-vs-closed-book eval: does feeding a model Cortex's cited notes stop
-// it hallucinating? Ask the SAME model project-specific facts two ways —
+// it hallucinating? Ask the SAME model project-specific facts two ways:
 // (a) closed-book, no context; (b) grounded with the top-3 Cortex notes in full
-// (the realistic `query -> get_note` path) — and score correctness objectively.
+// (the realistic `query -> get_note` path) and score correctness objectively.
 // Answers are facts NOT in the model's pretraining, so closed-book must guess.
 //
 // Requires a local OpenAI-style/ollama endpoint. Usage:
