@@ -66,10 +66,13 @@ export function discover(root: string, config: CortexConfig): DiscoverResult {
   const files: ManifestEntry[] = [];
   const skipped: { path: string; reason: string }[] = [];
   const sourcesDir = config.sourcesDir.replace(/\/$/, '');
+  const templatesDir = config.templatesDir.replace(/\/$/, '');
 
   for (const rel of listFiles(root)) {
     const segs = rel.split('/');
-    if (segs.some(s => SKIP_DIRS.has(s)) || segs[0] === sourcesDir) { continue; } // Cortex/vendored dirs: silent skip
+    // Cortex/vendored dirs, the immutable sources dir, and the note-template dir
+    // (a template is not a distillable source) are all silently skipped.
+    if (segs.some(s => SKIP_DIRS.has(s)) || segs[0] === sourcesDir || segs[0] === templatesDir) { continue; }
     const ext = extname(rel).toLowerCase();
     const name = basename(rel).toLowerCase();
     const abs = join(root, rel);

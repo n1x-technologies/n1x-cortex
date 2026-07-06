@@ -1,4 +1,5 @@
 import { resolve } from 'node:path';
+import { createRequire } from 'node:module';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { loadConfig } from '../config.js';
@@ -37,8 +38,11 @@ const distilledNote = z.object({
  * The embedding model is created at most once (only when a fresh store exists)
  * and reused across queries.
  */
+/** The package version, so MCP clients see the real server version (not a hardcoded stub). */
+const CORTEX_VERSION = (createRequire(import.meta.url)('../../package.json') as { version: string }).version;
+
 export function createMcpServer(vaultDir: string, writeScope: WriteScope = 'none'): McpServer {
-  const server = new McpServer({ name: 'cortex', version: '0.1.0' });
+  const server = new McpServer({ name: 'cortex', version: CORTEX_VERSION });
 
   // Warm embedder, memoized for the life of the process. The in-flight promise
   // is stored (not the resolved value) so concurrent first-calls share one load
