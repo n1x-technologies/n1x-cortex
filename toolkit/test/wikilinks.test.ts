@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractLinks } from '../src/wikilinks.js';
+import { extractLinks, stripLinkSyntax } from '../src/wikilinks.js';
 
 describe('extractLinks', () => {
   it('extracts targets and strips alias/anchor', () => {
@@ -33,5 +33,17 @@ describe('extractLinks', () => {
   it('still parses an unescaped alias pipe (non-table links)', () => {
     expect(extractLinks('[[RULE-02\\|aliased]] and [[RULE-03|plain]]').map(l => l.target))
       .toEqual(['RULE-02', 'RULE-03']);
+  });
+});
+
+describe('stripLinkSyntax', () => {
+  it('drops the raw link target, which is a filename slug and not prose', () => {
+    expect(stripLinkSyntax('Ver [[reunion-directorio-2026-q1]] para detalles.'))
+      .toBe('Ver  para detalles.');
+  });
+
+  it('keeps the alias, which is prose the author actually wrote', () => {
+    expect(stripLinkSyntax('Ver [[reunion-directorio-2026-q1|la última reunión]] para detalles.'))
+      .toBe('Ver la última reunión para detalles.');
   });
 });
