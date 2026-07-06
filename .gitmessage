@@ -1,0 +1,16 @@
+# <type>(<scope>): <summary in imperative, max ~50 chars>
+#
+# Types: feat | fix | chore | docs | refactor | test | style
+# Example:  feat(methodology): collaboration chapter
+#
+# Body (optional): explain the WHY of the change, not the what (~72 chars).
+#
+#
+# --- Co-authorship ----------------------------------------------------------
+# If THIS change was made by two people (pairing, shared code, or a
+# suggestion accepted in review), add them below —with a blank line above—.
+# Only if it was real joint work; not just for being on the same team.
+# The noreply email is on GitHub → Settings → Emails.
+#
+# Co-authored-by: First Last <ID+user@users.noreply.github.com>
+# ---------------------------------------------------------------------------

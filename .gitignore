@@ -1,0 +1,12 @@
+_img/
+.DS_Store
+
+# PDFs are derived from .typ — generated on demand, not versioned (coherente con consumers)
+*.pdf
+
+# Cortex (generated cache — do not commit)
+.cortex/
+
+# Scratch / tooling working dirs (not part of the repo)
+.playwright-mcp/
+__pycache__/
