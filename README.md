@@ -1,7 +1,7 @@
 <p align="right"><b>English</b> · <a href="README.es.md">Español</a></p>
 
 <p align="center">
-  <img src="docs/assets/hero.png" alt="N1X Cortex, the cited knowledge graph, for you and your agents" width="100%">
+  <img src="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/hero.png" alt="N1X Cortex, the cited knowledge graph, for you and your agents" width="100%">
 </p>
 
 <p align="center">
@@ -32,13 +32,13 @@ Most knowledge lives in scattered markdown files (notes, docs, wikis), or in no 
 - 🔒 **Local-first & private**: runs on your machine, on your files. Nothing leaves unless you say so.
 - 🤖 **Agent-native (MCP)**: ships an MCP server, so any agent can query and write back to your vault as a tool.
 
-<p align="center"><img src="docs/assets/flow.png" alt="What Cortex does in three moves: your notes or a whole repo → Cortex builds a cited graph → you and your agents ask and get cited answers" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/flow.png" alt="What Cortex does in three moves: your notes or a whole repo → Cortex builds a cited graph → you and your agents ask and get cited answers" width="100%"></p>
 
 ## Why it's cheaper, and why it stops guessing
 
 Imagine your knowledge base is **300 pages**. To answer one question, most setups hand the AI *all 300 pages* and hope. Cortex hands it **the one cited paragraph** that actually answers it.
 
-<p align="center"><img src="docs/assets/metrics.png" alt="Cortex sends ~1,340 tokens of cited context instead of 213,409 (159× less), and grounded in cited notes the model fabricates far less, 100% cited, local, reversible" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/metrics.png" alt="Cortex sends ~1,340 tokens of cited context instead of 213,409 (159× less), and grounded in cited notes the model fabricates far less, 100% cited, local, reversible" width="100%"></p>
 
 - **~159× less to read per question.** On a real 213,000-token knowledge base, "read everything" costs ~213,000 tokens per question; Cortex's cited answer costs **~1,340**: that's **99.4% less**. Faster, and far cheaper.
 - **It stops making things up.** Asked facts it couldn't know, a model gave confident-but-wrong answers **25–63%** of the time. Given Cortex's cited notes, that dropped to **0–13%**: it answered correctly, or said *"I don't know"*, instead of guessing.
