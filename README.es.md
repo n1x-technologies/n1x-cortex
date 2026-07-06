@@ -175,6 +175,16 @@ flowchart TB
 - **Curar** — los diagnósticos (`gaps`, `dupes`, `verify`) mantienen sano el cerebro; `merge` fusiona duplicados en una sola nota, de forma reversible.
 - **Capa de IA** — consulta citada (híbrida léxica + semántica), el servidor MCP, y un generador de documentos con marca propia.
 
+## Los números (medidos)
+
+Cortex se gana su lugar de dos formas — ambas medidas en vivo con la CLI sobre un corpus real de 45 documentos (~213k tokens). Reprodúcelas con [`bench/`](bench/).
+
+- **99,4% menos tokens de prompt por consulta.** Responder desde el vault entero costaría ~213.409 tokens; `cortex query` devuelve ~1.340 tokens de extractos citados — **~159× menos contexto**, y la brecha *crece* a medida que el vault crece (el retrieval mantiene un presupuesto ~fijo).
+- **El grounding hace que el modelo deje de inventar.** Preguntado *a ciegas* por hechos específicos del proyecto, un modelo local dio una respuesta segura-pero-incorrecta el **25–63%** de las veces; *con contexto* de las notas citadas de Cortex, la fabricación cayó al **0–13%** — respondió bien o dijo "no sé", pero dejó de inventar.
+- **100% citado.** Cada resultado está anclado a una nota fuente (`path` + `id`), los extractos son **verbatim**, y las fuentes `Markdown/` nunca se modifican.
+
+*Las cifras de tokens y provenance son exactas y reproducibles; la de grounding es un eval ilustrativo pequeño — muestra el mecanismo (grounding → acertar-o-abstenerse), no una tasa poblacional de alucinación. Metodología completa: [`bench/`](bench/).*
+
 ## Búsqueda semántica (opcional)
 
 La búsqueda léxica funciona de fábrica. Para búsqueda basada en significado (sinónimos, paráfrasis, cruce de idiomas ES↔EN) el modelo de embeddings es una dependencia **opt-in** para que la instalación base siga siendo liviana:

@@ -173,6 +173,16 @@ flowchart TB
 - **Curate** — diagnostics (`gaps`, `dupes`, `verify`) keep the brain healthy; `merge` folds duplicates into one note, reversibly.
 - **AI Layer** — cited query (hybrid lexical + semantic), the MCP server, and a branded document generator.
 
+## The numbers (measured)
+
+Cortex earns its keep two ways — both measured live with the CLI on a real 45-document corpus (~213k tokens). Reproduce them with [`bench/`](bench/).
+
+- **99.4% fewer prompt tokens per query.** Answering from the whole vault would cost ~213,409 tokens; `cortex query` returns ~1,340 tokens of cited excerpts — **~159× less context**, and the gap *widens* as the vault grows (retrieval keeps a roughly fixed budget).
+- **Grounding stops the model inventing.** Asked project-specific facts *closed-book*, a local model gave a confident-but-wrong answer **25–63%** of the time; *grounded* with Cortex's cited notes, fabrication fell to **0–13%** — it answered correctly or said "I don't know", but stopped making things up.
+- **100% cited.** Every result is anchored to a source note (`path` + `id`), excerpts are **verbatim**, and `Markdown/` sources are never modified.
+
+*The token & provenance figures are exact and reproducible; the grounding figure is a small illustrative eval — it shows the mechanism (grounding → correct-or-abstain), not a population hallucination rate. Full methodology: [`bench/`](bench/).*
+
 ## Semantic search (optional)
 
 Lexical search works out of the box. For meaning-based search (synonyms, paraphrase, cross-language ES↔EN) the embedding model is an **opt-in peer** so the base install stays light:
