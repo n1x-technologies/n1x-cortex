@@ -1,7 +1,7 @@
 <p align="right"><b>English</b> · <a href="README.es.md">Español</a></p>
 
 <p align="center">
-  <img src="docs/assets/hero.svg" alt="N1X Cortex — the cited knowledge graph, for you and your agents" width="100%">
+  <img src="docs/assets/hero.png" alt="N1X Cortex — the cited knowledge graph, for you and your agents" width="100%">
 </p>
 
 <p align="center">
@@ -31,6 +31,16 @@ Most knowledge lives in scattered markdown — Obsidian vaults, docs, wikis — 
 - 📌 **Cited by design** — every answer points back to its source notes. Provenance is what separates Cortex from an opaque RAG.
 - 🔒 **Local-first & private** — runs on your machine, on your files. Nothing leaves unless you say so.
 - 🤖 **Agent-native (MCP)** — ships an MCP server, so any agent can query and write back to your vault as a tool.
+
+## Why it's cheaper — and why it stops guessing
+
+Imagine your knowledge base is **300 pages**. To answer one question, most setups hand the AI *all 300 pages* and hope. Cortex hands it **the one cited paragraph** that actually answers it.
+
+- **~159× less to read per question.** On a real 213,000-token knowledge base, "read everything" costs ~213,000 tokens per question; Cortex's cited answer costs **~1,340** — that's **99.4% less**. Faster, and far cheaper.
+- **It stops making things up.** Asked facts it couldn't know, a model gave confident-but-wrong answers **25–63%** of the time. Given Cortex's cited notes, that dropped to **0–13%** — it answered correctly, or said *"I don't know"*, instead of guessing.
+- **You can always check.** Every answer points to the exact note it came from. **100% cited**, quoted word-for-word.
+
+All measured live with the CLI on real data — reproduce the numbers yourself in [`bench/`](bench/).
 
 ## Why it clicks
 
@@ -98,6 +108,8 @@ Write is **opt-in at launch** — an agent can't self-enable or escalate its own
 | **Curate** | `--write=curate` | Draft **+** promote drafts out of `_inbox/` and merge duplicates. |
 
 Every write is backed up and reversible (`cortex_undo`), sources under `Markdown/` are never touched, and an audit trail lands in `.cortex/mcp-writes.log`.
+
+> **Going further:** [**Symbiont**](docs/use-cases/symbiont.md) — the ambient-agent pattern where Cortex installs into a repo, scans the code, and keeps a cited brain of it in sync as you work.
 
 ## Distill or bootstrap without an agent (BYO-key)
 
