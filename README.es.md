@@ -1,7 +1,7 @@
 <p align="right"><a href="README.md">English</a> · <b>Español</b></p>
 
 <p align="center">
-  <img src="docs/assets/hero.svg" alt="N1X Cortex — el grafo de conocimiento citado, para ti y para tus agentes" width="100%">
+  <img src="docs/assets/hero.png" alt="N1X Cortex — el grafo de conocimiento citado, para ti y para tus agentes" width="100%">
 </p>
 
 > **Nota:** el inglés (`README.md`) es la fuente de verdad. Si esta traducción queda desactualizada, prevalece el inglés.
@@ -33,6 +33,16 @@ La mayor parte del conocimiento vive disperso en markdown — vaults de Obsidian
 - 📌 **Citado por diseño** — cada respuesta apunta a sus notas fuente. La procedencia es lo que distingue a Cortex de un RAG opaco.
 - 🔒 **Local-first y privado** — corre en tu máquina, sobre tus archivos. Nada sale a menos que tú lo decidas.
 - 🤖 **Nativo para agentes (MCP)** — incluye un servidor MCP, para que cualquier agente pueda consultar y escribir de vuelta en tu vault como herramienta.
+
+## Por qué es más barato — y por qué deja de inventar
+
+Imagina que tu base de conocimiento son **300 páginas**. Para responder una pregunta, la mayoría de los setups le pasan a la IA *las 300 páginas* y cruzan los dedos. Cortex le pasa **el único párrafo citado** que de verdad responde.
+
+- **~159× menos para leer por pregunta.** Sobre una base real de 213.000 tokens, "leerlo todo" cuesta ~213.000 tokens por pregunta; la respuesta citada de Cortex cuesta **~1.340** — un **99,4% menos**. Más rápido, y mucho más barato.
+- **Deja de inventar.** Preguntado por hechos que no podía saber, un modelo dio respuestas seguras-pero-incorrectas el **25–63%** de las veces. Con las notas citadas de Cortex, eso cayó al **0–13%** — respondió bien, o dijo *"no sé"*, en vez de adivinar.
+- **Siempre puedes verificar.** Cada respuesta apunta a la nota exacta de donde salió. **100% citado**, textual.
+
+Todo medido en vivo con la CLI sobre datos reales — reproduce los números tú mismo en [`bench/`](bench/).
 
 ## Por qué funciona
 
@@ -100,6 +110,8 @@ La escritura es **opt-in en el arranque** — un agente no puede autohabilitarse
 | **Curación (Curate)** | `--write=curate` | Draft **+** promueve borradores fuera de `_inbox/` y fusiona duplicados. |
 
 Cada escritura queda respaldada y es reversible (`cortex_undo`), las fuentes bajo `Markdown/` nunca se tocan, y una traza de auditoría queda en `.cortex/mcp-writes.log`.
+
+> **Yendo más lejos:** [**Symbiont**](docs/use-cases/symbiont.md) — el patrón de agente ambiental donde Cortex se instala en un repo, escanea el código, y mantiene sincronizado un cerebro citado de él mientras trabajas.
 
 ## Distila o haz bootstrap sin agente (BYO-key)
 
