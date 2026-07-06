@@ -1,7 +1,7 @@
 <p align="right"><a href="README.md">English</a> · <b>Español</b></p>
 
 <p align="center">
-  <img src="docs/assets/hero.png" alt="N1X Cortex, el grafo de conocimiento citado, para ti y para tus agentes" width="100%">
+  <img src="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/hero.png" alt="N1X Cortex, el grafo de conocimiento citado, para ti y para tus agentes" width="100%">
 </p>
 
 > **Nota:** el inglés (`README.md`) es la fuente de verdad. Si esta traducción queda desactualizada, prevalece el inglés.
@@ -34,13 +34,13 @@ La mayor parte del conocimiento vive disperso en archivos markdown (notas, docum
 - 🔒 **Local-first y privado**: corre en tu máquina, sobre tus archivos. Nada sale a menos que tú lo decidas.
 - 🤖 **Nativo para agentes (MCP)**: incluye un servidor MCP, para que cualquier agente pueda consultar y escribir de vuelta en tu vault como herramienta.
 
-<p align="center"><img src="docs/assets/flow.png" alt="Qué hace Cortex en tres pasos: tus notas o un repo → Cortex arma un grafo citado → tú y tus agentes preguntan y reciben respuestas citadas" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/flow.png" alt="Qué hace Cortex en tres pasos: tus notas o un repo → Cortex arma un grafo citado → tú y tus agentes preguntan y reciben respuestas citadas" width="100%"></p>
 
 ## Por qué es más barato, y por qué deja de inventar
 
 Imagina que tu base de conocimiento son **300 páginas**. Para responder una pregunta, la mayoría de los setups le pasan a la IA *las 300 páginas* y cruzan los dedos. Cortex le pasa **el único párrafo citado** que de verdad responde.
 
-<p align="center"><img src="docs/assets/metrics.png" alt="Cortex manda ~1.340 tokens de contexto citado en vez de 213.409 (159× menos), y con notas citadas el modelo inventa mucho menos, 100% citado, local, reversible" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/metrics.png" alt="Cortex manda ~1.340 tokens de contexto citado en vez de 213.409 (159× menos), y con notas citadas el modelo inventa mucho menos, 100% citado, local, reversible" width="100%"></p>
 
 - **~159× menos para leer por pregunta.** Sobre una base real de 213.000 tokens, "leerlo todo" cuesta ~213.000 tokens por pregunta; la respuesta citada de Cortex cuesta **~1.340**: un **99,4% menos**. Más rápido, y mucho más barato.
 - **Deja de inventar.** Preguntado por hechos que no podía saber, un modelo dio respuestas seguras-pero-incorrectas el **25–63%** de las veces. Con las notas citadas de Cortex, eso cayó al **0–13%**: respondió bien, o dijo *"no sé"*, en vez de adivinar.
