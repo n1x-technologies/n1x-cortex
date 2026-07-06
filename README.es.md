@@ -70,11 +70,13 @@ Lee cada archivo — código incluido — y destila los conceptos del proyecto e
 
 ## Casos de uso
 
-- **Adopta un repo legacy o sin documentar** — apúntale Cortex y pregunta *"¿cómo funciona el auth?"* en vez de hacer grep. Cada respuesta cita el archivo exacto.
-- **Dale memoria real a tu agente de IA** — un cerebro de largo plazo local, citado y reversible que cualquier agente MCP (Claude Code, Copilot, Cursor…) puede leer y al que escribe de vuelta.
-- **La fuente de verdad de un equipo** — una base de conocimiento verificable que comparten muchas personas y agentes, en vez de docs dispersos en los que nadie confía.
-- **Un codebase que se documenta solo** — docs vivos que se regeneran a medida que el código cambia, para que nunca queden desactualizados.
-- **Un agente ambiental siempre activo** — Cortex se instala en un repo, escanea el código y mantiene un cerebro citado sincronizado mientras trabajas → ver **[Symbiont](docs/use-cases/symbiont.md)**.
+- **[Adopta un repo legacy o sin documentar](docs/use-cases/onboard-a-repo.md)** — apúntale Cortex y pregunta *"¿cómo funciona el auth?"* en vez de hacer grep. Cada respuesta cita el archivo exacto.
+- **[Dale memoria real a tu agente de IA](docs/use-cases/agent-memory.md)** — un cerebro de largo plazo local, citado y reversible que cualquier agente MCP (Claude Code, Copilot, Cursor…) puede leer y al que escribe de vuelta.
+- **[La fuente de verdad de un equipo](docs/use-cases/team-knowledge-base.md)** — una base de conocimiento verificable que comparten muchas personas y agentes, en vez de docs dispersos en los que nadie confía.
+- **[Un codebase que se documenta solo](docs/use-cases/self-documenting-codebase.md)** — docs vivos que se regeneran a medida que el código cambia, para que nunca queden desactualizados.
+- **[Un agente ambiental siempre activo → Symbiont](docs/use-cases/symbiont.md)** — Cortex se instala en un repo, escanea el código y mantiene un cerebro citado sincronizado mientras trabajas.
+
+Cada uno enlaza a una guía corta — mira todos los [casos de uso](docs/use-cases/).
 
 ## Inicio rápido (30 segundos)
 
