@@ -57,13 +57,13 @@ Lee cada archivo — código incluido — y destila los conceptos del proyecto e
 ## Inicio rápido (30 segundos)
 
 ```bash
-npm i -g @n1x-technologies/cortex      # or run without installing: npx @n1x-technologies/cortex
+npm i -g @n1x-technologies/cortex      # o ejecútalo sin instalar: npx @n1x-technologies/cortex
 
-cd my-vault                            # any folder of .md notes
-cortex init                            # detect your frontmatter, write .cortex.json (+ gitignore the cache)
-cortex status                          # notes by type/status + orphans
-cortex query "how does X work?"        # a cited answer from your own notes
-cortex viz                             # 🌐 local web viewer — your knowledge graph
+cd mi-vault                            # cualquier carpeta de notas .md
+cortex init                            # detecta tu frontmatter, escribe .cortex.json (+ ignora la caché en git)
+cortex status                          # notas por tipo/estado + huérfanas
+cortex query "¿cómo funciona X?"       # una respuesta citada desde tus propias notas
+cortex viz                             # 🌐 visor web local — tu grafo de conocimiento
 ```
 
 Eso es todo — sin cuenta, sin servidor, sin nube.
@@ -81,13 +81,13 @@ npm i -g @n1x-technologies/cortex@latest
 Cortex habla el **[Model Context Protocol](https://modelcontextprotocol.io)**, así que cualquier agente compatible con MCP — no solo Claude Code — puede usar tu vault como una **fuente de conocimiento citada**, y opcionalmente escribir de vuelta.
 
 ```bash
-# read-only (default) — agents can query and read your vault:
+# solo lectura (por defecto) — los agentes consultan y leen tu vault:
 cortex mcp
 
-# ⭐ recommended — also let agents capture knowledge back as drafts (reversible):
+# ⭐ recomendado — deja que los agentes capturen conocimiento como borradores (reversible):
 cortex mcp --write
 
-# full curator — drafts + promote + merge (structural, still reversible):
+# curador completo — borradores + promote + merge (estructural, igual reversible):
 cortex mcp --write=curate
 ```
 
@@ -106,7 +106,7 @@ Cada escritura queda respaldada y es reversible (`cortex_undo`), las fuentes baj
 Cualquiera puede atomizar con su propio modelo — sin Claude Code, sin cliente MCP:
 
 ```bash
-export ANTHROPIC_API_KEY=...        # or OPENAI_API_KEY
+export ANTHROPIC_API_KEY=...        # o OPENAI_API_KEY
 cortex atomize Markdown/spec.md --model anthropic:claude-3-5-sonnet --write
 ```
 
@@ -121,7 +121,7 @@ La misma metodología de destilación impulsa cada camino — la skill `/atomize
 Apunta Cortex a un repositorio sin documentación y lee cada archivo — código incluido — destilando los conceptos del proyecto en notas atómicas conectadas:
 
 ```bash
-export ANTHROPIC_API_KEY=...        # or OPENAI_API_KEY
+export ANTHROPIC_API_KEY=...        # o OPENAI_API_KEY
 cortex bootstrap . --model anthropic:claude-3-5-sonnet --write
 ```
 
@@ -180,8 +180,8 @@ flowchart TB
 La búsqueda léxica funciona de fábrica. Para búsqueda basada en significado (sinónimos, paráfrasis, cruce de idiomas ES↔EN) el modelo de embeddings es una dependencia **opt-in** para que la instalación base siga siendo liviana:
 
 ```bash
-npm i -g @xenova/transformers      # the local, on-device model — nothing leaves your machine
-cortex embed                       # build the store once (incremental after that)
+npm i -g @xenova/transformers      # el modelo local, en tu dispositivo — nada sale de tu máquina
+cortex embed                       # construye el almacén una vez (incremental después)
 ```
 
 Luego `cortex query` y `cortex dupes` se vuelven híbridos (léxico + semántico), y el servidor MCP mantiene el modelo caliente.

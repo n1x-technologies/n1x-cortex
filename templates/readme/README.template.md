@@ -76,7 +76,7 @@ Convention: the README is updated on EVERY push.
 ```mermaid
 flowchart TB
     A["{{Component}}"] --> B["{{Component}}"]
-    style A fill:#1A1A2E,color:#fff
+    style A fill:#292929,color:#e5e5e5
 ```
 
 | Layer | Technology | Why |

@@ -16,6 +16,31 @@ function makeRunId(): string {
   return new Date().toISOString().replace(/[:.]/g, '-');
 }
 
+/**
+ * Normalize a model-provided folder. We always prepend `_inbox/` ourselves, so a
+ * folder that already starts with `_inbox/` (weaker/local models echo it — seen
+ * live during a real ollama bootstrap) must have those leading segments stripped,
+ * else notes land at `_inbox/_inbox/…`. Rejects absolute paths and `..` traversal.
+ * Returns null when nothing usable remains (→ note goes to `_inbox/` root).
+ */
+function sanitizeFolder(folder: string | null | undefined): string | null {
+  if (!folder || folder.startsWith('/') || folder.split('/').includes('..')) return null;
+  let f = folder.replace(/^\/+|\/+$/g, '');
+  while (f === INBOX || f.startsWith(INBOX + '/')) f = f.slice(INBOX.length).replace(/^\/+/, '');
+  return f === '' ? null : f;
+}
+
+/**
+ * Coerce a model-provided `tags` value into a clean string[]. Models sometimes
+ * return a comma string ("a, b") instead of an array (a real ollama run crashed
+ * on `spec.tags.join`); normalize both shapes here at the untrusted boundary.
+ */
+function normalizeTags(tags: unknown): string[] | undefined {
+  const arr = Array.isArray(tags) ? tags : typeof tags === 'string' ? tags.split(',') : [];
+  const clean = arr.filter((t): t is string => typeof t === 'string').map(t => t.trim()).filter(Boolean);
+  return clean.length ? clean : undefined;
+}
+
 /** File-path entry point: read distilled specs from disk, then apply them. */
 export function applyDistilled(
   vaultDir: string,
@@ -52,10 +77,10 @@ export function applyDistilledInput(
   const createItems: AtomizePlanItem[] = input.notes
     .filter(n => (n.action ?? 'create') === 'create')
     .map(n => {
-      const safeFolder = (n.folder && !n.folder.startsWith('/') && !n.folder.split('/').includes('..')) ? n.folder : null;
+      const safeFolder = sanitizeFolder(n.folder);
       const spec: NoteSpec = {
         id: slug(n.title), title: n.title, type: n.type ?? null, body: n.body,
-        source: input.source, status, folder: safeFolder, tags: n.tags,
+        source: input.source, status, folder: safeFolder, tags: normalizeTags(n.tags),
       };
       const folderPrefix = safeFolder ? `${safeFolder}/` : '';
       const { action, matchPath } = reconcile(spec, existing);
@@ -94,7 +119,7 @@ export function applyDistilledInput(
     if (!force && n.body.trim().length < existingBody.length * 0.5) { skipped.push({ target, reason: 'shrink-guard' }); continue; }
 
     updateItems.push({
-      spec: { id: '', title: n.title, type: n.type ?? null, body: n.body, source: input.source, status, folder: null, tags: n.tags },
+      spec: { id: '', title: n.title, type: n.type ?? null, body: n.body, source: input.source, status, folder: null, tags: normalizeTags(n.tags) },
       action: 'update', matchPath: target, destPath: target,
     });
     if (!dryRun) {
