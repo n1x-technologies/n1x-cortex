@@ -27,16 +27,20 @@ npm i -g @n1x-technologies/cortex
 
 ## Qué es
 
-La mayor parte del conocimiento vive disperso en markdown — vaults de Obsidian, documentación, wikis — o en ningún documento, solo en un repositorio de código. Los humanos pueden leerlo; **los agentes de IA no pueden confiar en él** (sin estructura, sin procedencia). Cortex resuelve eso: lee cualquier vault de markdown, o un repositorio entero sin documentar, y lo convierte en un **grafo de notas citado**, para que tanto una persona como un agente sepan *de dónde viene cada respuesta*.
+La mayor parte del conocimiento vive disperso en archivos markdown — notas, documentación, wikis — o en ningún documento, solo en un repositorio de código. Los humanos pueden leerlo; **los agentes de IA no pueden confiar en él** (sin estructura, sin procedencia). Cortex resuelve eso: lee cualquier vault de markdown, o un repositorio entero sin documentar, y lo convierte en un **grafo de notas citado**, para que tanto una persona como un agente sepan *de dónde viene cada respuesta*.
 
 - 🧩 **Atómico y conectado** — las notas forman un grafo de notas enlazadas y tipadas (wikilinks, frontmatter).
-- 📌 **Citado por diseño** — cada respuesta apunta a sus notas fuente. La procedencia es lo que distingue a Cortex de un RAG opaco.
+- 📌 **Citado por diseño** — cada respuesta apunta a sus notas fuente, así siempre sabes de dónde salió.
 - 🔒 **Local-first y privado** — corre en tu máquina, sobre tus archivos. Nada sale a menos que tú lo decidas.
 - 🤖 **Nativo para agentes (MCP)** — incluye un servidor MCP, para que cualquier agente pueda consultar y escribir de vuelta en tu vault como herramienta.
+
+<p align="center"><img src="docs/assets/flow.png" alt="Qué hace Cortex en tres pasos: tus notas o un repo → Cortex arma un grafo citado → tú y tus agentes preguntan y reciben respuestas citadas" width="100%"></p>
 
 ## Por qué es más barato — y por qué deja de inventar
 
 Imagina que tu base de conocimiento son **300 páginas**. Para responder una pregunta, la mayoría de los setups le pasan a la IA *las 300 páginas* y cruzan los dedos. Cortex le pasa **el único párrafo citado** que de verdad responde.
+
+<p align="center"><img src="docs/assets/metrics.png" alt="Cortex manda ~1.340 tokens de contexto citado en vez de 213.409 (159× menos), y con notas citadas el modelo inventa mucho menos — 100% citado, local, reversible" width="100%"></p>
 
 - **~159× menos para leer por pregunta.** Sobre una base real de 213.000 tokens, "leerlo todo" cuesta ~213.000 tokens por pregunta; la respuesta citada de Cortex cuesta **~1.340** — un **99,4% menos**. Más rápido, y mucho más barato.
 - **Deja de inventar.** Preguntado por hechos que no podía saber, un modelo dio respuestas seguras-pero-incorrectas el **25–63%** de las veces. Con las notas citadas de Cortex, eso cayó al **0–13%** — respondió bien, o dijo *"no sé"*, en vez de adivinar.
