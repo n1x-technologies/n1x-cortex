@@ -105,6 +105,42 @@ describe('applyDistilled', () => {
     expect(existsSync(join(dir, '_inbox/FolderB/shared-title.md'))).toBe(true);
   });
 
+  it('tolerates a model returning tags as a comma string instead of an array (no crash)', () => {
+    const dir = vault();
+    const cfg = loadConfig(dir, []);
+    // A real ollama bootstrap crashed a file with "spec.tags.join is not a function"
+    // because the model emitted tags as a string. Normalize instead of crashing.
+    const badTags: DistilledInput = {
+      source: 'src',
+      notes: [{ title: 'Stringy tags', body: 'x', tags: 'queue, retry' as unknown as string[] }],
+    };
+    const r = applyDistilled(dir, specsFile(dir, badTags), cfg, { dryRun: false });
+    expect(r.written).toEqual(['_inbox/stringy-tags.md']);
+    const md = readFileSync(join(dir, '_inbox/stringy-tags.md'), 'utf8');
+    expect(md).toMatch(/tags: \[queue, retry\]/);
+  });
+
+  it('strips a leading _inbox/ the model put in the folder (no _inbox/_inbox/ nesting)', () => {
+    const dir = vault();
+    const cfg = loadConfig(dir, []);
+    // A weaker/local model often echoes _inbox into the folder value. We always
+    // prepend _inbox/ ourselves, so those must be stripped — else notes land at
+    // _inbox/_inbox/_inbox/… (seen live during a real ollama bootstrap run).
+    const echoed: DistilledInput = {
+      source: 'src',
+      notes: [
+        { title: 'Alpha', folder: '_inbox/01-Concepts', body: 'a' },
+        { title: 'Beta', folder: '_inbox/_inbox/01-Concepts', body: 'b' },
+        { title: 'Gamma', folder: '_inbox', body: 'c' },
+      ],
+    };
+    const r = applyDistilled(dir, specsFile(dir, echoed), cfg, { dryRun: false });
+    expect(r.written).toContain('_inbox/01-Concepts/alpha.md');
+    expect(r.written).toContain('_inbox/01-Concepts/beta.md');
+    expect(r.written).toContain('_inbox/gamma.md'); // folder was only "_inbox" → root
+    expect(r.written.every(p => !p.includes('_inbox/_inbox'))).toBe(true);
+  });
+
   it('sanitizes a traversal folder — note lands under _inbox/ and nothing is created outside the vault', () => {
     const dir = vault();
     const cfg = loadConfig(dir, []);

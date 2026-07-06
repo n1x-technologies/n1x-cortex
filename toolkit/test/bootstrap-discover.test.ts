@@ -39,4 +39,12 @@ describe('discover', () => {
     // binary + lockfile appear in skipped with a reason
     expect(skipped.some(s => s.path === 'logo.png' && /binary/i.test(s.reason))).toBe(true);
   });
+
+  it('skips the note-template dir (_templates/ is not a distillable source)', () => {
+    const dir = gitRepo();
+    mkdirSync(join(dir, '_templates'));
+    writeFileSync(join(dir, '_templates', 'note.md'), '---\ntype: note\n---\n# {{title}}\n');
+    const { files } = discover(dir, loadConfig(dir, []));
+    expect(files.map(f => f.path)).not.toContain('_templates/note.md');
+  });
 });
