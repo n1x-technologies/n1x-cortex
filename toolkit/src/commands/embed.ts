@@ -65,9 +65,9 @@ export async function runEmbed(
       } catch (cause) {
         const code = (cause as NodeJS.ErrnoException)?.code;
         const message = cause instanceof Error ? cause.message : String(cause);
-        if (code === 'ERR_MODULE_NOT_FOUND' || message.includes('@xenova/transformers')) {
+        if (code === 'ERR_MODULE_NOT_FOUND' || message.includes('@huggingface/transformers')) {
           throw new Error(
-            'Semantic support is optional and not installed. Enable it with:  npm i -g @xenova/transformers',
+            'Semantic support is optional and not installed. Enable it with:  npm i -g @huggingface/transformers',
             { cause },
           );
         }
