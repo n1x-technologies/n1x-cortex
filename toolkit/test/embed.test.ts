@@ -45,7 +45,7 @@ describe('runEmbed', () => {
 
   it('reports a friendly "not installed" message when the optional dep is absent', async () => {
     const dir = vault();
-    const notFound = Object.assign(new Error("Cannot find package '@xenova/transformers'"), {
+    const notFound = Object.assign(new Error("Cannot find package '@huggingface/transformers'"), {
       code: 'ERR_MODULE_NOT_FOUND',
     });
     await expect(

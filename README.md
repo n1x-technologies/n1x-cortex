@@ -204,7 +204,7 @@ flowchart TB
 Lexical search works out of the box. For meaning-based search (synonyms, paraphrase, cross-language ES↔EN) the embedding model is an **opt-in peer** so the base install stays light:
 
 ```bash
-npm i -g @xenova/transformers      # the local, on-device model, nothing leaves your machine
+npm i -g @huggingface/transformers # the local, on-device model, nothing leaves your machine
 cortex embed                       # build the store once (incremental after that)
 ```
 
