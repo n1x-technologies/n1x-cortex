@@ -22,11 +22,11 @@ describe('package is publishable', () => {
     expect(pkg.files).toContain('dist/');
   });
   it('keeps the heavy ML dep as an optional peer, not a hard dependency', () => {
-    expect(pkg.dependencies?.['@xenova/transformers']).toBeUndefined();
-    expect(pkg.peerDependencies?.['@xenova/transformers']).toBe('^2.17.2');
-    expect(pkg.peerDependenciesMeta?.['@xenova/transformers']?.optional).toBe(true);
+    expect(pkg.dependencies?.['@huggingface/transformers']).toBeUndefined();
+    expect(pkg.peerDependencies?.['@huggingface/transformers']).toBe('^4.0.0');
+    expect(pkg.peerDependenciesMeta?.['@huggingface/transformers']?.optional).toBe(true);
     // exact version guard — must match peerDependencies
-    expect(pkg.devDependencies?.['@xenova/transformers']).toBe('^2.17.2');
+    expect(pkg.devDependencies?.['@huggingface/transformers']).toBe('^4.0.0');
   });
   it('has an executable shebang as the first line of cli.ts', () => {
     const cli = readFileSync(join(here, '..', 'src', 'cli.ts'), 'utf8');

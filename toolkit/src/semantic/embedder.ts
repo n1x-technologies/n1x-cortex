@@ -5,10 +5,12 @@ export interface Embedder {
 }
 
 export async function createTransformersEmbedder(modelId: string, cacheDir: string): Promise<Embedder> {
-  const { pipeline, env } = await import('@xenova/transformers');
+  const { pipeline, env } = await import('@huggingface/transformers');
   env.cacheDir = cacheDir;
   env.allowLocalModels = false;
-  const extractor = await pipeline('feature-extraction', modelId);
+  // dtype: 'q8' matches the quantized default of the former @xenova/transformers,
+  // so embeddings stay bit-identical to any store generated before this migration.
+  const extractor = await pipeline('feature-extraction', modelId, { dtype: 'q8' });
   let dim = 0;
   return {
     id: modelId,
