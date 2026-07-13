@@ -206,7 +206,7 @@ flowchart TB
 La búsqueda léxica funciona de fábrica. Para búsqueda basada en significado (sinónimos, paráfrasis, cruce de idiomas ES↔EN) el modelo de embeddings es una dependencia **opt-in** para que la instalación base siga siendo liviana:
 
 ```bash
-npm i -g @xenova/transformers      # el modelo local, en tu dispositivo, nada sale de tu máquina
+npm i -g @huggingface/transformers # el modelo local, en tu dispositivo, nada sale de tu máquina
 cortex embed                       # construye el almacén una vez (incremental después)
 ```
 
