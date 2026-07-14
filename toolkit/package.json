@@ -64,7 +64,7 @@
     "cytoscape-d3-force": "^1.1.4",
     "d3-force": "^3.0.0",
     "eslint": "^9.39.5",
-    "tsx": "^4.7.0",
+    "tsx": "^4.23.1",
     "typescript": "^5.4.0",
     "typescript-eslint": "^8.64.0",
     "vitest": "^3.2.7"
