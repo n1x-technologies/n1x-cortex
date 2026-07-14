@@ -98,6 +98,8 @@ Re-run the install anywhere to jump to the latest version:
 npm i -g @n1x-technologies/cortex@latest
 ```
 
+See [CHANGELOG.md](CHANGELOG.md) for what changed in each release.
+
 ## Use it from any agent (MCP)
 
 Cortex speaks the **[Model Context Protocol](https://modelcontextprotocol.io)**, so any MCP-capable agent, not just Claude Code, can use your vault as a **cited knowledge source**, and optionally write back.
