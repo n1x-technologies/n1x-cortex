@@ -60,7 +60,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.5",
     "@huggingface/transformers": "^4.0.0",
-    "@types/node": "^20.0.0",
+    "@types/node": "^26.1.1",
     "cytoscape-d3-force": "^1.1.4",
     "d3-force": "^3.0.0",
     "eslint": "^9.39.5",
