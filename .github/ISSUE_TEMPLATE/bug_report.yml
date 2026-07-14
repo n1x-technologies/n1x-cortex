@@ -1,0 +1,36 @@
+name: Bug report
+description: Report a problem with N1X Cortex
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Exact commands (e.g. `cortex query "..."`) and vault setup.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Cortex version
+      description: Output of `cortex --version`.
+    validations:
+      required: true
+  - type: input
+    id: node
+    attributes:
+      label: Node version
+      description: Output of `node --version`.
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: OS / environment
