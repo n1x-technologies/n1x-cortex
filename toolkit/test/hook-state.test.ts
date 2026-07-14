@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { freshState, loadState, saveState, snapshotSources, computeDirty, reconcile, markDirty, clearDirty, setPaused } from '../src/hooks/state.js';
 import { loadConfig } from '../src/config.js';
-import { mkdtempSync, mkdirSync, writeFileSync, utimesSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 

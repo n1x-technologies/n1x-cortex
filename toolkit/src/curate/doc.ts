@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, writeFileSync, copyFileSync, readFileSync } from 'node:fs';
-import { join, resolve, dirname } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { scanVault } from '../vault.js';

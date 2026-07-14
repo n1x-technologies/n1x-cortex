@@ -16,7 +16,7 @@ describe('package is publishable', () => {
     expect(pkg.publishConfig?.access).toBe('public');
     expect(pkg.license).toBe('MIT');
     expect(pkg.version).toMatch(/^\d+\.\d+\.\d+/);
-    expect(pkg.engines?.node).toBe('>=18');
+    expect(pkg.engines?.node).toBe('>=20');
   });
   it('ships only the build output', () => {
     expect(pkg.files).toContain('dist/');
