@@ -1,5 +1,8 @@
 name: ci
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -16,7 +19,17 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: npm
           cache-dependency-path: toolkit/package-lock.json
-      - run: npm ci
+      # Retry: a transitive native postinstall (onnxruntime-node) downloads
+      # binaries from nuget.org and occasionally times out on CI runners.
+      - name: Install dependencies
+        shell: bash
+        run: |
+          for i in 1 2 3; do
+            npm ci && exit 0
+            echo "npm ci failed (attempt $i), retrying in 15s..."
+            sleep 15
+          done
+          exit 1
       - run: npm run lint
       - run: npm test
       - run: npm run build
