@@ -9,7 +9,7 @@ import { runInit } from './commands/init.js';
 import { runStatus } from './commands/status.js';
 import { runOrphans } from './commands/orphans.js';
 import { runViz, openBrowser, resolveVizPort } from './commands/viz.js';
-import { runQuery, runQuerySemantic, formatQuery, formatQueryJson } from './commands/query.js';
+import { runQuerySemantic, formatQuery, formatQueryJson } from './commands/query.js';
 import { runAtomize, formatPlan, runEmit, runApply, formatDistilledPlan, runUndo, runDistillLlm } from './commands/atomize.js';
 import { runPromote, formatPromote, runSetStatus } from './commands/promote.js';
 import { runHookCommand } from './commands/hook.js';

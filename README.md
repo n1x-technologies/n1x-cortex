@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@n1x-technologies/cortex"><img alt="npm" src="https://img.shields.io/npm/v/@n1x-technologies/cortex?color=292929&label=npm"></a>
-  <img alt="node" src="https://img.shields.io/badge/node-%E2%89%A518-292929">
+  <img alt="node" src="https://img.shields.io/badge/node-%E2%89%A520-292929">
   <img alt="MCP" src="https://img.shields.io/badge/MCP-ready-292929">
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-292929"></a>
   <img alt="local-first" src="https://img.shields.io/badge/local--first-%E2%9C%93-292929">

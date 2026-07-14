@@ -1,5 +1,5 @@
 import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
-import { join, dirname, basename, resolve, sep } from 'node:path';
+import { dirname, basename, resolve, sep } from 'node:path';
 import { loadConfig } from '../config.js';
 import { scanVault, collectFrontmatterKeys } from '../vault.js';
 import { segmentSource } from './segment.js';

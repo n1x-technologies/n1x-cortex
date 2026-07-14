@@ -1,6 +1,6 @@
 // toolkit/src/atomize/apply-distilled.ts
 import { readFileSync, writeFileSync, existsSync, realpathSync } from 'node:fs';
-import { resolve, join, sep } from 'node:path';
+import { resolve, sep } from 'node:path';
 import { slug } from './propose.js';
 import { reconcile } from './reconcile.js';
 import { scanVault } from '../vault.js';

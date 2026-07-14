@@ -79,7 +79,7 @@ describe('planPromote — confinement', () => {
     const item = items.find(i => i.from === '_inbox/Markdown/x.md');
     expect(item).toMatchObject({ action: 'skip', reason: 'source-immutable' });
     // applyPromote must not move it even with dryRun:false
-    const r = applyPromote(dir, { items }, cfg, { dryRun: false });
+    applyPromote(dir, { items }, cfg, { dryRun: false });
     expect(existsSync(join(dir, 'Markdown', 'x.md'))).toBe(false);
     expect(existsSync(join(dir, '_inbox', 'Markdown', 'x.md'))).toBe(true);
   });
