@@ -1,6 +1,6 @@
 // toolkit/src/curate/moc.ts
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { join, dirname, resolve, sep } from 'node:path';
+import { dirname, resolve, sep } from 'node:path';
 import { scanVault } from '../vault.js';
 import { backupNote } from '../atomize/backup.js';
 import type { CortexConfig, Note } from '../types.js';

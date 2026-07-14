@@ -3,6 +3,9 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20, 22]
     defaults:
       run:
         working-directory: toolkit
@@ -10,7 +13,10 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: toolkit/package-lock.json
       - run: npm ci
+      - run: npm run lint
       - run: npm test
       - run: npm run build
