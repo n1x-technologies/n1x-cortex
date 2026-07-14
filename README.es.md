@@ -100,6 +100,8 @@ Vuelve a ejecutar la instalación donde sea para saltar a la última versión:
 npm i -g @n1x-technologies/cortex@latest
 ```
 
+Consulta [CHANGELOG.md](CHANGELOG.md) para ver qué cambió en cada versión.
+
 ## Úsalo desde cualquier agente (MCP)
 
 Cortex habla el **[Model Context Protocol](https://modelcontextprotocol.io)**, así que cualquier agente compatible con MCP, no solo Claude Code, puede usar tu vault como una **fuente de conocimiento citada**, y opcionalmente escribir de vuelta.
