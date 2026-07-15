@@ -19,7 +19,12 @@
     "cli",
     "rag",
     "notes",
-    "zettelkasten"
+    "zettelkasten",
+    "mcp",
+    "embeddings",
+    "semantic-search",
+    "knowledge-base",
+    "ai"
   ],
   "repository": {
     "type": "git",
