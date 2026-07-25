@@ -18,3 +18,5 @@ docs/superpowers/
 # Bench build artifacts
 bench/node_modules/
 bench/out/
+bench/fixtures/ci-vault/.cortex/models/
+bench/fixtures/ci-vault/.cortex/backups/
