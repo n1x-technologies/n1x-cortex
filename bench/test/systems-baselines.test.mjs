@@ -32,13 +32,18 @@ describe('loadCorpusText', () => {
   it('labels each note with its vault-relative path', () => {
     expect(loadCorpusText(VAULT)).toMatch(/notes\/first-crack\.md/);
   });
+
+  it('excludes the vault\'s configured templates directory', () => {
+    expect(loadCorpusText(VAULT)).not.toMatch(/\{\{title\}\}/);
+  });
 });
 
 describe('full-context', () => {
   it('cites every note in the corpus', async () => {
     const r = await fullContext.run('Q', { vaultDir: VAULT, corpusText: loadCorpusText(VAULT) });
-    expect(r.citedPaths.length).toBeGreaterThanOrEqual(12);
+    expect(r.citedPaths).toHaveLength(12);
     expect(r.citedPaths).toContain('notes/first-crack.md');
+    expect(r.citedPaths).not.toContain('_templates/note.md');
   });
 
   it('costs far more than any retriever', async () => {
