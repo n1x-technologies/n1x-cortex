@@ -48,8 +48,10 @@ describe('naive-rag', () => {
   it('exports the contract name', () => expect(name).toBe('naive-rag'));
 
   it('ships a calibrated, documented TOP_K', () => {
-    expect(Number.isInteger(TOP_K)).toBe(true);
-    expect(TOP_K).toBeGreaterThan(0);
+    // Pinned to the value scripts/calibrate-naive-rag.mjs actually produced
+    // (see task-12-report.md) so a future recalibration must update this
+    // test deliberately instead of drifting silently.
+    expect(TOP_K).toBe(12);
   });
 
   it('returns the contract shape', async () => {
@@ -66,7 +68,18 @@ describe('naive-rag', () => {
   });
 
   it('deduplicates paths when several chunks of one note rank', async () => {
-    const r = await run('crack temperature', { vaultDir: VAULT, embedder });
-    expect(new Set(r.citedPaths).size).toBe(r.citedPaths.length);
+    // Both chunks belong to the same path and both rank into the top-k (the
+    // stub embeds each along x, same as the query), so this only passes if
+    // run() actually dedupes — removing the Set(...) in naive-rag.mjs makes
+    // citedPaths come back as ['a.md', 'a.md'].
+    const r = await run('crack temperature', {
+      vaultDir: VAULT,
+      embedder,
+      chunks: [
+        { path: 'a.md', text: 'crack temperature', index: 0 },
+        { path: 'a.md', text: '196 C', index: 1 },
+      ],
+    });
+    expect(r.citedPaths).toEqual(['a.md']);
   });
 });
