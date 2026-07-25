@@ -22,12 +22,29 @@ export function checkGate(results, baseline) {
       continue;
     }
 
-    const recallDrop = base.recallAt5 - cur.recallAt5;
-    if (recallDrop > RECALL_DROP_LIMIT) {
+    // A null baseline recall means the system was ALREADY declared
+    // non-ranking (e.g. full-context.mjs's `ranks = false`) when the
+    // baseline was captured — there is no threshold to check, by design, and
+    // that is not a gap in the gate. But if the BASELINE recall is a real
+    // number (the system used to rank) and the CURRENT recall has become
+    // null, that is a system that stopped reporting a ranking metric it
+    // used to report — a regression the gate must still catch, not a
+    // declaration it can wave through.
+    if (base.recallAt5 === null) {
+      // Nothing to compare: declared non-ranking, skip.
+    } else if (cur.recallAt5 === null) {
       failures.push(
-        `${name}: recall@5 fell ${(recallDrop * 100).toFixed(1)} points ` +
-        `(${base.recallAt5.toFixed(3)} -> ${cur.recallAt5.toFixed(3)}), limit ${RECALL_DROP_LIMIT * 100} points`,
+        `${name}: recall@5 is null but baseline expected a number ` +
+        `(${base.recallAt5.toFixed(3)}) — a ranking system stopped reporting a ranking metric`,
       );
+    } else {
+      const recallDrop = base.recallAt5 - cur.recallAt5;
+      if (recallDrop > RECALL_DROP_LIMIT) {
+        failures.push(
+          `${name}: recall@5 fell ${(recallDrop * 100).toFixed(1)} points ` +
+          `(${base.recallAt5.toFixed(3)} -> ${cur.recallAt5.toFixed(3)}), limit ${RECALL_DROP_LIMIT * 100} points`,
+        );
+      }
     }
 
     const tokenRise = (cur.medianTokens - base.medianTokens) / base.medianTokens;

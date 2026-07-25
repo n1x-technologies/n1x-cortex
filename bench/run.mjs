@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { loadDataset } from './lib/dataset.mjs';
 import { createCachedEmbedder } from './lib/fixture-embedder.mjs';
 import { runStageA } from './lib/stage-a.mjs';
+import { selectSystemNames } from './lib/system-list.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -52,18 +53,18 @@ const embedder = usingFixtures
       return createTransformersEmbedder(config.embedModel, join(vaultDir, '.cortex/models'));
     })();
 
-const SYSTEM_MODULES = stage === 'ab'
-  ? ['cortex', 'cortex-lexical', 'cortex-semantic', 'naive-rag', 'full-context', 'grep-agent', 'closed-book']
-  : ['cortex', 'cortex-lexical', 'cortex-semantic', 'naive-rag', 'full-context'];
-const requested = args.systems ? args.systems.split(',') : SYSTEM_MODULES;
-const systems = await Promise.all(
-  requested.map(n => import(`./lib/systems/${n}.mjs`)),
+const { stageA: stageANames, stageB: stageBNames } = selectSystemNames({
+  stage,
+  requested: args.systems ? args.systems.split(',') : undefined,
+});
+const stageASystems = await Promise.all(
+  stageANames.map(n => import(`./lib/systems/${n}.mjs`)),
 );
 
 const { loadCorpusText } = await import('./lib/systems/full-context.mjs');
 const corpusText = loadCorpusText(vaultDir);
 
-const results = await runStageA({ systems, questions, ctx: { vaultDir, embedder, corpusText } });
+const results = await runStageA({ systems: stageASystems, questions, ctx: { vaultDir, embedder, corpusText } });
 
 const outDir = resolve(args.out ? resolve(args.out) : join(here, 'out'));
 mkdirSync(outDir, { recursive: true });
@@ -75,12 +76,26 @@ const payload = {
 writeFileSync(join(outDir, 'results.json'), JSON.stringify(payload, null, 2));
 
 for (const s of Object.values(results.perSystem)) {
+  // A system that declares itself non-ranking (full-context.mjs's `ranks =
+  // false`) reports null recall@5/MRR/nDCG@10 from runStageA — printed as
+  // "n/a", never coerced to a number, same treatment as null medianTokens.
+  const recall = s.recallAt5 === null ? 'n/a' : s.recallAt5.toFixed(3);
+  const mrr = s.mrr === null ? 'n/a' : s.mrr.toFixed(3);
+  const ndcg = s.ndcgAt10 === null ? 'n/a' : s.ndcgAt10.toFixed(3);
   console.log(
-    `${s.name.padEnd(18)} recall@5 ${s.recallAt5.toFixed(3)}  ` +
-    `MRR ${s.mrr.toFixed(3)}  nDCG@10 ${s.ndcgAt10.toFixed(3)}  ` +
+    `${s.name.padEnd(18)} recall@5 ${recall.padStart(5)}  ` +
+    `MRR ${mrr.padStart(5)}  nDCG@10 ${ndcg.padStart(5)}  ` +
     `tok(med) ${String(s.medianTokens).padStart(6)}  ` +
     `lat(med) ${String(s.medianLatencyMs).padStart(5)}ms` +
     (s.errors.length ? `  [${s.errors.length} errors]` : ''),
+  );
+}
+if (results.perSystem['full-context']?.recallAt5 === null) {
+  console.log(
+    "\nfull-context: recall@5/MRR/nDCG@10 are n/a — its citedPaths are the whole\n" +
+    'corpus in filesystem order, not a ranking, so ordinal retrieval metrics would\n' +
+    'describe directory order rather than retrieval quality. Its token cost is\n' +
+    'still measured — that IS the point of including it: the cost floor.',
   );
 }
 console.log(`\n${results.questionCount} questions · wrote ${join(outDir, 'results.json')}`);
@@ -95,6 +110,10 @@ if (stage === 'ab') {
     process.exit(1);
   }
 
+  const stageBSystems = await Promise.all(
+    stageBNames.map(n => import(`./lib/systems/${n}.mjs`)),
+  );
+
   const llm = makeLlm(args.model, args['base-url']);
   const judgeLlm = makeLlm(args['judge-model'] || args.model, args['base-url']);
 
@@ -104,7 +123,7 @@ if (stage === 'ab') {
   const fullContextSample = Number(args['full-context-sample'] ?? questions.length);
 
   const b = await runStageB({
-    systems,
+    systems: stageBSystems,
     questions,
     ctx: { vaultDir, embedder, llm, corpusText },
     llm,
@@ -121,7 +140,10 @@ if (stage === 'ab') {
     ...b,
   }, null, 2));
 
-  writeFileSync(join(outDir, 'spot-check.md'), renderSpotCheck(b, questions, 30));
+  // Explicit, not accidental: sample cortex's records for the published
+  // judge-human agreement figure, rather than whichever system happened to
+  // land first in stageBNames' insertion order.
+  writeFileSync(join(outDir, 'spot-check.md'), renderSpotCheck(b, questions, 30, 'cortex'));
 
   console.log(`\ncontaminated: ${b.contaminatedIds.length}/${b.questionCount} questions ` +
               `(answered correctly with no context)\n`);

@@ -7,6 +7,17 @@ import { walkVault } from '../corpus.mjs';
 
 export const name = 'full-context';
 
+// This system emits the ENTIRE corpus, in walkVault's directory-enumeration
+// order — not a ranking. recall@5/MRR/nDCG@10 truncate to the first k of
+// citedPaths, so scoring them here would measure filesystem order, not
+// retrieval competence (a real system that ranks its whole corpus by
+// relevance would score very differently on the same fixture — see
+// naive-rag.mjs's TOP_K note). Stage A reads this flag and reports those
+// three metrics as null instead of a misleading number; token cost is still
+// measured normally, since that IS the point of running full-context: it's
+// the cost floor, not a retrieval-quality contender.
+export const ranks = false;
+
 /** Every markdown note in the vault, labelled by path. Cache this — it is expensive. */
 export function loadCorpusText(vaultDir) {
   return walkVault(vaultDir)

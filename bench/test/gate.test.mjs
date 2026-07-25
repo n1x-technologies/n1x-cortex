@@ -61,6 +61,37 @@ describe('checkGate', () => {
     const r = checkGate(results(0.5, 5000), baseline);
     expect(r.failures.length).toBe(2);
   });
+
+  // Resolution (task 15 review, Finding 2): full-context.mjs declares
+  // `ranks: false`, so its baseline recallAt5 is null (Stage A never
+  // computed a ranking for it). The gate must not treat that null as a
+  // "recall dropped to nothing" failure -- there is no threshold to check
+  // for a system that never claimed to rank.
+  it('skips the recall@5 threshold when baseline recall is null (a declared non-ranking system)', () => {
+    const nonRankingBaseline = {
+      perSystem: { 'full-context': { recallAt5: null, medianTokens: 1000 } },
+    };
+    const r = checkGate(
+      { perSystem: { 'full-context': { name: 'full-context', recallAt5: null, medianTokens: 1000, errors: [] } } },
+      nonRankingBaseline,
+    );
+    expect(r.pass).toBe(true);
+  });
+
+  // The other half of the same fix: a null recall must be a skip ONLY when
+  // the system declared itself non-ranking (null in the baseline too). If a
+  // system whose baseline recall was a real number suddenly reports null,
+  // that is a regression -- e.g. a bug that stopped computing citedPaths --
+  // and must still fail the gate, not be silently waved through by the same
+  // null-handling that legitimately exempts full-context.
+  it('fails when a ranking system (non-null baseline) reports a null recall@5', () => {
+    const r = checkGate(
+      { perSystem: { cortex: { name: 'cortex', recallAt5: null, medianTokens: 1000, errors: [] } } },
+      baseline, // baseline.cortex.recallAt5 = 0.9, a real number
+    );
+    expect(r.pass).toBe(false);
+    expect(r.failures.some(f => /recall@5 is null/i.test(f))).toBe(true);
+  });
 });
 
 describe('checkCacheCompleteness', () => {

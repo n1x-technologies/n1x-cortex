@@ -42,7 +42,37 @@ const agentLike = {
   },
 };
 
+// Resolution (task 15 review, Finding 2): a system that declares
+// `ranks: false` emits citedPaths that are not actually a ranking (e.g.
+// full-context.mjs's whole-corpus-in-directory-order payload). Ordinal
+// retrieval metrics computed on it would describe filesystem order, not
+// retrieval quality, so runStageA must report them as null while still
+// computing real cost/latency metrics.
+const nonRanking = {
+  name: 'nonRanking',
+  ranks: false,
+  async run() {
+    return { promptPayload: 'the whole corpus, unranked', citedPaths: ['a.md', 'b.md'], latencyMs: 4, retrievalTokens: 0 };
+  },
+};
+
 describe('runStageA', () => {
+  it('reports null ranking metrics but real token/latency metrics for a system declaring ranks: false', async () => {
+    const r = await runStageA({ systems: [nonRanking], questions, ctx: {} });
+    const s = r.perSystem.nonRanking;
+    expect(s.recallAt5).toBeNull();
+    expect(s.mrr).toBeNull();
+    expect(s.ndcgAt10).toBeNull();
+    expect(s.medianTokens).toBeGreaterThan(0);
+    expect(s.medianLatencyMs).toBe(4);
+    expect(s.errors).toEqual([]);
+  });
+
+  it('still ranks a system with no `ranks` property at all (backward compatible default)', async () => {
+    const r = await runStageA({ systems: [perfect], questions, ctx: {} });
+    expect(r.perSystem.perfect.recallAt5).toBe(1);
+  });
+
   it('sums retrievalTokens into the reported cost, not just the promptPayload', async () => {
     const r = await runStageA({ systems: [agentLike], questions, ctx: {} });
     expect(r.perSystem.agentLike.medianTokens).toBe(501);

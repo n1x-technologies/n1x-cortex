@@ -17,7 +17,7 @@
       "medianTokens": 1081
     },
     "full-context": {
-      "recallAt5": 0.4,
+      "recallAt5": null,
       "medianTokens": 1033
     }
   }
