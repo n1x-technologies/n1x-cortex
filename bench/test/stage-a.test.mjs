@@ -29,7 +29,25 @@ const flaky = {
   },
 };
 
+// Resolution 2 (task 13): grep-agent is the first system with a nonzero
+// retrievalTokens — the token cost of its ReAct loop, spent BEFORE any
+// answering call. stage-a's cost sum must include it, not just the
+// promptPayload. 'agent' is 1 token under the real tokenizer (verified with
+// countTokens), so with retrievalTokens: 500 the reported medianTokens must
+// be exactly 501 — payload tokens PLUS retrieval tokens, not payload alone.
+const agentLike = {
+  name: 'agentLike',
+  async run() {
+    return { promptPayload: 'agent', citedPaths: ['a.md'], latencyMs: 3, retrievalTokens: 500 };
+  },
+};
+
 describe('runStageA', () => {
+  it('sums retrievalTokens into the reported cost, not just the promptPayload', async () => {
+    const r = await runStageA({ systems: [agentLike], questions, ctx: {} });
+    expect(r.perSystem.agentLike.medianTokens).toBe(501);
+  });
+
   it('scores a perfect system at 1 across retrieval metrics', async () => {
     const r = await runStageA({ systems: [perfect], questions, ctx: {} });
     const s = r.perSystem.perfect;
