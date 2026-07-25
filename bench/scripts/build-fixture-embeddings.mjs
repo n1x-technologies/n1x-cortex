@@ -25,12 +25,17 @@ const embedder = await createTransformersEmbedder(config.embedModel, join(VAULT,
 const questions = readFileSync(resolve(here, '../fixtures/ci-questions.jsonl'), 'utf8')
   .split('\n').map(l => l.trim()).filter(Boolean).map(l => JSON.parse(l).question);
 
-const cache = { model: config.embedModel, dim: embedder.dim, vectors: {} };
+const vectors = {};
 for (const q of questions) {
   const [v] = await embedder.embed([queryText(q)]);
-  cache.vectors[q] = Array.from(v);
+  vectors[q] = Array.from(v);
   console.log(`  ${q.slice(0, 50)}`);
 }
+
+// embedder.dim is a closure variable only assigned as a side effect inside
+// embed(), so it reads 0 until at least one vector has been produced — build
+// the cache object after the loop, not before.
+const cache = { model: config.embedModel, dim: embedder.dim, vectors };
 
 writeFileSync(resolve(here, '../fixtures/query-vectors.json'), JSON.stringify(cache));
 console.log(`wrote ${questions.length} query vectors`);
