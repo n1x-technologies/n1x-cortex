@@ -14,7 +14,18 @@ export const JUDGE_SYSTEM =
   'INCORRECT if it conveys a different or contradictory fact. Reply with the ' +
   'single word only.';
 
-const ABSTENTION = /^\s*(i don'?t know|i do not know|unknown|not sure|no information|the context (does not|doesn'?t) (contain|include|provide)|cannot determine|unable to determine)/i;
+// Apostrophes are written as escapes, not literals: models emit U+2019 (right
+// single quotation mark) and U+02BC (modifier letter apostrophe) regardless of
+// the prompt asking for a plain `I don't know.`, and a literal class is too easy
+// to get wrong by eye. A missed abstention is graded `incorrect` and inflates
+// fabrication rate — the headline metric — so this class is load-bearing.
+const APOS = '[\\u0027\\u2019\\u02bc]?';
+const ABSTENTION = new RegExp(
+  `^\\s*(i don${APOS}t know|i do not know|unknown|not sure|no information|` +
+    `the context (does not|doesn${APOS}t) (contain|include|provide)|` +
+    `cannot determine|unable to determine)`,
+  'i',
+);
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 

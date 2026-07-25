@@ -58,4 +58,54 @@ describe('judge', () => {
     ).rejects.toThrow(/could not parse/i);
     expect(n).toBe(2);
   });
+
+  it("recognises 'don't know.' (straight apostrophe U+0027) as abstention without calling model", async () => {
+    let called = false;
+    const llm = { async complete() { called = true; return 'CORRECT'; } };
+    const v = await judge(llm, { question: 'Q', goldAnswer: 'A', candidate: "I don't know." });
+    expect(v).toBe('abstained');
+    expect(called).toBe(false);
+  });
+
+  it("recognises 'don’t know.' (right single quotation mark U+2019) as abstention without calling model", async () => {
+    let called = false;
+    const llm = { async complete() { called = true; return 'CORRECT'; } };
+    const v = await judge(llm, { question: 'Q', goldAnswer: 'A', candidate: "I don’t know." });
+    expect(v).toBe('abstained');
+    expect(called).toBe(false);
+  });
+
+  it("recognises 'donʼt know.' (modifier letter apostrophe U+02BC) as abstention without calling model", async () => {
+    let called = false;
+    const llm = { async complete() { called = true; return 'CORRECT'; } };
+    const v = await judge(llm, { question: 'Q', goldAnswer: 'A', candidate: "I donʼt know." });
+    expect(v).toBe('abstained');
+    expect(called).toBe(false);
+  });
+
+  it("recognises 'dont know.' (no apostrophe) as abstention without calling model", async () => {
+    let called = false;
+    const llm = { async complete() { called = true; return 'CORRECT'; } };
+    const v = await judge(llm, { question: 'Q', goldAnswer: 'A', candidate: "I dont know." });
+    expect(v).toBe('abstained');
+    expect(called).toBe(false);
+  });
+
+  it("recognises 'doesn’t contain' (right single quotation mark U+2019) as abstention without calling model", async () => {
+    let called = false;
+    const llm = { async complete() { called = true; return 'CORRECT'; } };
+    const v = await judge(llm, { question: 'Q', goldAnswer: 'A', candidate: "The context doesn’t contain the answer." });
+    expect(v).toBe('abstained');
+    expect(called).toBe(false);
+  });
+
+  it('does not treat legitimate answers containing the word "know" as abstentions', async () => {
+    let called = false;
+    let seenUser = '';
+    const llm = { async complete(_s, user) { called = true; seenUser = user; return 'CORRECT'; } };
+    const v = await judge(llm, { question: 'Q', goldAnswer: 'A', candidate: 'The answer is 196 C, as far as I know.' });
+    expect(v).toBe('correct');
+    expect(called).toBe(true);
+    expect(seenUser).toMatch(/196 C/);
+  });
 });
