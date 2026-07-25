@@ -14,3 +14,7 @@ __pycache__/
 # Internal design docs & agent tooling — never published (portable rule, was in .git/info/exclude)
 docs/superpowers/
 .superpowers/
+
+# Bench build artifacts
+bench/node_modules/
+bench/out/
