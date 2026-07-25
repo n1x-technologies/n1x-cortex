@@ -5,7 +5,7 @@
 //   node run.mjs --stage a --corpus /path/to/vault --questions /path/to/q.jsonl
 //
 // Stage A needs no API keys and no network. Stage B is added in Phase 2.
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadDataset } from './lib/dataset.mjs';
@@ -79,3 +79,40 @@ for (const s of Object.values(results.perSystem)) {
   );
 }
 console.log(`\n${results.questionCount} questions · wrote ${join(outDir, 'results.json')}`);
+
+const baselinePath = resolve(here, 'fixtures/baseline.json');
+
+if (args['update-baseline'] !== undefined) {
+  const next = { perSystem: {} };
+  for (const [name, s] of Object.entries(results.perSystem)) {
+    next.perSystem[name] = { recallAt5: s.recallAt5, medianTokens: s.medianTokens };
+  }
+  writeFileSync(baselinePath, JSON.stringify(next, null, 2) + '\n');
+  console.log(`\nbaseline updated: ${baselinePath}`);
+  process.exit(0);
+}
+
+if (args.gate !== undefined) {
+  const { checkGate, checkCacheCompleteness } = await import('./lib/gate.mjs');
+
+  // Silent-degradation guard: if the query-vector cache is missing an entry,
+  // Cortex's semanticQueryRanking swallows the embedder's throw and falls
+  // back to lexical-only retrieval with no error and (on this fixture) no
+  // recall drop either. Catch the stale cache directly, not its symptom.
+  const cacheFailures = usingFixtures
+    ? checkCacheCompleteness(questions, resolve(here, 'fixtures/query-vectors.json'))
+    : [];
+
+  const baseline = JSON.parse(readFileSync(baselinePath, 'utf8'));
+  const { failures } = checkGate(results, baseline);
+  const allFailures = [...cacheFailures, ...failures];
+
+  if (allFailures.length) {
+    console.error('\nBENCH GATE FAILED');
+    for (const f of allFailures) console.error(`  - ${f}`);
+    console.error('\nIf this change is intentional, re-baseline explicitly:');
+    console.error('  node bench/run.mjs --stage a --corpus fixtures --update-baseline 1');
+    process.exit(1);
+  }
+  console.log('\nbench gate passed');
+}

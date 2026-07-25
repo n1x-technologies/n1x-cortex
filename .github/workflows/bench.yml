@@ -1,0 +1,31 @@
+name: bench
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Build toolkit
+        working-directory: toolkit
+        run: npm ci && npm run build
+
+      - name: Install bench
+        working-directory: bench
+        run: npm install --no-audit --no-fund
+
+      - name: Bench unit tests
+        working-directory: bench
+        run: npm test
+
+      - name: Stage A regression gate
+        working-directory: bench
+        run: node run.mjs --stage a --corpus fixtures --gate 1

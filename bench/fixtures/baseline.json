@@ -1,0 +1,16 @@
+{
+  "perSystem": {
+    "cortex": {
+      "recallAt5": 1.0,
+      "medianTokens": 982
+    },
+    "cortex-lexical": {
+      "recallAt5": 1,
+      "medianTokens": 714
+    },
+    "cortex-semantic": {
+      "recallAt5": 1,
+      "medianTokens": 1077
+    }
+  }
+}

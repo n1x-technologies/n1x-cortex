@@ -8,7 +8,7 @@
 import { readFileSync } from 'node:fs';
 
 /** Strip the e5 instruction prefix so cached raw questions match prefixed lookups. */
-function normalise(text) {
+export function normalise(text) {
   return text.replace(/^\s*(query|passage):\s*/i, '').trim();
 }
 
