@@ -4,10 +4,12 @@ What Cortex costs and what it buys, measured against baselines chosen to be
 hard to beat rather than easy.
 
 **Status: only the CI fixture has been run, and its 12-note corpus saturates
-every system under test — see below.** No public-corpus run exists yet, and
-Stage B (judged answer quality) has never been run against a live model. This
-file states exactly that, rather than filling the gaps with numbers from
-elsewhere.
+every system under test — in both stages.** No public-corpus run exists yet.
+Stage B has now been run against a live model and its judge validated at 94.7%
+agreement with a human labeller, so its numbers are reported — but every system
+with retrieval scores identically and perfectly there too, so they compare
+nothing. This file states exactly that, rather than filling the gaps with
+numbers from elsewhere.
 
 ## Method
 
@@ -189,12 +191,53 @@ Three more caveats specific to this fixture:
 
 ## Stage B — answer quality
 
-**Not run against a live model.** Task 15 verified only the runner's
-no-`--model` guard; every Stage B unit test uses stubbed LLM responses, and no
-local model endpoint has been reachable during this build. No Stage B table
-is published. The method below is implemented and tested — it is not
-theoretical — it has simply not been pointed at a real corpus and a real
-model yet.
+Run against a live model on 2026-07-26 — `claude-sonnet-5` answering,
+`claude-opus-5` judging, on the CI fixture. Judge-human agreement was measured
+at **94.7%** (see below), which clears the 90% bar, so these numbers are
+reported rather than withheld.
+
+| System | accuracy | abstain | invented | fabricate | n (answerable/clean/traps) |
+|---|---|---|---|---|---|
+| `cortex` | 1.000 | 0.000 | 0.000 | 0.000 | 15/12/4 |
+| `cortex-lexical` | 1.000 | 0.000 | 0.000 | 0.000 | 15/12/4 |
+| `cortex-semantic` | 1.000 | 0.000 | 0.000 | 0.000 | 15/12/4 |
+| `naive-rag` | 1.000 | 0.000 | 0.000 | 0.000 | 15/12/4 |
+| `full-context` | 1.000 | 0.000 | 0.000 | 0.000 | 15/12/4 |
+| `grep-agent` | 1.000 | 0.000 | 0.000 | 0.000 | 15/12/3 |
+| `closed-book` | 0.200 | 0.533 | 0.500 | 0.267 | 15/12/4 |
+
+**Every system with retrieval is identical and perfect, so this table compares
+nothing.** Six systems, one row. The fixture saturates in Stage B exactly as it
+does in Stage A: 15 answerable questions each answerable from a single note in
+a 12-note corpus is not a discriminating test, and no claim that one retrieval
+strategy beats another can be drawn from these numbers.
+
+What it does show is that the trap machinery works end to end. All six
+retrieval systems declined all four traps (`invented 0.000`), and the control
+did not: **`closed-book` invented on two of four** (`invented 0.500`). That
+contrast is the point. Had closed-book also declined everything, the traps
+would be trivially recognisable as unanswerable and would be measuring nothing;
+a model without the corpus does get tempted by them, and a model with the
+corpus does not.
+
+`contaminated: 3/15` — closed-book answered three answerable questions
+correctly with no context at all, and those are excluded from every
+`*Uncontaminated` figure.
+
+**`grep-agent`'s row is over 3 traps, not 4.** It searched for a fact the
+corpus does not contain, found nothing, returned an empty payload, and the
+runner scored that as a broken run — correct behaviour recorded as an error. The
+rule assumed an answer always exists to be found, which is false on a trap; it
+was fixed after this run, so a re-run would score 4. Its numbers here are over
+survivors and are not publishable.
+
+```bash
+node run.mjs --stage ab --corpus /path/to/vault --questions /path/to/questions.jsonl \
+  --model anthropic:claude-sonnet-5 --judge-model anthropic:claude-opus-5
+```
+
+Using a different model to judge than to answer is deliberate: a model grading
+its own output measures its consistency as much as its correctness.
 
 ```bash
 node run.mjs --stage ab --corpus /path/to/vault --questions /path/to/questions.jsonl \
@@ -219,11 +262,43 @@ Every rate is printed beside the denominator it was computed over
 population prints `n/a`, never `0.000`: a system that errored on every
 question must not publish the best possible fabrication score.
 
-**Judge-human agreement has not been measured.** No human has labelled a
-spot-check sample yet. The project's own rule (`lib/spot-check.mjs`) is that
-below 90% judge-human agreement, no accuracy or fabrication number gets
-published at all — so there is no percentage to report here, placeholder or
-otherwise, until that labelling happens and clears the bar.
+### Judge-human agreement: 94.7% (n = 19)
+
+Measured 2026-07-26. A human labelled all 19 of `closed-book`'s records by
+hand, without reading the judge's verdict first, and
+`scripts/judge-agreement.mjs` compared the two columns.
+
+| judge label | agreed |
+|---|---|
+| `correct` | 2/3 |
+| `incorrect` | 4/4 |
+| `abstained` | 8/8 |
+| `declined` | 2/2 |
+| `invented` | 2/2 |
+
+**Sampled from `closed-book`, not `cortex`.** Every one of cortex's records is
+`correct` or `declined` — two of the five labels — so labelling them would have
+said the judge can recognise a right answer and a decline, and nothing about
+whether it recognises a wrong answer or an invention, which are the labels
+`fabricationRate` and `inventionRate` rest on. Only the control's records span
+all five, because it is the only system that gets things wrong on this fixture.
+
+`declined` and `invented` both agreed 2/2: the **trap judge**, the newer and
+less validated of the two paths, was checked rather than crowded out.
+
+**The single disagreement, and its direction.** On *"What grind size range is
+used for espresso?"* (gold: *200 to 300 microns*) the candidate answered *"a
+fine grind, roughly the texture of table salt or slightly finer"*. The judge
+scored it `correct`; the human scored it `incorrect`. The candidate gives no
+measurement at all — it conveys a vaguer, related fact, not the same one. The
+judge was **lenient**, and a lenient judge *deflates* fabrication rate. One
+case is an observation, not a measured tendency, but it is recorded here
+because it runs in the flattering direction.
+
+**19 items is a small sample and the margin is thin.** One more disagreement
+would put this at 89.5%, below the bar. The figure must be published with its
+`n` beside it, never alone, and it describes the judge on one system's records
+— not judge quality across the run.
 
 ## Honest boundary
 
@@ -278,8 +353,9 @@ otherwise, until that labelling happens and clears the bar.
   scored on**, with abstentions in the denominator and never in the
   numerator. A system that abstains instead of guessing correctly scores a
   *lower* fabrication rate under this definition. This is the number the
-  grounding claim rests on, and it has not been measured yet (see Stage B
-  above).
+  grounding claim rests on. It is now measured, and it is 0.000 for every
+  system with retrieval — on a fixture where no system fabricates anything,
+  which makes it a floor observation and not a comparison (see Stage B above).
 - **Abstention is decided by the judge model, not by a local pattern.** It
   used to be a `^`-anchored regex over a closed list of phrasings, on the
   argument that the answering prompt fixes those phrasings. An earlier version
@@ -336,8 +412,11 @@ otherwise, until that labelling happens and clears the bar.
   saturates at 1.000 for every ranking system on this fixture, and a
   four-question denominator has a resolution of 25 points. It detects
   regressions; it distinguishes nothing.
-- **Stage B is unmeasured.** No answer-quality table, no fabrication rate,
-  no judge-human agreement figure exists yet. See Stage B above.
+- **Stage B is measured but not discriminating.** One live run exists, its
+  judge is validated at 94.7% agreement over 19 hand-labelled items, and every
+  retrieval system in it scores accuracy 1.000 and fabrication 0.000. A table
+  where six systems share one row measures the fixture, not the systems. See
+  Stage B above.
 - **Numbers are corpus-dependent.** Run it on your own vault; do not carry
   these figures over to a different corpus.
 
