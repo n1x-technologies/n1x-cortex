@@ -45,6 +45,41 @@ describe('ensureCortexIgnored', () => {
     expect(ensureCortexIgnored(dir)).toBe(false);
   });
 
+  // The bug this guards: appending a blanket `.cortex/` under a deliberately
+  // scoped ignore voids the negation, because git cannot re-include a path
+  // inside an excluded directory. Files already tracked stay tracked, so
+  // nothing looks wrong until the store gains a second file — at which point
+  // it is silent data loss. bench/fixtures/ci-vault is exactly this shape, and
+  // `cortex embed` re-broke it on every regeneration.
+  it('leaves a deliberately scoped .cortex ignore alone', () => {
+    const dir = tmp();
+    const scoped = '.cortex/*\n!.cortex/embeddings/\n';
+    writeFileSync(join(dir, '.gitignore'), scoped);
+    expect(ensureCortexIgnored(dir)).toBe(false);
+    expect(readFileSync(join(dir, '.gitignore'), 'utf8')).toBe(scoped);
+  });
+
+  it('treats any rule mentioning .cortex as intent, including a negation alone', () => {
+    for (const rule of ['.cortex/*', '/.cortex/', '!.cortex/embeddings/', '.cortex/backups/']) {
+      const dir = tmp();
+      writeFileSync(join(dir, '.gitignore'), `${rule}\n`);
+      expect(ensureCortexIgnored(dir), rule).toBe(false);
+    }
+  });
+
+  it('does not mistake a commented-out rule for coverage', () => {
+    const dir = tmp();
+    writeFileSync(join(dir, '.gitignore'), '# .cortex/\n');
+    expect(ensureCortexIgnored(dir)).toBe(true);
+    expect(readFileSync(join(dir, '.gitignore'), 'utf8')).toContain('\n.cortex/');
+  });
+
+  it('does not treat an unrelated dotfile rule as .cortex coverage', () => {
+    const dir = tmp();
+    writeFileSync(join(dir, '.gitignore'), '.cortexfoo/\n.cortex.json\n');
+    expect(ensureCortexIgnored(dir)).toBe(true);
+  });
+
   it('does not ignore .cortex.json (config stays committable)', () => {
     const dir = tmp();
     ensureCortexIgnored(dir);
