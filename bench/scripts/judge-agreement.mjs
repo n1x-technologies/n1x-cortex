@@ -39,7 +39,18 @@ const malformed = [];
 for (const b of blocks) {
   const id = b.split('\n')[0].trim();
   const judge = /^judge: `(\w+)`/m.exec(b)?.[1];
-  const humanRaw = /^human:\s*(.*)$/m.exec(b)?.[1]?.trim().toLowerCase();
+  // Normalised before matching. The `judge:` line one row above renders its
+  // label in backticks, so a labeller copying that format writes `correct`
+  // rather than correct — which is the natural thing to do and was rejected as
+  // a typo on all 19 records the first time this ran. Trailing punctuation and
+  // case are stripped for the same reason: the point is to capture a human's
+  // judgement, not to test their formatting.
+  const humanRaw = /^human:\s*(.*)$/m.exec(b)?.[1]
+    ?.trim()
+    .toLowerCase()
+    .replace(/[`'"*_]/g, '')
+    .replace(/[.,;]+$/, '')
+    .trim();
 
   if (!judge) { malformed.push(`${id}: no judge line`); continue; }
   if (!humanRaw || /^_+$/.test(humanRaw)) continue;      // not labelled yet
@@ -70,7 +81,11 @@ if (!rows.length) {
 const agreed = rows.filter(r => r.judge === r.human).length;
 const rate = agreed / rows.length;
 
-console.log(`\njudge-human agreement: ${(rate * 100).toFixed(1)}%  (${agreed}/${rows.length} labelled, ${total} exported)\n`);
+// "(18/19 labelled, 19 exported)" read as "18 of 19 got labelled" when it
+// meant "18 of 19 labelled records agreed" — the two are different facts and
+// the wrong one is reassuring. Spelled out.
+console.log(`\njudge-human agreement: ${(rate * 100).toFixed(1)}%`);
+console.log(`  ${agreed} of ${rows.length} labelled records agreed (${total} exported, ${total - rows.length} unlabelled)\n`);
 
 // Per-class, because an aggregate can hide a class the judge always gets wrong.
 console.log('by judge label:');
