@@ -38,15 +38,11 @@ La mayor parte del conocimiento vive disperso en archivos markdown (notas, docum
 
 ## Por qué es más barato, y por qué deja de inventar
 
-Imagina que tu base de conocimiento son **300 páginas**. Para responder una pregunta, la mayoría de los setups le pasan a la IA *las 300 páginas* y cruzan los dedos. Cortex le pasa **el único párrafo citado** que de verdad responde.
+Imagina que tu base de conocimiento son **300 páginas**. Para responder una pregunta, la mayoría de los setups le pasan a la IA *las 300 páginas* y cruzan los dedos. Cortex le pasa **el único párrafo citado** que de verdad responde, y cada respuesta apunta a de dónde salió.
 
-<p align="center"><img src="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/metrics.png" alt="Cortex manda ~1.340 tokens de contexto citado en vez de 213.409 (159× menos), y con notas citadas el modelo inventa mucho menos, 100% citado, local, reversible" width="100%"></p>
-
-- **~159× menos para leer por pregunta.** Sobre una base real de 213.000 tokens, "leerlo todo" cuesta ~213.000 tokens por pregunta; la respuesta citada de Cortex cuesta **~1.340**: un **99,4% menos**. Más rápido, y mucho más barato.
-- **Deja de inventar.** Preguntado por hechos que no podía saber, un modelo dio respuestas seguras-pero-incorrectas el **25–63%** de las veces. Con las notas citadas de Cortex, eso cayó al **0–13%**: respondió bien, o dijo *"no sé"*, en vez de adivinar.
-- **Siempre puedes verificar.** Cada respuesta apunta a la nota exacta de donde salió. **100% citado**, textual.
-
-Todo medido en vivo con la CLI sobre datos reales, reproduce los números tú mismo en [`bench/`](bench/).
+- **Recuperación en vez de un volcado completo.** Las respuestas se construyen a partir de fragmentos citados y recuperados, no de todo el vault, así que el costo por pregunta no crece con el tamaño del corpus como pasa con "leerlo todo".
+- **Citado, no parafraseado.** Cada respuesta apunta a la nota fuente exacta de donde salió, textual.
+- **Medido, no afirmado.** Una suite de benchmarks reproducible compara Cortex contra baselines diseñados para ser difíciles de superar (contexto completo, un agente basado en grep, un RAG de chunks fijos con costo equiparado), usando un tokenizador BPE real en vez de una estimación por conteo de caracteres. Por ahora solo reporta resultados sobre un fixture pequeño de regresión de CI, no una comparación sobre un corpus público — ver [`bench/README.md`](bench/README.md) para el método, los números actuales, y exactamente qué muestran y qué no.
 
 ## Por qué funciona
 

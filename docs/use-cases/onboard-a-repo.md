@@ -17,11 +17,11 @@ Run it without `--write` first to preview the file plan **for free** (it calls n
 ```bash
 cortex query "how does auth token refresh work?"
 ```
-You get a **cited answer**: the exact notes (and source files) it came from, in ~1.3k tokens, not the whole repo. Ask instead of grep.
+You get a **cited answer**: the exact notes (and source files) it came from, not the whole repo. Ask instead of grep.
 
 ## Why it beats reading the code cold
 - Every answer names its source file, verifiable, no guessing.
-- **~159× less context** than dumping files into an AI (see [the numbers](../../bench/)).
+- **Cited, retrieved excerpts, not a full repo dump** — see [the method and current numbers](../../bench/README.md).
 - Any language; `discover` skips binaries, vendored dirs, and lockfiles.
 - Nothing leaves your machine.
 
