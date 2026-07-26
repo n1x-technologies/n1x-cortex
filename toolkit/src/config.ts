@@ -53,7 +53,7 @@ export function loadConfig(vaultDir: string, sampleKeys: string[] = []): CortexC
   try {
     override = JSON.parse(readFileSync(file, 'utf8')) as Partial<CortexConfig>;
   } catch (e) {
-    throw new Error(`Invalid .cortex.json in ${vaultDir}: ${(e as Error).message}`);
+    throw new Error(`Invalid .cortex.json in ${vaultDir}: ${(e as Error).message}`, { cause: e });
   }
   return {
     ...defaults,
