@@ -211,6 +211,27 @@ describe('loadDataset', () => {
     }
   });
 
+  // The canonical checks are string tests, and macOS matches paths
+  // case-insensitively, so a wrongly-cased path satisfies both normalize() and
+  // existsSync() and then matches no citedPath — the exact defect the check
+  // was added for, arriving by a different route.
+  it('rejects a path whose case does not match the file on disk', () => {
+    writeFileSync(jsonl, rec({
+      id: 'a1', question: 'Q', goldPaths: ['notes/A.md'], goldAnswer: 'A',
+    }));
+    expect(() => loadDataset(jsonl, vault)).toThrow(/does not match the file on disk.*notes\/a\.md/s);
+  });
+
+  it('accepts a real file whose name begins with dots', () => {
+    // `..` must be a path-segment test: `startsWith('..')` rejected a genuine
+    // `..hidden.md` and told the author to write what they already wrote.
+    writeFileSync(join(vault, '..hidden.md'), '# H\n');
+    writeFileSync(jsonl, rec({
+      id: 'a1', question: 'Q', goldPaths: ['..hidden.md'], goldAnswer: 'A',
+    }));
+    expect(loadDataset(jsonl, vault)[0].goldPaths).toEqual(['..hidden.md']);
+  });
+
   it('still accepts an ordinary nested path', () => {
     mkdirSync(join(vault, 'notes', 'sub'), { recursive: true });
     writeFileSync(join(vault, 'notes', 'sub', 'deep.md'), '# D\n');

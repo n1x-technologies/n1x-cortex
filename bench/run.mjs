@@ -15,11 +15,26 @@ import { selectSystemNames } from './lib/system-list.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
+// Walks argv one token at a time rather than in pairs. Stepping by two meant a
+// valueless flag swallowed the NEXT flag as its value: `--gate --corpus
+// fixtures` set `gate: '--corpus'` and left `corpus` unset, and plain `--gate`
+// at the end of the line set it to `undefined`, which reads as "not passed" —
+// so `node run.mjs --stage a --corpus fixtures --gate` printed a normal table
+// and exited 0 with the regression gate never running. One dropped argument
+// silently disabling CI's only guard is the failure mode this benchmark exists
+// to avoid in its own metrics.
 function parseArgs(argv) {
   const args = {};
-  for (let i = 0; i < argv.length; i += 2) {
+  for (let i = 0; i < argv.length; i++) {
     if (!argv[i].startsWith('--')) throw new Error(`unexpected argument "${argv[i]}"`);
-    args[argv[i].slice(2)] = argv[i + 1];
+    const key = argv[i].slice(2);
+    const next = argv[i + 1];
+    if (next === undefined || next.startsWith('--')) {
+      args[key] = '1';   // valueless flag: present means on
+    } else {
+      args[key] = next;
+      i++;
+    }
   }
   return args;
 }

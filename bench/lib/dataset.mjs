@@ -4,8 +4,8 @@
 // a broken dataset. A trap question — one the corpus does not answer — is
 // declared with answerable: false and names the notes that make it a near
 // miss in nearMissPaths; it must not carry a goldAnswer or goldPaths.
-import { readFileSync, existsSync, statSync } from 'node:fs';
-import { join, normalize, isAbsolute } from 'node:path';
+import { readFileSync, existsSync, statSync, realpathSync } from 'node:fs';
+import { join, normalize, isAbsolute, sep } from 'node:path';
 
 /**
  * @typedef {Object} Question
@@ -171,7 +171,13 @@ function checkPaths(paths, label, where, vaultDir) {
     // retrieval regression whose message cannot explain itself. Verified:
     // rewriting one gold path as `./notes/...` fails the gate with
     // "recall@5 fell 6.7 points" on four systems at once.
-    if (isAbsolute(p) || normalize(p) !== p || p.startsWith('..')) {
+    // `..` is a path SEGMENT test, not a string prefix. `p.startsWith('..')`
+    // rejected a real vault file named `..hidden.md` with the self-refuting
+    // message `expected "..hidden.md"` — the author told to write what they
+    // already wrote — while accepting `notes/..hidden.md`, so the rejection
+    // was position-dependent rather than principled.
+    const segments = p.split('/');
+    if (isAbsolute(p) || normalize(p) !== p || segments.includes('..')) {
       throw new Error(
         `${where}: ${label} "${p}" is not a canonical vault-relative path ` +
           `(expected "${normalize(p)}") — citedPaths are matched by exact string equality, ` +
@@ -184,6 +190,27 @@ function checkPaths(paths, label, where, vaultDir) {
     }
     if (!statSync(full).isFile()) {
       throw new Error(`${where}: ${label} "${p}" is not a file`);
+    }
+    // The checks above are pure string tests, and they run against a
+    // filesystem that is case- and unicode-normalisation-INSENSITIVE on macOS.
+    // So `notes/ROAST-PROFILE.MD` satisfies both `normalize(p) === p` and
+    // `existsSync`, and then never matches a citedPath — reproducing exactly
+    // the defect this function was extended to prevent. Verified: rewriting
+    // one gold path that way fails the gate with "recall@5 fell 6.7 points" on
+    // four systems at once. Linux CI would catch it at existsSync; the author
+    // hitting it locally on a Mac would not, and they are the audience here.
+    //
+    // realpath returns the on-disk spelling, so comparing against it catches
+    // both wrong case and NFD-vs-NFC.
+    const onDisk = realpathSync.native(full);
+    const expected = realpathSync.native(vaultDir) + sep + segments.join(sep);
+    if (onDisk !== expected) {
+      throw new Error(
+        `${where}: ${label} "${p}" does not match the file on disk ` +
+          `(it is "${onDisk.slice(realpathSync.native(vaultDir).length + 1)}"). ` +
+          'The filesystem is case-insensitive but citedPaths are matched by exact ' +
+          'string equality, so this would validate here and match nothing later',
+      );
     }
   }
 }
