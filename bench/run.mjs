@@ -95,7 +95,8 @@ if (results.perSystem['full-context']?.recallAt5 === null) {
     "\nfull-context: recall@5/MRR/nDCG@10 are n/a — its citedPaths are the whole\n" +
     'corpus in filesystem order, not a ranking, so ordinal retrieval metrics would\n' +
     'describe directory order rather than retrieval quality. Its token cost is\n' +
-    'still measured — that IS the point of including it: the cost floor.',
+    'still measured — that IS the point of including it: the reference cost a\n' +
+    'retriever must beat.',
   );
 }
 console.log(`\n${results.questionCount} questions · wrote ${join(outDir, 'results.json')}`);
@@ -173,6 +174,20 @@ if (stage === 'ab') {
 const baselinePath = resolve(here, 'fixtures/baseline.json');
 
 if (args['update-baseline'] !== undefined) {
+  // A run scoped with --systems only ever produces results for the systems
+  // requested. Writing that partial results.perSystem straight to the
+  // baseline would permanently narrow the gate to whichever systems were
+  // asked for — silently dropping every other system from coverage with no
+  // warning at gate time (FIX 2). Refuse rather than let that happen.
+  if (args.systems) {
+    console.error(
+      '--update-baseline refuses to run with --systems: a partial run would narrow the ' +
+        'gate to only the requested systems, silently dropping every other system from ' +
+        'coverage. Re-baseline with the full default system list (no --systems flag).',
+    );
+    process.exit(1);
+  }
+
   const next = { perSystem: {} };
   for (const [name, s] of Object.entries(results.perSystem)) {
     next.perSystem[name] = { recallAt5: s.recallAt5, medianTokens: s.medianTokens };

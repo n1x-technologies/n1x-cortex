@@ -62,7 +62,14 @@ describe('loadDataset', () => {
   });
 
   it('rejects malformed JSON, naming the line number', () => {
-    writeFileSync(jsonl, '{not json}');
-    expect(() => loadDataset(jsonl, vault)).toThrow(/line 1/);
+    // The bad record sits on line 2 (line 1 is a valid record) so this test
+    // actually discriminates: V8's native SyntaxError also happens to say
+    // "line 1" for line-1 input, so a line-1 fixture would pass even with
+    // the try/catch that produces this message removed entirely.
+    writeFileSync(jsonl, [
+      rec({ id: 'q1', question: 'Q', goldPaths: ['notes/a.md'], goldAnswer: 'A' }),
+      '{not json}',
+    ].join('\n'));
+    expect(() => loadDataset(jsonl, vault)).toThrow(/line 2/);
   });
 });

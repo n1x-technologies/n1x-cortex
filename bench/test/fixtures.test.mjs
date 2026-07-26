@@ -18,7 +18,7 @@ describe('ci fixture', () => {
     const p = join(VAULT, '.cortex/embeddings/index.json');
     expect(existsSync(p)).toBe(true);
     const store = JSON.parse(readFileSync(p, 'utf8'));
-    expect(store.records.length).toBeGreaterThanOrEqual(12);
+    expect(store.records.length).toBe(12);
     expect(store.dim).toBeGreaterThan(0);
   });
 

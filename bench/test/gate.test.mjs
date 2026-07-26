@@ -84,6 +84,27 @@ describe('checkGate', () => {
   // that is a regression -- e.g. a bug that stopped computing citedPaths --
   // and must still fail the gate, not be silently waved through by the same
   // null-handling that legitimately exempts full-context.
+  // FIX 2 (Important): checkGate only ever iterated baseline.perSystem, so a
+  // system present in results but absent from baseline was never checked at
+  // all. That is the one route by which the gate can pass when it should
+  // fail (e.g. a --systems-scoped --update-baseline permanently narrows
+  // baseline coverage; or a system newly added to STAGE_A_DEFAULT_SYSTEMS
+  // ships ungated until someone re-baselines).
+  it('fails when a system in results has no baseline entry, naming it and pointing at --update-baseline', () => {
+    const r = checkGate(
+      {
+        perSystem: {
+          cortex: { name: 'cortex', recallAt5: 0.9, medianTokens: 1000, errors: [] },
+          'naive-rag': { name: 'naive-rag', recallAt5: 0.9, medianTokens: 1000, errors: [] },
+        },
+      },
+      baseline, // baseline only has an entry for 'cortex'
+    );
+    expect(r.pass).toBe(false);
+    expect(r.failures.some(f => /naive-rag/.test(f) && /baseline/.test(f))).toBe(true);
+    expect(r.failures.some(f => /--update-baseline/.test(f))).toBe(true);
+  });
+
   it('fails when a ranking system (non-null baseline) reports a null recall@5', () => {
     const r = checkGate(
       { perSystem: { cortex: { name: 'cortex', recallAt5: null, medianTokens: 1000, errors: [] } } },

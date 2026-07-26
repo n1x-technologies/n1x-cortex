@@ -17,14 +17,33 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
  * @param {{complete(system: string, user: string): Promise<string>}} llm
  * @param {string} question
  * @param {string} promptPayload  '' for the closed-book control
- * @param {{retries?: number, backoffMs?: number}} [opts]
+ * @param {{retries?: number, backoffMs?: number, isClosedBook?: boolean, systemName?: string}} [opts]
+ *   `isClosedBook` selects the closed-book system prompt. It must be set
+ *   ONLY for the system that declares `export const closedBook = true`
+ *   (bench/lib/systems/closed-book.mjs) — never inferred from an empty
+ *   payload. Any OTHER system returning '' is a broken run (e.g. an agent
+ *   that answered on turn 0 before using any tool, or a retriever with zero
+ *   hits), not a quietly different measurement, so it throws instead of
+ *   silently falling back to the closed-book prompt. `systemName` is used
+ *   only to name the offending system in that error.
  * @returns {Promise<string>}
  */
 export async function answer(llm, question, promptPayload, opts = {}) {
   const retries = opts.retries ?? 3;
   const backoffMs = opts.backoffMs ?? 1000;
+  const isClosedBook = opts.isClosedBook ?? false;
 
-  const system = promptPayload ? ANSWER_SYSTEM_GROUNDED : ANSWER_SYSTEM_CLOSED_BOOK;
+  if (!promptPayload && !isClosedBook) {
+    throw new Error(
+      `answer: system "${opts.systemName ?? 'unknown'}" returned an empty promptPayload ` +
+        'but is not declared closed-book. A grounded system with nothing to say is a ' +
+        'broken run, not a closed-book answer — if this system IS the contamination ' +
+        'control, it must declare `export const closedBook = true` ' +
+        '(see bench/lib/systems/closed-book.mjs).',
+    );
+  }
+
+  const system = isClosedBook ? ANSWER_SYSTEM_CLOSED_BOOK : ANSWER_SYSTEM_GROUNDED;
   const user = promptPayload
     ? `Context:\n${promptPayload}\n\nQuestion: ${question}`
     : `Question: ${question}`;

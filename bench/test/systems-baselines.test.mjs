@@ -46,9 +46,16 @@ describe('full-context', () => {
     expect(r.citedPaths).not.toContain('_templates/note.md');
   });
 
-  it('costs far more than any retriever', async () => {
+  // FIX 3 (Important): this was named 'costs far more than any retriever'
+  // but asserted `> 500`, which can't fail for that property and is false on
+  // this fixture anyway — full-context is 1033 tokens while cortex-semantic
+  // (1077) and naive-rag (1081) both cost MORE (bench/fixtures/baseline.json).
+  // What's actually true and worth pinning: full-context emits the whole
+  // corpus verbatim, not an excerpt, so its token count must equal the
+  // corpus's own token count exactly.
+  it('emits the whole corpus, not an excerpt', async () => {
     const r = await fullContext.run('Q', { vaultDir: VAULT, corpusText: loadCorpusText(VAULT) });
-    expect(countTokens(r.promptPayload)).toBeGreaterThan(500);
+    expect(countTokens(r.promptPayload)).toBe(countTokens(loadCorpusText(VAULT)));
   });
 
   it('builds the corpus itself when ctx.corpusText is absent', async () => {

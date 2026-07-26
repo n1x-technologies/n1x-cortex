@@ -27,7 +27,7 @@ BPE tokenizer (`lib/tokenizer.mjs`), never a `chars / 4` estimate.
 Run it:
 
 ```bash
-cd toolkit && npm run build && cd ../bench && npm install
+cd toolkit && npm ci && npm run build && cd ../bench && npm install
 
 # Stage A — retrieval quality and cost. No API key, no network.
 node run.mjs --stage a --corpus fixtures
@@ -38,11 +38,19 @@ node run.mjs --stage ab --corpus /path/to/vault --questions /path/to/questions.j
   --model anthropic:claude-sonnet-5
 ```
 
+Any `--corpus` other than `fixtures` builds a real, on-device embedding store
+via `toolkit/dist/semantic/embedder.js`, which requires `@huggingface/transformers`
+— an OPTIONAL peer of `toolkit` (`toolkit/package.json`'s `peerDependenciesMeta`).
+`npm ci` above already installs it, because `toolkit` also lists it as a
+devDependency for its own build/test — but that is silent unless stated here,
+and it is the only path (a real corpus, not the CI fixture) that could ever
+produce a publishable number.
+
 ## Systems compared
 
 | System | What it represents | Stage |
 |---|---|---|
-| `full-context` | The whole corpus in the prompt, in filesystem order. Cost floor; does not rank. | A + B |
+| `full-context` | The whole corpus in the prompt, in filesystem order. The reference cost a retriever must beat; does not rank. | A + B |
 | `cortex` | Hybrid lexical + semantic retrieval fused with RRF. | A + B |
 | `cortex-lexical` / `cortex-semantic` | Ablations isolating each retrieval signal. | A + B |
 | `naive-rag` | Fixed ~512-token chunks, same embedding model as Cortex, cost-matched top-k. | A + B |
@@ -78,7 +86,7 @@ ranking, so recall@5/MRR/nDCG@10 would truncate an unranked list and describe
 directory order, not retrieval quality (`ranks = false` in
 `lib/systems/full-context.mjs`). It is included anyway for its token
 figure — 1033 tokens/query on this 12-note corpus — which is the point of
-having it: the cost floor a real corpus is measured against.
+having it: the reference cost a real retriever must beat.
 
 Latency figures are wall-clock milliseconds on this fixture on a single
 developer machine; they are not a portability claim and are not gated.
@@ -90,13 +98,22 @@ because the gold note ranks first under every retrieval strategy on a
 from these numbers, and none should be inferred from them. A corpus large
 enough to separate these systems has not been run yet.
 
-Two more caveats specific to this fixture:
+Three more caveats specific to this fixture:
 
 - **`naive-rag`'s cost-matched `TOP_K` is calibrated to 12** on this corpus,
   which has exactly 12 single-chunk notes (`lib/systems/naive-rag.mjs`), so
   cost-matching here drives it to retrieve the entire corpus. Its real
   cutoff behaviour — retrieving a bounded top-k out of many more chunks —
   only shows up on a larger corpus.
+- **The cost column saturates for the same reason recall does.** The whole
+  12-note corpus is 1033 tokens, and `cortex`'s median payload of 982 tokens
+  is 95.1% of that — it is citing 8-12 of 12 notes per question, because a
+  12-note corpus barely gives a retriever room to leave anything out. Two
+  systems (`cortex-semantic` at 1077, `naive-rag` at 1081) cost MORE than
+  `full-context`'s 1033. No cost comparison — "cortex is cheaper than
+  full-context", "cortex is cheaper than naive-rag" — can be drawn from this
+  fixture; a corpus where a retriever can actually leave most of the corpus
+  out has not been run yet.
 - Error counts are 0/15 for every system on this run. Stage A's per-system
   averages are computed only over the questions a system answered without
   error, so a system that errors on its hardest questions and is perfect on
@@ -139,6 +156,13 @@ otherwise, until that labelling happens and clears the bar.
 - **The CI fixture saturates.** All Cortex variants and `naive-rag` hit
   recall@5 = 1.000 on its 12-note corpus. It detects regressions; it cannot
   and does not show a difference between systems.
+- **The cost column saturates too, for the same reason.** The whole 12-note
+  corpus is 1033 tokens; `cortex`'s median payload is 982 tokens — 95.1% of
+  the entire corpus, 8-12 of 12 notes cited per question. Two systems
+  (`cortex-semantic`, `naive-rag`) cost MORE than `full-context` on this
+  fixture. No cost claim ("cortex costs less than full-context or than
+  naive-rag") can be drawn from this fixture either; a corpus large enough
+  for a retriever to actually leave most of it out has not been run yet.
 - **`naive-rag`'s cost-matched `TOP_K` is calibrated to 12** on this fixture,
   which happens to have exactly 12 single-chunk notes, so cost-matching
   drives it to retrieve the whole corpus here. Real cutoff behaviour only
@@ -149,6 +173,15 @@ otherwise, until that labelling happens and clears the bar.
   actually consumed — deliberate, so the baseline is built strong on
   purpose, but it inflates `grep-agent`'s apparent recall and must be read
   with that in mind.
+- **`grep-agent`'s `GREP` action returns only the FIRST matching line per
+  file**, not every matching line (`executeTool`'s `.find(...)` in
+  `lib/systems/grep-agent.mjs`). This cuts the other way from the recall
+  inflation above: a distinctive term that appears once near the top of a
+  long file is easy for the agent to see and act on; the same term buried
+  after an earlier, unrelated match on the same line prefix is invisible to
+  it until it reads the whole file. This caps what the strongest baseline
+  can see per grep and is a real limitation, not a tuning choice made to
+  flatter it.
 - **`grep-agent` is a text-protocol ReAct loop**, because the toolkit's LLM
   client exposes only single-turn completion with no native tool-calling
   API. A native function-calling agent would likely score somewhat higher.
@@ -163,6 +196,19 @@ otherwise, until that labelling happens and clears the bar.
   *lower* fabrication rate under this definition. This is the number the
   grounding claim rests on, and it has not been measured yet (see Stage B
   above).
+- **Abstention is detected by a fixed local pattern, not by the judge model**
+  (`ABSTENTION` in `lib/judge.mjs`): a closed list of phrasings anchored to
+  the start of the answer. A reply that abstains in different words — *"Based
+  on the provided context, I don't know."* or *"There is no information in
+  the notes about X."* — does not match, is sent to the judge, and is graded
+  `incorrect` rather than `abstained`. Because `incorrect` is exactly what
+  feeds the fabrication-rate numerator, this is a one-directional bias that
+  can only inflate fabrication rate, never deflate it. The intended control
+  is judge-human spot-checking (`out/spot-check.md`, see above) — a labeller
+  reviewing the sample would catch a paraphrased refusal scored as a
+  fabrication. The pattern is deliberately not widened to catch more phrasings
+  without that human check first; doing so unreviewed would risk the opposite
+  failure, an answer that isn't really a refusal being waved through as one.
 - **Stage B is unmeasured.** No answer-quality table, no fabrication rate,
   no judge-human agreement figure exists yet. See Stage B above.
 - **Numbers are corpus-dependent.** Run it on your own vault; do not carry

@@ -41,17 +41,23 @@ describe('runStageB', () => {
   });
 
   it('counts an abstention as neither correct nor fabricated', async () => {
+    // FIX 1: an empty promptPayload is no longer a stand-in for "the system
+    // abstained" — a non-closed-book system returning '' now throws (it's a
+    // broken run, not an abstention). Exercise abstention directly: a system
+    // with real context whose answering model replies "I don't know."
+    const abstainingLlm = { async complete() { return "I don't know."; } };
     const r = await runStageB({
-      systems: [sys('empty', '')], questions, ctx: {}, llm, judgeLlm,
+      systems: [sys('abstains', 'SOME CONTEXT')], questions, ctx: {}, llm: abstainingLlm, judgeLlm,
     });
-    expect(r.perSystem.empty.accuracy).toBe(0);
-    expect(r.perSystem.empty.abstentionRate).toBe(1);
-    expect(r.perSystem.empty.fabricationRate).toBe(0);
+    expect(r.perSystem.abstains.accuracy).toBe(0);
+    expect(r.perSystem.abstains.abstentionRate).toBe(1);
+    expect(r.perSystem.abstains.fabricationRate).toBe(0);
   });
 
   it('marks questions the closed-book control answers correctly as contaminated', async () => {
     const closedBook = {
       name: 'closed-book',
+      closedBook: true,
       async run() { return { promptPayload: '', citedPaths: [], latencyMs: 0, retrievalTokens: 0 }; },
     };
     // This answering model "already knows" q1 with no context.
@@ -124,7 +130,12 @@ describe('runStageB', () => {
       async run(q) {
         if (q === 'M1') return { promptPayload: 'ALPHA', citedPaths: [], latencyMs: 1, retrievalTokens: 0 }; // -> correct
         if (q === 'M2') return { promptPayload: 'WRONG', citedPaths: [], latencyMs: 1, retrievalTokens: 0 }; // -> incorrect
-        return { promptPayload: '', citedPaths: [], latencyMs: 1, retrievalTokens: 0 }; // -> abstained
+        // FIX 1: a non-closed-book system with an empty payload now throws
+        // (it's a broken run), so abstention here is exercised through a
+        // real, non-empty payload whose echoed candidate the judge's local
+        // ABSTENTION detector recognises directly — not through '' standing
+        // in for "the system had nothing to say".
+        return { promptPayload: "I don't know.", citedPaths: [], latencyMs: 1, retrievalTokens: 0 }; // -> abstained
       },
     };
     const r = await runStageB({ systems: [system], questions: mixed, ctx: {}, llm, judgeLlm });
@@ -168,6 +179,7 @@ describe('runStageB', () => {
   it('refuses to subsample the closed-book contamination control', async () => {
     const closedBook = {
       name: 'closed-book',
+      closedBook: true,
       async run() { return { promptPayload: '', citedPaths: [], latencyMs: 0, retrievalTokens: 0 }; },
     };
     await expect(runStageB({
@@ -182,6 +194,7 @@ describe('runStageB', () => {
   it('reports scored and scoredUncontaminated counts beside every rate', async () => {
     const closedBook = {
       name: 'closed-book',
+      closedBook: true,
       async run() { return { promptPayload: '', citedPaths: [], latencyMs: 0, retrievalTokens: 0 }; },
     };
     const knowing = {

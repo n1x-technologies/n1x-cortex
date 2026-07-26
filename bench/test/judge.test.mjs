@@ -99,6 +99,25 @@ describe('judge', () => {
     expect(called).toBe(false);
   });
 
+  // FIX 7 (Important, honest-boundary disclosure): ABSTENTION is a
+  // ^-anchored regex over a fixed phrase list. A paraphrased refusal that
+  // doesn't start with one of those exact phrasings is NOT recognised
+  // locally and falls through to the judge model — where, absent a matching
+  // gold answer, it is graded 'incorrect' and counted in the
+  // fabrication-rate numerator. This pins that known limitation in the
+  // suite (bench/README.md's honest boundary states it in prose) rather
+  // than leaving it visible only in judge.mjs's module comment. This is a
+  // documented gap, NOT something to fix by widening the regex here.
+  it('does NOT recognise a paraphrased refusal as abstention (documented limitation, see README honest boundary)', async () => {
+    const llm = stub('INCORRECT');
+    const v = await judge(llm, {
+      question: 'Q',
+      goldAnswer: 'A',
+      candidate: "Based on the provided context, I don't know.",
+    });
+    expect(v).toBe('incorrect');
+  });
+
   it('does not treat legitimate answers containing the word "know" as abstentions', async () => {
     let called = false;
     let seenUser = '';

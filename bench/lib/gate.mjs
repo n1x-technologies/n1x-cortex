@@ -15,6 +15,23 @@ export const TOKEN_RISE_LIMIT = 0.10;  // 10%
 export function checkGate(results, baseline) {
   const failures = [];
 
+  // A system present in results but absent from baseline is otherwise never
+  // checked at all: the loop below only iterates baseline's entries. That is
+  // the one route by which the gate can pass when it should fail — e.g.
+  // `--update-baseline --systems cortex` narrows baseline.perSystem to one
+  // system, and every later run silently stops gating the other four. Any
+  // such system must fail loudly, pointing at the fix (a full re-baseline),
+  // rather than being invisible to the gate.
+  for (const name of Object.keys(results.perSystem)) {
+    if (!Object.prototype.hasOwnProperty.call(baseline.perSystem, name)) {
+      failures.push(
+        `${name}: present in results but missing from baseline — the gate is not ` +
+          'checking this system. Re-baseline WITHOUT --systems so every system is ' +
+          'covered: node bench/run.mjs --stage a --corpus fixtures --update-baseline 1',
+      );
+    }
+  }
+
   for (const [name, base] of Object.entries(baseline.perSystem)) {
     const cur = results.perSystem[name];
     if (!cur) {

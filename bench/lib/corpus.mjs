@@ -7,7 +7,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-export function readTemplatesDir(vaultDir) {
+function readTemplatesDir(vaultDir) {
   try {
     const config = JSON.parse(readFileSync(join(vaultDir, '.cortex.json'), 'utf8'));
     return config.templatesDir ?? '_templates';

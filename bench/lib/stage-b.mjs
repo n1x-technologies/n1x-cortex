@@ -49,7 +49,10 @@ export async function runStageB({ systems, questions, ctx, llm, judgeLlm, subsam
     for (const q of asked) {
       try {
         const r = await system.run(q.question, ctx);
-        const candidate = await answer(llm, q.question, r.promptPayload);
+        const candidate = await answer(llm, q.question, r.promptPayload, {
+          isClosedBook: !!system.closedBook,
+          systemName: system.name,
+        });
         const verdict = await judge(judgeLlm, {
           question: q.question,
           goldAnswer: q.goldAnswer,

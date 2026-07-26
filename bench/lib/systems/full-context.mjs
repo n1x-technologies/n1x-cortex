@@ -1,6 +1,9 @@
-// The whole corpus in the prompt: the quality ceiling and the cost floor.
-// With million-token context windows this is the honest competitor, not the
-// strawman the old bench used it as.
+// The whole corpus in the prompt: the quality ceiling and the cost ceiling —
+// "floor" reads as "cheapest", which this system is not (a retriever that
+// fetches less than the whole corpus costs less; two of them cost MORE than
+// this on the CI fixture, but that is the fixture saturating, not a general
+// claim). With million-token context windows this is the honest competitor,
+// not the strawman the old bench used it as.
 import { readFileSync } from 'node:fs';
 import { relative } from 'node:path';
 import { walkVault } from '../corpus.mjs';
@@ -15,7 +18,7 @@ export const name = 'full-context';
 // naive-rag.mjs's TOP_K note). Stage A reads this flag and reports those
 // three metrics as null instead of a misleading number; token cost is still
 // measured normally, since that IS the point of running full-context: it's
-// the cost floor, not a retrieval-quality contender.
+// the reference cost a retriever must beat, not a retrieval-quality contender.
 export const ranks = false;
 
 /** Every markdown note in the vault, labelled by path. Cache this — it is expensive. */
