@@ -482,6 +482,40 @@ The answerable questions must come from a source **independent of the corpus**.
 Questions written while reading the notes get calqued onto note boundaries and
 inflate every system — especially Cortex, which indexes by note.
 
+### Where the answerable questions come from: StackOverflow
+
+Decided 2026-07-26. The `kubernetes` tag on StackOverflow, filtered.
+
+The two failure modes here are not symmetric, and that asymmetry decides it.
+**Contamination is measurable and excludable** — `closed-book` marks every
+question the model answers correctly with no context, and those leave the
+headline. **Calquing is neither.** Questions written while reading the corpus
+end up aligned to note boundaries, which silently inflates every system and
+Cortex most of all, because it indexes by note. One failure has a control; the
+other does not. So realism wins over low contamination.
+
+StackOverflow is the most contaminated option available — it is a major
+pretraining source — and it is still the right one, because that cost is the
+one we can see and subtract.
+
+Selection criteria, so this stays reproducible:
+
+- **Answerable from `concepts` + `tasks` alone.** Most SO questions are
+  debugging a particular cluster ("why is *my* pod pending"). Those are not
+  corpus questions and must be rejected, not paraphrased into shape.
+- **One factual answer.** Not "what is the best way to…" — a judge cannot
+  grade an opinion against a gold answer.
+- **Prefer recent.** Recency does not eliminate contamination but reduces it,
+  and it costs nothing to sort by.
+- **Record the source.** The dataset's `sourceUrl` field carries the question
+  link. CC BY-SA requires attribution, and it also makes every question
+  auditable by whoever doubts the set.
+
+Traps stay separately authored. `kubernetes/website` issues — readers saying
+the docs do not explain something — are the natural source when the trap set
+is built, because they are *documented* gaps rather than our judgement of what
+is absent.
+
 **Measure contamination on the first ~20 questions before writing the rest.**
 Every viable public corpus is popular technical documentation, so it is heavily
 represented in pretraining, and `closed-book` marks any question the model
