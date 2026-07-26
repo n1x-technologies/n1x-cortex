@@ -16,4 +16,4 @@
 {"id":"t1","question":"What drum rotation speed in RPM should be used during a roast?","answerable":false,"nearMissPaths":["notes/drum-temperature.md","notes/roast-profile.md"]}
 {"id":"t2","question":"What grind size is used for cupping?","answerable":false,"nearMissPaths":["notes/cupping-protocol.md","notes/grind-size.md"]}
 {"id":"t3","question":"How long does roasted coffee stay fresh after packaging?","answerable":false,"nearMissPaths":["notes/packaging.md","notes/green-storage.md"]}
-{"id":"t4","question":"What is the roaster's maximum batch capacity?","answerable":false,"nearMissPaths":["notes/drum-temperature.md","notes/batch-logging.md"]}
+{"id": "t4", "question": "Which origin do the roastery's green coffee lots come from?", "answerable": false, "nearMissPaths": ["notes/green-storage.md", "notes/defect-sorting.md"]}
