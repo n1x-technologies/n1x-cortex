@@ -34,17 +34,13 @@ Most knowledge lives in scattered markdown files (notes, docs, wikis), or in no 
 
 <p align="center"><img src="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/flow.png" alt="What Cortex does in three moves: your notes or a whole repo → Cortex builds a cited graph → you and your agents ask and get cited answers" width="100%"></p>
 
-## Why it's cheaper, and why it stops guessing
+## Why it's built to cost less, and to be verifiable
 
-Imagine your knowledge base is **300 pages**. To answer one question, most setups hand the AI *all 300 pages* and hope. Cortex hands it **the one cited paragraph** that actually answers it.
+Imagine your knowledge base is **300 pages**. To answer one question, most setups hand the AI *all 300 pages* and hope. Cortex hands it **the one cited paragraph** that actually answers it, and every answer points back to where it came from.
 
-<p align="center"><img src="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/metrics.png" alt="Cortex sends ~1,340 tokens of cited context instead of 213,409 (159× less), and grounded in cited notes the model fabricates far less, 100% cited, local, reversible" width="100%"></p>
-
-- **~159× less to read per question.** On a real 213,000-token knowledge base, "read everything" costs ~213,000 tokens per question; Cortex's cited answer costs **~1,340**: that's **99.4% less**. Faster, and far cheaper.
-- **It stops making things up.** Asked facts it couldn't know, a model gave confident-but-wrong answers **25–63%** of the time. Given Cortex's cited notes, that dropped to **0–13%**: it answered correctly, or said *"I don't know"*, instead of guessing.
-- **You can always check.** Every answer points to the exact note it came from. **100% cited**, quoted word-for-word.
-
-All measured live with the CLI on real data, reproduce the numbers yourself in [`bench/`](bench/).
+- **Retrieval instead of a full dump.** Answers are built from cited, retrieved excerpts, not the whole vault, so per-question cost doesn't scale with corpus size the way "read everything" does.
+- **Cited, not paraphrased.** Every answer points to the exact source note it came from, quoted word-for-word.
+- **Measured, not asserted.** A reproducible benchmark suite compares Cortex against baselines built to be hard to beat (whole-context, a grep-based agent, a cost-matched fixed-chunk RAG), using a real BPE tokenizer instead of a character-count estimate. It currently reports results only on a small CI regression fixture, not a public-corpus comparison — see [`bench/README.md`](bench/README.md) for the method, the current numbers, and exactly what they do and don't show.
 
 ## Why it clicks
 

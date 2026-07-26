@@ -5,7 +5,16 @@ _img/
 *.pdf
 
 # Cortex (generated cache — do not commit)
-.cortex/
+# Contents-only (not the directory itself), so a nested vault's .gitignore
+# (or the negation below) can re-include specific paths under a .cortex/ —
+# git will not let a later `!` pattern re-include anything whose PARENT
+# DIRECTORY is excluded, only its contents, so excluding the directory
+# outright here would make any such negation a no-op.
+**/.cortex/*
+# bench's CI fixture force-tracks its query-embedding store so offline CI
+# never regenerates it; the negation must survive a regenerated store
+# gaining a new or renamed file, not just cover the file committed today.
+!bench/fixtures/ci-vault/.cortex/embeddings/
 
 # Scratch / tooling working dirs (not part of the repo)
 .playwright-mcp/
@@ -14,3 +23,9 @@ __pycache__/
 # Internal design docs & agent tooling — never published (portable rule, was in .git/info/exclude)
 docs/superpowers/
 .superpowers/
+
+# Bench build artifacts
+bench/node_modules/
+bench/out/
+bench/fixtures/ci-vault/.cortex/models/
+bench/fixtures/ci-vault/.cortex/backups/
