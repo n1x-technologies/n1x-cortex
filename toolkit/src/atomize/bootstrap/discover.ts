@@ -77,7 +77,7 @@ export function discover(root: string, config: CortexConfig): DiscoverResult {
     const name = basename(rel).toLowerCase();
     const abs = join(root, rel);
     if (LOCK_FILES.has(name) || name.endsWith('.min.js') || name.endsWith('.min.css')) { skipped.push({ path: rel, reason: 'lockfile/minified' }); continue; }
-    let bytes = 0;
+    let bytes: number;
     try { bytes = statSync(abs).size; } catch { skipped.push({ path: rel, reason: 'unreadable' }); continue; }
     if (bytes > MAX_BYTES) { skipped.push({ path: rel, reason: `too large (${bytes} bytes)` }); continue; }
     // Binary sniff runs before extension classification: a binary file should be

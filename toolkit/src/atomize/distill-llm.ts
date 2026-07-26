@@ -29,7 +29,7 @@ export function parseDistilledResponse(text: string, source: string): DistilledI
   try {
     parsed = JSON.parse(raw) as { notes?: unknown };
   } catch (e) {
-    throw new Error(`Could not parse model response as JSON (${(e as Error).message}):\n${raw.slice(0, 500)}`);
+    throw new Error(`Could not parse model response as JSON (${(e as Error).message}):\n${raw.slice(0, 500)}`, { cause: e });
   }
   if (!Array.isArray(parsed.notes)) throw new Error('Model response has no "notes" array');
   return { source, notes: parsed.notes as DistilledInput['notes'] };
