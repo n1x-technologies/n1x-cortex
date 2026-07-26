@@ -7,6 +7,19 @@ import { normalise } from './fixture-embedder.mjs';
 export const RECALL_DROP_LIMIT = 0.02; // 2 points
 export const TOKEN_RISE_LIMIT = 0.10;  // 10%
 
+// The near-miss hit rate gets its own constant even though it currently holds
+// the same value, because the two thresholds do NOT behave the same way and
+// writing "same threshold as recall@5" would be a false reassurance.
+//
+// nearMissHitRateAt5 is a mean of per-trap 0/1 values, so its resolution is
+// 1/nTraps. On the committed 4-trap fixture the smallest possible move is 25
+// points — twelve times this limit — which means the limit cannot bind and any
+// single trap flipping from tempted to not-tempted fails the gate. That is the
+// intended behaviour at this fixture size: on four traps there is no such
+// thing as a drop small enough to be noise. The threshold is here for a larger
+// trap set, where a hit rate can move by less than a whole question.
+export const NEAR_MISS_DROP_LIMIT = 0.02; // 2 points
+
 /**
  * @param {{perSystem: Record<string, {name, recallAt5, medianTokens, errors}>}} results
  * @param {{perSystem: Record<string, {recallAt5, medianTokens}>}} baseline
@@ -64,27 +77,28 @@ export function checkGate(results, baseline) {
       }
     }
 
-    // Same rule and threshold as recall@5, and the same asymmetry. A null (or
-    // absent key) in the BASELINE means the metric never applied when the
-    // baseline was captured — a non-ranking system, a dataset with no trap
-    // questions, or a baseline written before this metric existed — so there
-    // is nothing to compare and the system's other thresholds still apply. A
-    // null that appears only in the CURRENT run is a system that stopped
-    // reporting a metric it used to report, which is a regression to catch.
-    if (base.nearMissRecallAt5 === undefined || base.nearMissRecallAt5 === null) {
+    // Same null/undefined rule as recall@5 (see NEAR_MISS_DROP_LIMIT for why
+    // the threshold itself is NOT the same in effect). A null or absent key in
+    // the BASELINE means the metric never applied when the baseline was
+    // captured — a non-ranking system, a dataset with no trap questions, or a
+    // baseline written before this metric existed — so there is nothing to
+    // compare and the system's other thresholds still apply. A null that
+    // appears only in the CURRENT run is a system that stopped reporting a
+    // metric it used to report, which is a regression to catch.
+    if (base.nearMissHitRateAt5 === undefined || base.nearMissHitRateAt5 === null) {
       // Nothing to compare.
-    } else if (cur.nearMissRecallAt5 === undefined || cur.nearMissRecallAt5 === null) {
+    } else if (cur.nearMissHitRateAt5 === undefined || cur.nearMissHitRateAt5 === null) {
       failures.push(
-        `${name}: near-miss recall@5 is null but baseline expected a number ` +
-        `(${base.nearMissRecallAt5.toFixed(3)}) — a system stopped reporting a metric it used to report`,
+        `${name}: near-miss hit rate is null but baseline expected a number ` +
+        `(${base.nearMissHitRateAt5.toFixed(3)}) — a system stopped reporting a metric it used to report`,
       );
     } else {
-      const nearMissDrop = base.nearMissRecallAt5 - cur.nearMissRecallAt5;
-      if (nearMissDrop > RECALL_DROP_LIMIT) {
+      const nearMissDrop = base.nearMissHitRateAt5 - cur.nearMissHitRateAt5;
+      if (nearMissDrop > NEAR_MISS_DROP_LIMIT) {
         failures.push(
-          `${name}: near-miss recall@5 fell ${(nearMissDrop * 100).toFixed(1)} points ` +
-          `(${base.nearMissRecallAt5.toFixed(3)} -> ${cur.nearMissRecallAt5.toFixed(3)}), ` +
-          `limit ${RECALL_DROP_LIMIT * 100} points`,
+          `${name}: near-miss hit rate fell ${(nearMissDrop * 100).toFixed(1)} points ` +
+          `(${base.nearMissHitRateAt5.toFixed(3)} -> ${cur.nearMissHitRateAt5.toFixed(3)}), ` +
+          `limit ${NEAR_MISS_DROP_LIMIT * 100} points`,
         );
       }
     }

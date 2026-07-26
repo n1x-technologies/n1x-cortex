@@ -82,7 +82,7 @@ for (const s of Object.values(results.perSystem)) {
   const recall = s.recallAt5 === null ? 'n/a' : s.recallAt5.toFixed(3);
   const mrr = s.mrr === null ? 'n/a' : s.mrr.toFixed(3);
   const ndcg = s.ndcgAt10 === null ? 'n/a' : s.ndcgAt10.toFixed(3);
-  const nearMiss = s.nearMissRecallAt5 === null ? 'n/a' : s.nearMissRecallAt5.toFixed(3);
+  const nearMiss = s.nearMissHitRateAt5 === null ? 'n/a' : s.nearMissHitRateAt5.toFixed(3);
   console.log(
     `${s.name.padEnd(18)} recall@5 ${recall.padStart(5)}  ` +
     `MRR ${mrr.padStart(5)}  nDCG@10 ${ndcg.padStart(5)}  ` +
@@ -104,10 +104,12 @@ if (results.perSystem['full-context']?.recallAt5 === null) {
 }
 if (Object.values(results.perSystem).some(s => s.scoredNearMiss > 0)) {
   console.log(
-    '\nnear-miss: on trap questions the corpus cannot answer, the fraction where the\n' +
-    'system retrieved at least one tempting-but-insufficient note. Read it next to\n' +
-    "Stage B's invented column: low invention with low near-miss recall means the\n" +
-    'system was never tempted, not that it resisted.',
+    '\nnear-miss: on trap questions the corpus cannot answer, the fraction of traps\n' +
+    'where the system retrieved at least one tempting-but-insufficient note. Binary\n' +
+    'per trap — retrieving one near-miss note counts the same as retrieving all of\n' +
+    "them, because the question is only whether the system was tempted. Read it next\n" +
+    "to Stage B's invented column: low invention with a low near-miss hit rate means\n" +
+    'the system was never tempted, not that it resisted.',
   );
 }
 console.log(`\n${results.questionCount} questions · wrote ${join(outDir, 'results.json')}`);
@@ -204,7 +206,7 @@ if (args['update-baseline'] !== undefined) {
   for (const [name, s] of Object.entries(results.perSystem)) {
     next.perSystem[name] = {
       recallAt5: s.recallAt5,
-      nearMissRecallAt5: s.nearMissRecallAt5,
+      nearMissHitRateAt5: s.nearMissHitRateAt5,
       medianTokens: s.medianTokens,
     };
   }

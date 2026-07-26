@@ -3,13 +3,13 @@
 // offline. One system failing one question never aborts the run; the failure
 // is recorded and excluded from that system's scores.
 import { countTokens } from './tokenizer.mjs';
-import { recallAtK, reciprocalRank, ndcgAtK, percentile, mean } from './metrics.mjs';
+import { recallAtK, hitAtK, reciprocalRank, ndcgAtK, percentile, mean } from './metrics.mjs';
 
 export async function runStageA({ systems, questions, ctx }) {
   const perSystem = {};
 
   for (const system of systems) {
-    const recalls = [], rrs = [], ndcgs = [], nearMissRecalls = [], tokens = [], latencies = [];
+    const recalls = [], rrs = [], ndcgs = [], nearMissHits = [], tokens = [], latencies = [];
     const errors = [];
 
     // A system declares `export const ranks = false` (e.g. full-context.mjs)
@@ -44,7 +44,13 @@ export async function runStageA({ systems, questions, ctx }) {
           // a system that never retrieved a near-miss note and then declined
           // to answer looks identical to one that resisted temptation, and
           // only this number tells them apart.
-          nearMissRecalls.push(recallAtK(r.citedPaths, q.nearMissPaths, 5));
+          //
+          // Binary, not fractional: "was it tempted" is a yes/no about the
+          // question, so the aggregate is the fraction of traps on which the
+          // system was tempted. Averaging per-trap coverage instead would
+          // answer a question nobody asked and would move with the number of
+          // near-miss paths an author happened to list. See hitAtK.
+          nearMissHits.push(hitAtK(r.citedPaths, q.nearMissPaths, 5));
         }
       }
       tokens.push(countTokens(r.promptPayload) + r.retrievalTokens);
@@ -57,12 +63,12 @@ export async function runStageA({ systems, questions, ctx }) {
       // system declared it does not rank, or the dataset contained no question
       // of that kind (no traps, or no answerable questions). Neither may be
       // coerced to 0 downstream — 0 reads as "measured zero relevance", and a
-      // trap-free dataset publishing "0" for near-miss recall would read as a
-      // result rather than as an absence of data.
+      // trap-free dataset publishing "0" for the near-miss hit rate would read
+      // as a result rather than as an absence of data.
       recallAt5: ranksRetrieval && recalls.length ? round(mean(recalls)) : null,
       mrr: ranksRetrieval && rrs.length ? round(mean(rrs)) : null,
       ndcgAt10: ranksRetrieval && ndcgs.length ? round(mean(ndcgs)) : null,
-      nearMissRecallAt5: ranksRetrieval && nearMissRecalls.length ? round(mean(nearMissRecalls)) : null,
+      nearMissHitRateAt5: ranksRetrieval && nearMissHits.length ? round(mean(nearMissHits)) : null,
       medianTokens: Math.round(percentile(tokens, 0.5)),
       p95Tokens: Math.round(percentile(tokens, 0.95)),
       medianLatencyMs: Math.round(percentile(latencies, 0.5)),
@@ -71,7 +77,7 @@ export async function runStageA({ systems, questions, ctx }) {
       // because the three metric families are computed over three different
       // subsets of the run.
       scoredRanking: recalls.length,
-      scoredNearMiss: nearMissRecalls.length,
+      scoredNearMiss: nearMissHits.length,
       scoredCost: tokens.length,
       errors,
     };

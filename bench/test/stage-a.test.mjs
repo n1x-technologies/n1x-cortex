@@ -116,49 +116,106 @@ describe('runStageA', () => {
   // A trap question is one the corpus does not answer (dataset.mjs's
   // `answerable: false`). It has no gold document, so ordinal retrieval
   // metrics have no defined value for it — but its token and latency cost is
-  // real. nearMissRecallAt5 measures whether the system retrieved the
+  // real. nearMissHitRateAt5 measures whether the system retrieved the
   // tempting-but-insufficient notes at all, which is the only thing that
   // separates "resisted temptation" from "was never tempted".
   const answerableQ = (id, gold) => ({
     id, question: `Q${id}`, goldPaths: [gold], goldAnswer: 'A',
     sourceUrl: null, answerable: true, nearMissPaths: [],
   });
-  const trapQ = (id, near) => ({
+  const trapQ = (id, ...near) => ({
     id, question: `T${id}`, goldPaths: [], goldAnswer: null,
-    sourceUrl: null, answerable: false, nearMissPaths: [near],
+    sourceUrl: null, answerable: false, nearMissPaths: near,
+  });
+  // Cites exactly what it is told to, for every question.
+  const citing = (name, citedPaths) => ({
+    name,
+    async run() {
+      return { promptPayload: 'hello world', citedPaths, latencyMs: 5, retrievalTokens: 0 };
+    },
   });
 
   it('excludes trap questions from ranking metrics but counts them for cost', async () => {
     // Cites the near-miss note on every question. On the answerable question
     // that is a miss (gold is a different note); on the trap it is a hit.
-    const sys = {
-      name: 's',
-      async run() {
-        return { promptPayload: 'hello world', citedPaths: ['b.md'], latencyMs: 5, retrievalTokens: 0 };
-      },
-    };
     const r = await runStageA({
-      systems: [sys],
+      systems: [citing('s', ['b.md'])],
       questions: [answerableQ('a1', 'a.md'), trapQ('t1', 'b.md')],
       ctx: {},
     });
     const s = r.perSystem.s;
-    expect(s.recallAt5).toBe(0);          // one answerable question, gold not cited
-    expect(s.nearMissRecallAt5).toBe(1);  // one trap, near-miss note cited
+    expect(s.recallAt5).toBe(0);            // one answerable question, gold not cited
+    expect(s.nearMissHitRateAt5).toBe(1);   // one trap, near-miss note cited
     expect(s.scoredRanking).toBe(1);
     expect(s.scoredNearMiss).toBe(1);
-    expect(s.scoredCost).toBe(2);         // cost counts BOTH questions
+    expect(s.scoredCost).toBe(2);           // cost counts BOTH questions
   });
 
-  it('reports nearMissRecallAt5 as null when the dataset has no traps', async () => {
-    const sys = {
-      name: 's',
-      async run() {
-        return { promptPayload: 'x', citedPaths: ['a.md'], latencyMs: 1, retrievalTokens: 0 };
-      },
-    };
-    const r = await runStageA({ systems: [sys], questions: [answerableQ('a1', 'a.md')], ctx: {} });
-    expect(r.perSystem.s.nearMissRecallAt5).toBeNull();
+  // The metric is a hit rate, not recall: it answers "was the system tempted",
+  // a yes/no about the question. Retrieving one of two near-miss notes is the
+  // same temptation as retrieving both. Scoring it 0.5 would invent a ranking
+  // where there is none, and would move the number when an author adds a third
+  // near-miss path without anything about retrieval changing.
+  it('scores a trap as tempted when ANY near-miss note is retrieved, not a fraction', async () => {
+    const r = await runStageA({
+      systems: [citing('s', ['b.md'])],
+      questions: [trapQ('t1', 'b.md', 'c.md')],  // two near-miss notes, one retrieved
+      ctx: {},
+    });
+    expect(r.perSystem.s.nearMissHitRateAt5).toBe(1);
+  });
+
+  it('does not move when a trap gains another near-miss note the system never retrieves', async () => {
+    const one = await runStageA({
+      systems: [citing('s', ['b.md'])], questions: [trapQ('t1', 'b.md')], ctx: {},
+    });
+    const three = await runStageA({
+      systems: [citing('s', ['b.md'])], questions: [trapQ('t1', 'b.md', 'c.md', 'd.md')], ctx: {},
+    });
+    expect(three.perSystem.s.nearMissHitRateAt5).toBe(one.perSystem.s.nearMissHitRateAt5);
+  });
+
+  it('scores a trap as untempted when no near-miss note is retrieved', async () => {
+    const r = await runStageA({
+      systems: [citing('s', ['unrelated.md'])],
+      questions: [trapQ('t1', 'b.md')],
+      ctx: {},
+    });
+    expect(r.perSystem.s.nearMissHitRateAt5).toBe(0);
+    expect(r.perSystem.s.scoredNearMiss).toBe(1);  // measured, and measured as zero
+  });
+
+  it('averages the hit rate over every trap, not just the first', async () => {
+    const r = await runStageA({
+      systems: [citing('s', ['b.md'])],
+      questions: [
+        trapQ('t1', 'b.md'),          // tempted
+        trapQ('t2', 'far.md'),        // not tempted
+        trapQ('t3', 'b.md'),          // tempted
+        trapQ('t4', 'other.md'),      // not tempted
+      ],
+      ctx: {},
+    });
+    expect(r.perSystem.s.nearMissHitRateAt5).toBe(0.5);
+    expect(r.perSystem.s.scoredNearMiss).toBe(4);
+  });
+
+  it('only counts a near-miss note retrieved within the top 5', async () => {
+    // Six notes cited; the near-miss note sits at rank 6. The metric is @5, so
+    // the system was not tempted by anything a reader would have seen.
+    const r = await runStageA({
+      systems: [citing('s', ['1.md', '2.md', '3.md', '4.md', '5.md', 'near.md'])],
+      questions: [trapQ('t1', 'near.md')],
+      ctx: {},
+    });
+    expect(r.perSystem.s.nearMissHitRateAt5).toBe(0);
+  });
+
+  it('reports nearMissHitRateAt5 as null when the dataset has no traps', async () => {
+    const r = await runStageA({
+      systems: [citing('s', ['a.md'])], questions: [answerableQ('a1', 'a.md')], ctx: {},
+    });
+    expect(r.perSystem.s.nearMissHitRateAt5).toBeNull();
     expect(r.perSystem.s.scoredNearMiss).toBe(0);
   });
 
@@ -177,7 +234,7 @@ describe('runStageA', () => {
     });
     const s = r.perSystem.nr;
     expect(s.recallAt5).toBeNull();
-    expect(s.nearMissRecallAt5).toBeNull();
+    expect(s.nearMissHitRateAt5).toBeNull();
     expect(s.medianTokens).toBeGreaterThan(0); // cost is still measured
   });
 

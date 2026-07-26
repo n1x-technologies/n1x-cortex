@@ -114,42 +114,65 @@ describe('checkGate', () => {
     expect(r.failures.some(f => /recall@5 is null/i.test(f))).toBe(true);
   });
 
-  // ---- near-miss recall, gated on the same rule as recall@5 ----
+  // ---- near-miss hit rate ----
   const sysResult = over => ({
-    name: 's', recallAt5: 1, nearMissRecallAt5: 1, medianTokens: 100, errors: [], ...over,
+    name: 's', recallAt5: 1, nearMissHitRateAt5: 1, medianTokens: 100, errors: [], ...over,
   });
-  const sysBase = over => ({ recallAt5: 1, nearMissRecallAt5: 1, medianTokens: 100, ...over });
+  const sysBase = over => ({ recallAt5: 1, nearMissHitRateAt5: 1, medianTokens: 100, ...over });
 
-  it('fails when near-miss recall falls past the limit', () => {
+  it('fails when the near-miss hit rate falls past the limit', () => {
     const r = checkGate(
-      { perSystem: { s: sysResult({ nearMissRecallAt5: 0.9 }) } },
+      { perSystem: { s: sysResult({ nearMissHitRateAt5: 0.9 }) } },
       { perSystem: { s: sysBase() } },
     );
     expect(r.pass).toBe(false);
-    expect(r.failures.join('\n')).toMatch(/near-miss recall@5 fell 10\.0 points/);
+    expect(r.failures.join('\n')).toMatch(/near-miss hit rate fell 10\.0 points/);
   });
 
-  it('passes when near-miss recall moves within the limit', () => {
-    const r = checkGate(
-      { perSystem: { s: sysResult({ nearMissRecallAt5: 0.99 }) } },
+  // The threshold is pinned from BOTH sides. Asserting only that a large drop
+  // fails and a tiny one passes leaves the whole band between them free: the
+  // limit could be loosened several-fold and every test would still be green.
+  //
+  // 1.9 and 2.1 points rather than a clean 2.0 boundary, because binary
+  // floating point puts `1 - 0.98` at 0.020000000000000018 — a drop of exactly
+  // the limit lands on whichever side the representation error falls. Pinning
+  // to within 0.2 points is the tightest assertion that is actually about the
+  // threshold rather than about IEEE 754.
+  it('pins the near-miss threshold from both sides: 1.9 points passes, 2.1 fails', () => {
+    const within = checkGate(
+      { perSystem: { s: sysResult({ nearMissHitRateAt5: 0.981 }) } },
       { perSystem: { s: sysBase() } },
     );
-    expect(r.pass).toBe(true);
+    expect(within.pass).toBe(true);
+
+    const past = checkGate(
+      { perSystem: { s: sysResult({ nearMissHitRateAt5: 0.979 }) } },
+      { perSystem: { s: sysBase() } },
+    );
+    expect(past.pass).toBe(false);
   });
 
-  it('skips near-miss recall when the baseline recorded null', () => {
+  it('does not fail when the near-miss hit rate RISES', () => {
     const r = checkGate(
-      { perSystem: { s: sysResult({ nearMissRecallAt5: null }) } },
-      { perSystem: { s: sysBase({ nearMissRecallAt5: null }) } },
+      { perSystem: { s: sysResult({ nearMissHitRateAt5: 1 }) } },
+      { perSystem: { s: sysBase({ nearMissHitRateAt5: 0.5 }) } },
     );
     expect(r.pass).toBe(true);
   });
 
-  it('skips near-miss recall for a baseline written before the metric existed', () => {
-    // An older baseline.json has no nearMissRecallAt5 key at all. That must not
-    // fail the whole gate — the system's other thresholds still apply.
+  it('skips the near-miss hit rate when the baseline recorded null', () => {
     const r = checkGate(
-      { perSystem: { s: sysResult({ nearMissRecallAt5: 0.5 }) } },
+      { perSystem: { s: sysResult({ nearMissHitRateAt5: null }) } },
+      { perSystem: { s: sysBase({ nearMissHitRateAt5: null }) } },
+    );
+    expect(r.pass).toBe(true);
+  });
+
+  it('skips the near-miss hit rate for a baseline written before the metric existed', () => {
+    // An older baseline.json has no nearMissHitRateAt5 key at all. That must
+    // not fail the whole gate — the system's other thresholds still apply.
+    const r = checkGate(
+      { perSystem: { s: sysResult({ nearMissHitRateAt5: 0.5 }) } },
       { perSystem: { s: { recallAt5: 1, medianTokens: 100 } } },
     );
     expect(r.pass).toBe(true);
@@ -157,11 +180,25 @@ describe('checkGate', () => {
 
   it('fails when a system with a real near-miss baseline reports null', () => {
     const r = checkGate(
-      { perSystem: { s: sysResult({ nearMissRecallAt5: null }) } },
-      { perSystem: { s: sysBase({ nearMissRecallAt5: 0.9 }) } },
+      { perSystem: { s: sysResult({ nearMissHitRateAt5: null }) } },
+      { perSystem: { s: sysBase({ nearMissHitRateAt5: 0.9 }) } },
     );
     expect(r.pass).toBe(false);
-    expect(r.failures.join('\n')).toMatch(/near-miss recall@5 is null but baseline expected a number/);
+    expect(r.failures.join('\n')).toMatch(/near-miss hit rate is null but baseline expected a number/);
+  });
+
+  // A results object that has STOPPED emitting the key is not the same as one
+  // reporting null, and it must not fall through to `base - undefined` -> NaN,
+  // where every comparison is false and the gate silently stops checking.
+  it('fails when the current results omit the near-miss key entirely', () => {
+    const cur = sysResult();
+    delete cur.nearMissHitRateAt5;
+    const r = checkGate(
+      { perSystem: { s: cur } },
+      { perSystem: { s: sysBase({ nearMissHitRateAt5: 0.9 }) } },
+    );
+    expect(r.pass).toBe(false);
+    expect(r.failures.join('\n')).toMatch(/near-miss hit rate is null but baseline expected a number/);
   });
 
 });
