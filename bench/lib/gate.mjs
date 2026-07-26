@@ -52,6 +52,35 @@ export function checkGate(results, baseline) {
       continue;
     }
 
+    // The baseline side needs the same distrust as the results side, and for a
+    // sharper reason: every check below is guarded by a `base.X === undefined`
+    // test that means "nothing to compare", so an ABSENT baseline key silently
+    // turns that check off. `base.medianTokens` was worse — it reached no
+    // presence test at all, and `(cur - undefined) / undefined` is NaN, which
+    // fails every comparison.
+    //
+    // Demonstrated end to end: strip the three metrics from one system's
+    // baseline entry, break its retriever so recall@5 is 0.000, and the gate
+    // printed "bench gate passed". The rename in this very commit range is how
+    // that happens in practice — update run.mjs and gate.mjs, forget
+    // baseline.json, and the check evaporates without a word.
+    //
+    // So absence is a failure and `null` stays legal, because null is the
+    // meaningful value ("not applicable", a declared non-ranking system).
+    // There is deliberately no backward-compatible skip for a baseline written
+    // before a metric existed: regenerating is one command, and an old
+    // baseline that silently gates less is exactly what this catches.
+    const missingKeys = ['recallAt5', 'nearMissHitRateAt5', 'medianTokens', 'questionMix']
+      .filter(k => base[k] === undefined);
+    if (missingKeys.length) {
+      failures.push(
+        `${name}: baseline entry is missing ${missingKeys.join(', ')} — an absent key ` +
+          'silently disables that check rather than comparing it. Re-baseline: ' +
+          'node bench/run.mjs --stage a --corpus fixtures --update-baseline 1',
+      );
+      continue;
+    }
+
     // A null baseline recall means the system was ALREADY declared
     // non-ranking (e.g. full-context.mjs's `ranks = false`) when the
     // baseline was captured — there is no threshold to check, by design, and
@@ -118,14 +147,25 @@ export function checkGate(results, baseline) {
     // before this guard existed — nothing to compare, same rule as the
     // near-miss key.
     const mixChanged =
-      base.questionMix !== undefined && !sameMix(base.questionMix, curMix(cur));
+      base.questionMix === null || !sameMix(base.questionMix, curMix(cur));
     if (mixChanged) {
+      // The cost number is still REPORTED, just not blamed. Withholding it
+      // entirely opened a laundering path: a PR that adds trap questions AND
+      // regresses cost fails once on the mix, gets re-baselined per the
+      // instruction in this very message, and ships the regression unmeasured.
+      // (This branch is itself "a PR that adds trap questions".) Whoever
+      // re-baselines needs to see what they are accepting.
+      const rise = measured(cur.medianTokens) && measured(base.medianTokens) && base.medianTokens
+        ? ` For reference, median tokens moved ${(((cur.medianTokens - base.medianTokens) / base.medianTokens) * 100).toFixed(1)}% ` +
+          `(${base.medianTokens} -> ${cur.medianTokens}) across the two different question sets; ` +
+          'check that before accepting it as the new baseline.'
+        : '';
       failures.push(
         `${name}: the question set changed since the baseline ` +
         `(ranking/near-miss/cost ${fmtMix(base.questionMix)} -> ${fmtMix(curMix(cur))}). ` +
         'medianTokens is a median over every question asked, so this moves it ' +
-        'independently of retrieval cost — the cost check is skipped rather than ' +
-        'blamed on the system. Re-baseline: ' +
+        'independently of retrieval cost — the cost threshold is not applied to a ' +
+        `set it cannot compare.${rise} Re-baseline: ` +
         'node bench/run.mjs --stage a --corpus fixtures --update-baseline 1',
       );
     } else if (!measured(cur.medianTokens)) {
@@ -143,7 +183,16 @@ export function checkGate(results, baseline) {
       }
     }
 
-    if (cur.errors?.length) {
+    // Not `cur.errors?.length`: an omitted, null or non-array `errors` was
+    // waved through by the optional chain, and a string threw a raw TypeError
+    // out of `.map`. Same threat model as measured() — a hand-edited
+    // results.json must fail the gate, not disable a check or crash it.
+    if (!Array.isArray(cur.errors)) {
+      failures.push(
+        `${name}: results carry no errors array (${describe(cur.errors)}) — the gate ` +
+          'cannot confirm the system ran without errors',
+      );
+    } else if (cur.errors.length) {
       failures.push(`${name}: errored on ${cur.errors.length} question(s): ${cur.errors.map(e => e.id).join(', ')}`);
     }
   }
@@ -176,10 +225,18 @@ const curMix = s => ({
   cost: s.scoredCost,
 });
 
+// Compared as numbers, not with ===. A baseline round-tripped through a tool
+// that stringifies would otherwise fail with "the question set changed
+// (15/4/19 -> 15/4/19)" — identical values on both sides of the arrow, which
+// tells the reader nothing and looks like a bug in the gate.
 const sameMix = (a, b) =>
-  a.ranking === b.ranking && a.nearMiss === b.nearMiss && a.cost === b.cost;
+  a !== null && a !== undefined &&
+  Number(a.ranking) === Number(b.ranking) &&
+  Number(a.nearMiss) === Number(b.nearMiss) &&
+  Number(a.cost) === Number(b.cost);
 
-const fmtMix = m => `${m.ranking}/${m.nearMiss}/${m.cost}`;
+const fmtMix = m =>
+  m === null || m === undefined ? 'none recorded' : `${m.ranking}/${m.nearMiss}/${m.cost}`;
 
 /**
  * Guards against silent degradation: Cortex's semanticQueryRanking swallows

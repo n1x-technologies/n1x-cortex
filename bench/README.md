@@ -84,7 +84,7 @@ produce a publishable number.
 | `full-context` | The whole corpus in the prompt, in filesystem order. The reference cost a retriever must beat; does not rank. | A + B |
 | `cortex` | Hybrid lexical + semantic retrieval fused with RRF. | A + B |
 | `cortex-lexical` / `cortex-semantic` | Ablations isolating each retrieval signal. | A + B |
-| `naive-rag` | Fixed ~512-token chunks, same embedding model as Cortex, cost-matched top-k. | A + B |
+| `naive-rag` | Fixed ~512-token chunks, same embedding model as Cortex, top-k calibrated to match Cortex's cost. | A + B |
 | `grep-agent` | A text-protocol ReAct loop that lists, greps and reads files — what an agent does without Cortex. | B only |
 | `closed-book` | No context at all. A control, not a baseline. | B only |
 
@@ -97,8 +97,10 @@ rows that look like real measurements without being any (`bench/lib/system-list.
 
 Corpus: `bench/fixtures/ci-vault` — 12 synthetic notes (a fictional coffee
 roastery's process docs), each short enough to be a single retrieval chunk.
-Questions: 19 — 15 answerable with one gold note each, plus 4 trap questions
-the corpus cannot answer. This fixture exists to catch regressions in CI, not
+Questions: 19 — 15 answerable (14 with a single gold note, one with two), plus
+4 trap questions the corpus cannot answer. The count matters: recall@5 is the
+fraction of a question's gold notes retrieved, so the two-gold question scores
+1.000 only when both are in the top 5. This fixture exists to catch regressions in CI, not
 to compare systems — see the caveats below the table. Numbers are taken from
 the committed `bench/fixtures/baseline.json` (recall@5, near-miss,
 medianTokens) and a matching run of `bench/out/results.json` (MRR, nDCG@10,
@@ -119,8 +121,11 @@ because the only question it asks is whether the system was *exposed to the
 temptation*. It exists to be read next to Stage B's `invented` column: a
 system with low invention and a low near-miss hit rate was never tempted, not
 virtuous. Ranking metrics are computed over the 15 answerable questions,
-near-miss over the 4 traps, and cost over all 19; every run prints the three
-denominators as `n 15/4/19` so a rate is never read against the wrong one.
+near-miss over the 4 traps, and cost over all 19; every run prints those three
+denominators beside the rates as `n <ranking>/<near-miss>/<cost>` so a rate is
+never read against the wrong one. The four ranking systems print `n 15/4/19`;
+`full-context` prints `n 0/0/19`, because it declares itself non-ranking and so
+scores nothing but cost.
 
 `full-context`'s recall@5/MRR/nDCG@10 are **n/a**, not zero or omitted:
 `full-context` emits the whole corpus in filesystem order rather than a
@@ -153,7 +158,7 @@ either.
 
 Three more caveats specific to this fixture:
 
-- **`naive-rag`'s cost-matched `TOP_K` is calibrated to 12** on this corpus,
+- **`naive-rag`'s `TOP_K` is calibrated to 12** on this corpus,
   which has exactly 12 single-chunk notes (`lib/systems/naive-rag.mjs`), so
   cost-matching here drives it to retrieve the entire corpus. Its real
   cutoff behaviour — retrieving a bounded top-k out of many more chunks —
@@ -202,6 +207,11 @@ answerable questions, declined / invented for traps — so the trap judge, the
 newer and less validated of the two judge paths, is actually checked by the
 human rather than crowded out by the answerable side.
 
+It samples **one system's records only** (`cortex`, or the first system in the
+run if cortex was not part of it). The judge-human agreement figure computed
+from it therefore describes that system, and is not a judge-quality figure for
+the whole run.
+
 Every rate is printed beside the denominator it was computed over
 (`n <answerable>/<uncontaminated>/<traps>`), and a rate with an empty
 population prints `n/a`, never `0.000`: a system that errored on every
@@ -230,10 +240,15 @@ otherwise, until that labelling happens and clears the bar.
   fixture. No cost claim ("cortex costs less than full-context or than
   naive-rag") can be drawn from this fixture either; a corpus large enough
   for a retriever to actually leave most of it out has not been run yet.
-- **`naive-rag`'s cost-matched `TOP_K` is calibrated to 12** on this fixture,
-  which happens to have exactly 12 single-chunk notes, so cost-matching
-  drives it to retrieve the whole corpus here. Real cutoff behaviour only
-  appears on a larger corpus.
+- **`naive-rag`'s `TOP_K` is calibrated to 12** on this fixture, which happens
+  to have exactly 12 single-chunk notes, so cost-matching drives it to
+  retrieve the whole corpus here. Real cutoff behaviour only appears on a
+  larger corpus. **The calibration is also stale:** it was fixed against a
+  cortex median of 982 tokens, which was the pre-traps figure. The current run
+  is cortex 809 vs `naive-rag` 1081 — a 34% gap, not a match. It is not
+  re-tuned here, because tuning against a fixture that saturates would be
+  tuning to noise; but "cost-matched" should not be read as a present-tense
+  claim about these numbers.
 - **`grep-agent` credits recall for every path its `GREP` action matched**,
   whether or not the agent ever issued a `READ` on that path. That is
   generous to this baseline relative to an agent judged only on what it
@@ -317,10 +332,17 @@ against the committed `bench/fixtures/ci-vault` fixture and fails when:
 - recall@5 drops more than 2 points,
 - the near-miss hit rate drops more than 2 points,
 - median tokens rise more than 10%,
-- the question set changed since the baseline (reported as a dataset change,
-  and the cost check is skipped rather than blamed on the system),
-- a system present in results is missing from the baseline, or reports a
-  metric as missing/null/NaN that the baseline recorded as a number,
+- the question set changed since the baseline (reported as a dataset change:
+  the cost threshold is not applied to a set it cannot compare, though the
+  cost move is still printed so whoever re-baselines sees what they accept),
+- a system is present in results but missing from the baseline, or present in
+  the baseline but missing from results,
+- a baseline entry is missing a metric key — absence is a failure, because it
+  would otherwise silently disable that check; `null` remains a legal value,
+- a system reports a metric as missing/null/NaN that the baseline recorded as
+  a number, or carries no errors array,
+- the committed query-vector cache is missing a vector for any question
+  (`checkCacheCompleteness`, which runs under the same flag),
 - or any system errors.
 
 The 2-point near-miss threshold does not bind at this fixture size. That

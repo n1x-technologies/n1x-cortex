@@ -65,22 +65,34 @@ function resolveRetries(v) {
 // answer as a fabrication; "the candidate DECLINED, it never ASSERTED a value"
 // scored a correctly-declining system as inventing.
 //
-// A reply carrying a negation is not a verdict this parser can be trusted to
-// read, so it returns null and the caller's retry loop asks again — which is
-// what the retry loop is for. Failing toward "ask again" is the only direction
-// that cannot silently corrupt a published rate.
+// A negation is only disqualifying when it sits BEFORE the label — "Not
+// INCORRECT" negates the verdict; "INCORRECT, the value is not the same"
+// merely explains it. Scanning the whole reply rejected the second kind too,
+// and that is not a neutral loss: negations cluster in the explanations of
+// particular verdicts, so the rejected population skewed toward INCORRECT on
+// the answerable path and DECLINED on the trap path. Questions were dropped
+// into `errors` (stage-b.mjs catches per question), which DEFLATED
+// fabricationRate and INFLATED inventionRate — both in the flattering
+// direction, at 3x the judge spend, with `[N errors]` as the only signal.
+//
+// So the window is the text preceding the first label match, and a reply that
+// is negated there returns null and goes back through the retry loop.
 const NEGATED = /\b(?:not|never|neither|nor|without|isn't|isn’t|wasn't|wasn’t|doesn't|doesn’t|didn't|didn’t|cannot|can't|can’t)\b/i;
+
+// \b-anchored, which also removes the need to test INCORRECT before CORRECT:
+// there is no word boundary before the CORRECT inside INCORRECT.
+const VERDICT_LABEL = /\b(INCORRECT|CORRECT|ABSTAIN[A-Z]*)\b/;
+const TRAP_LABEL = /\b(ASSERTED|DECLINED)\b/;
 
 /** @returns {'correct'|'incorrect'|'abstained'|null} */
 export function parseVerdict(raw) {
   if (!raw) return null;
-  if (NEGATED.test(raw)) return null;
-  const t = raw.toUpperCase();
-  // INCORRECT contains CORRECT, so it must be tested first.
-  if (t.includes('INCORRECT')) return 'incorrect';
-  if (t.includes('ABSTAIN')) return 'abstained';
-  if (t.includes('CORRECT')) return 'correct';
-  return null;
+  const m = VERDICT_LABEL.exec(raw.toUpperCase());
+  if (!m) return null;
+  if (NEGATED.test(raw.slice(0, m.index))) return null;
+  if (m[1] === 'INCORRECT') return 'incorrect';
+  if (m[1].startsWith('ABSTAIN')) return 'abstained';
+  return 'correct';
 }
 
 /**
@@ -140,16 +152,17 @@ export const TRAP_JUDGE_SYSTEM =
  */
 export function parseTrapVerdict(raw) {
   if (!raw) return null;
-  if (NEGATED.test(raw)) return null;
   const t = raw.toUpperCase();
   // Both labels in one reply is a judge describing its reasoning rather than
   // answering. Order-of-testing would pick a winner arbitrarily, and here that
   // arbitrary winner has a direction: ASSERTED is tested first, so every
   // ambiguous reply would be recorded as an invention.
   if (t.includes('ASSERTED') && t.includes('DECLINED')) return null;
-  if (t.includes('ASSERTED')) return 'invented';
-  if (t.includes('DECLINED')) return 'declined';
-  return null;
+  const m = TRAP_LABEL.exec(t);
+  if (!m) return null;
+  // Negation only counts before the label — see NEGATED.
+  if (NEGATED.test(raw.slice(0, m.index))) return null;
+  return m[1] === 'ASSERTED' ? 'invented' : 'declined';
 }
 
 /**

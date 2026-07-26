@@ -11,23 +11,36 @@ const BLOCK = '# Cortex (generated cache — do not commit)\n.cortex/\n';
  *
  * Idempotent: returns true only when the file was actually changed.
  *
- * "Already covered" deliberately means ANY rule mentioning `.cortex`, not just
- * a literal `.cortex/`. Matching only the exact line meant a deliberately
- * scoped ignore —
+ * Two failure modes to avoid, pulling in opposite directions.
+ *
+ * Appending too eagerly: matching only a literal `.cortex/` meant a
+ * deliberately scoped ignore —
  *
  *     .cortex/*
  *     !.cortex/embeddings/
  *
- * — did not count as covered, so this function appended a blanket `.cortex/`
- * underneath it. git cannot re-include a path inside an excluded directory, so
- * that one appended line silently voided the negation: files already tracked
- * stayed tracked and everything new under the store became invisible. The
- * damage is invisible until the store gains a second file, at which point it
- * is data loss with no error anywhere.
+ * — did not count as covered, so a blanket `.cortex/` got appended underneath.
+ * git cannot re-include a path inside an excluded directory, so that one line
+ * silently voided the negation, and the damage stays invisible until the store
+ * gains a second file.
  *
- * A user who has written any `.cortex` rule has expressed intent about that
- * directory. Overriding it is what caused the bug, so presence of intent is
- * the signal, and this function leaves the file alone.
+ * Appending too rarely: treating ANY mention of `.cortex` as intent means a
+ * vault with only `.cortex/backups/` is declared covered, and the several-MB
+ * model and embedding store are left committable with no warning — the callers
+ * print nothing when this returns false, so silence is indistinguishable from
+ * "already ignored".
+ *
+ * So coverage is two specific things, not any mention:
+ *
+ *   - a rule that excludes the whole tree (`.cortex`, `.cortex/`, `.cortex/*`,
+ *     optionally prefixed with a slash or a recursive-glob segment), or
+ *   - a NEGATION naming `.cortex`, which is the only shape appending can
+ *     damage. Leave those alone even when nothing else excludes the tree: a
+ *     negation with no base exclusion ignores nothing, but the author plainly
+ *     meant something, and quietly overriding it is the original bug.
+ *
+ * A partial rule like `.cortex/backups/` is neither, so the block is appended
+ * — safe there, because with no negation present nothing can be voided.
  */
 export function ensureCortexIgnored(vaultDir: string): boolean {
   const file = join(vaultDir, '.gitignore');
@@ -41,10 +54,16 @@ export function ensureCortexIgnored(vaultDir: string): boolean {
   const covered = current.split('\n').some(line => {
     const t = line.trim();
     if (!t || t.startsWith('#')) return false;
-    // Strip a negation prefix and a leading slash, then ask whether the
-    // pattern is about `.cortex` at all.
-    const pattern = t.replace(/^!/, '').replace(/^\//, '');
-    return pattern === '.cortex' || pattern.startsWith('.cortex/');
+
+    const negated = t.startsWith('!');
+    const pattern = t.replace(/^!/, '').replace(/^\*\*\//, '').replace(/^\//, '');
+
+    // A negation about .cortex is the only shape appending can damage.
+    if (negated) return pattern === '.cortex' || pattern.startsWith('.cortex/');
+
+    // Otherwise: does this rule exclude the whole tree?
+    const base = pattern.replace(/\/\*$/, '').replace(/\/$/, '');
+    return base === '.cortex';
   });
   if (covered) return false;
 

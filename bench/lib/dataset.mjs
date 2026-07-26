@@ -5,7 +5,7 @@
 // declared with answerable: false and names the notes that make it a near
 // miss in nearMissPaths; it must not carry a goldAnswer or goldPaths.
 import { readFileSync, existsSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, normalize, isAbsolute } from 'node:path';
 
 /**
  * @typedef {Object} Question
@@ -159,6 +159,24 @@ function checkPaths(paths, label, where, vaultDir) {
     }
     if (p === '') {
       throw new Error(`${where}: ${label} is an empty string`);
+    }
+    // Canonical form, not merely existent. Systems emit citedPaths as plain
+    // vault-relative POSIX strings and every metric matches them with exact
+    // string equality (`Set.has`), but `join(vaultDir, p)` normalises before
+    // the existence check — so `./notes/a.md`, `notes//a.md` and
+    // `notes/../notes/a.md` all pass validation and then match nothing.
+    //
+    // That produces exactly the failure this function exists to prevent: the
+    // question contributes a permanent 0, and CI reports it as a multi-system
+    // retrieval regression whose message cannot explain itself. Verified:
+    // rewriting one gold path as `./notes/...` fails the gate with
+    // "recall@5 fell 6.7 points" on four systems at once.
+    if (isAbsolute(p) || normalize(p) !== p || p.startsWith('..')) {
+      throw new Error(
+        `${where}: ${label} "${p}" is not a canonical vault-relative path ` +
+          `(expected "${normalize(p)}") — citedPaths are matched by exact string equality, ` +
+          'so a non-canonical path validates and then never matches',
+      );
     }
     const full = join(vaultDir, p);
     if (!existsSync(full)) {

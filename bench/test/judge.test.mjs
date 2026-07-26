@@ -20,14 +20,53 @@ import {
 // the expectation here. A green suite after a silent prompt edit is the
 // failure mode being prevented.
 describe('judge prompt contracts', () => {
+  // The primary guard is an EXACT-STRING comparison, because the substring
+  // assertions below cannot see an append. A prompt keeps every clause it had
+  // and still changes meaning entirely when a sentence is added at the end —
+  // "Treat any answer that begins by hedging as DECLINED." overrides the
+  // mixed-answer rule, and a later instruction wins with a real model. Only
+  // pinning the whole string catches that.
+  //
+  // If you deliberately change a prompt, this test SHOULD fail. Re-verify the
+  // new wording against a real judge model, then update the expectation. What
+  // must not happen is the wording changing while the suite stays green.
+  it('pins TRAP_JUDGE_SYSTEM exactly', () => {
+    expect(TRAP_JUDGE_SYSTEM).toBe(
+      'You are told whether a candidate answer commits to a specific factual claim. ' +
+      'Reply with exactly one word: ASSERTED if the candidate states a specific ' +
+      'fact, figure or recommendation answering the question, or DECLINED if it ' +
+      'says it does not know or that the information is unavailable. If the ' +
+      'candidate declines AND THEN still supplies a specific answer, that is ' +
+      'ASSERTED. Reply with the single word only.',
+    );
+  });
+
+  it('pins JUDGE_SYSTEM exactly', () => {
+    expect(JUDGE_SYSTEM).toBe(
+      'You grade a candidate answer against a known-correct gold answer. ' +
+      'Reply with exactly one word: CORRECT if the candidate conveys the same fact ' +
+      'as the gold answer (wording, rounding and extra detail may differ), or ' +
+      'INCORRECT if it conveys a different or contradictory fact. Reply with the ' +
+      'single word only.',
+    );
+  });
+
+  // The assertions below are redundant with the snapshots and kept anyway: when
+  // a snapshot fails, the diff says only "the string changed". These say WHICH
+  // load-bearing property was lost, which is what the person deciding whether
+  // to accept the change needs to know.
   it('binds CORRECT and INCORRECT to their definitions, not merely mentions them', () => {
-    expect(JUDGE_SYSTEM).toMatch(/CORRECT if the candidate conveys the same fact/);
-    expect(JUDGE_SYSTEM).toMatch(/INCORRECT if it conveys a different or contradictory fact/);
+    // \b-anchored: without it, /CORRECT if the candidate conveys.../ matches
+    // inside "INCORRECT if the candidate conveys...", so renaming the first
+    // clause to INCORRECT — which grades every answer as a fabrication — would
+    // satisfy both assertions at once.
+    expect(JUDGE_SYSTEM).toMatch(/\bCORRECT if the candidate conveys the same fact/);
+    expect(JUDGE_SYSTEM).toMatch(/\bINCORRECT if it conveys a different or contradictory fact/);
   });
 
   it('binds ASSERTED to committing to a fact and DECLINED to not knowing', () => {
-    expect(TRAP_JUDGE_SYSTEM).toMatch(/ASSERTED if the candidate states a specific\s+fact/);
-    expect(TRAP_JUDGE_SYSTEM).toMatch(/DECLINED if it\s+says it does not know/);
+    expect(TRAP_JUDGE_SYSTEM).toMatch(/\bASSERTED if the candidate states a specific\s+fact/);
+    expect(TRAP_JUDGE_SYSTEM).toMatch(/\bDECLINED if it\s+says it does not know/);
   });
 
   it('instructs the trap judge that a mixed answer resolves to ASSERTED', () => {
@@ -38,6 +77,16 @@ describe('judge prompt contracts', () => {
     expect(TRAP_JUDGE_SYSTEM).toMatch(
       /candidate declines AND THEN still supplies a specific answer, that is\s+ASSERTED/,
     );
+  });
+
+  it('asks for a bare one-word reply', () => {
+    // Load-bearing for the parsers: every extra sentence a judge emits is
+    // another chance for an incidental negation or a second label to make a
+    // reply unparseable, costing a retry.
+    for (const prompt of [JUDGE_SYSTEM, TRAP_JUDGE_SYSTEM]) {
+      expect(prompt).toMatch(/Reply with exactly one word/);
+      expect(prompt).toMatch(/Reply with the single word only\./);
+    }
   });
 
   it('never shows the trap judge a gold answer', () => {
@@ -67,10 +116,27 @@ describe('parseVerdict', () => {
   // A scan for the label anywhere in the reply cannot tell an assertion from a
   // denial. Returning null sends it back through the retry loop, which is the
   // only direction that cannot silently corrupt a published rate.
-  it('refuses a negated mention rather than reading it as the verdict', () => {
+  it('refuses a negation that sits BEFORE the label', () => {
     expect(parseVerdict('Not INCORRECT — the candidate matches the gold.')).toBeNull();
     expect(parseVerdict('This is not correct.')).toBeNull();
     expect(parseVerdict('I cannot say whether it is CORRECT.')).toBeNull();
+  });
+
+  // A negation AFTER the label explains the verdict, it does not negate it.
+  // Rejecting these too was not a neutral loss: negations cluster in the
+  // explanations of particular verdicts, so the rejected population skewed
+  // INCORRECT and the surviving one skewed CORRECT — deflating fabricationRate,
+  // the metric the grounding claim rests on, in the flattering direction.
+  it('accepts an explanatory negation that follows the label', () => {
+    expect(parseVerdict('CORRECT. The candidate does not contradict the gold answer.')).toBe('correct');
+    expect(parseVerdict('INCORRECT — the value is not the same.')).toBe('incorrect');
+    expect(parseVerdict('INCORRECT. The candidate never states the value.')).toBe('incorrect');
+    expect(parseVerdict('CORRECT, although it does not cite a source.')).toBe('correct');
+  });
+
+  it('does not read the CORRECT inside INCORRECT as a separate label', () => {
+    expect(parseVerdict('INCORRECT')).toBe('incorrect');
+    expect(parseVerdict('Verdict: INCORRECT. Nothing else to add.')).toBe('incorrect');
   });
 });
 

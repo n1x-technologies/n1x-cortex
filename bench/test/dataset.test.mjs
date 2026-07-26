@@ -194,6 +194,32 @@ describe('loadDataset', () => {
     expect(() => loadDataset(jsonl, vault)).toThrow(/nearMissPath "notes" is not a file/);
   });
 
+  it('rejects a non-canonical path that would validate and then never match', () => {
+    // join() normalises before the existence check, so these all exist. But
+    // citedPaths are matched by exact string equality, so each contributes a
+    // permanent 0 and CI reports a multi-system retrieval regression.
+    for (const p of ['./notes/a.md', 'notes//a.md', 'notes/../notes/a.md']) {
+      writeFileSync(jsonl, rec({ id: 'a1', question: 'Q', goldPaths: [p], goldAnswer: 'A' }));
+      expect(() => loadDataset(jsonl, vault), p).toThrow(/is not a canonical vault-relative path/);
+    }
+  });
+
+  it('rejects a path that escapes the vault', () => {
+    for (const p of ['../outside.md', '/etc/passwd']) {
+      writeFileSync(jsonl, rec({ id: 'a1', question: 'Q', goldPaths: [p], goldAnswer: 'A' }));
+      expect(() => loadDataset(jsonl, vault), p).toThrow(/is not a canonical vault-relative path/);
+    }
+  });
+
+  it('still accepts an ordinary nested path', () => {
+    mkdirSync(join(vault, 'notes', 'sub'), { recursive: true });
+    writeFileSync(join(vault, 'notes', 'sub', 'deep.md'), '# D\n');
+    writeFileSync(jsonl, rec({
+      id: 'a1', question: 'Q', goldPaths: ['notes/sub/deep.md'], goldAnswer: 'A',
+    }));
+    expect(loadDataset(jsonl, vault)[0].goldPaths).toEqual(['notes/sub/deep.md']);
+  });
+
   it('reports a non-string path with the file, line and question id', () => {
     writeFileSync(jsonl, rec({
       id: 'a1', question: 'Q', goldPaths: ['notes/a.md', 123], goldAnswer: 'A',

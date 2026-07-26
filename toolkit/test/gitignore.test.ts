@@ -59,11 +59,35 @@ describe('ensureCortexIgnored', () => {
     expect(readFileSync(join(dir, '.gitignore'), 'utf8')).toBe(scoped);
   });
 
-  it('treats any rule mentioning .cortex as intent, including a negation alone', () => {
-    for (const rule of ['.cortex/*', '/.cortex/', '!.cortex/embeddings/', '.cortex/backups/']) {
+  it('treats a whole-tree exclusion as covered, however it is spelled', () => {
+    for (const rule of ['.cortex', '.cortex/', '.cortex/*', '/.cortex/', '**/.cortex/']) {
       const dir = tmp();
       writeFileSync(join(dir, '.gitignore'), `${rule}\n`);
       expect(ensureCortexIgnored(dir), rule).toBe(false);
+    }
+  });
+
+  it('leaves a .cortex negation alone even with no base exclusion', () => {
+    // A negation is the only shape appending can damage, so it is left alone
+    // regardless of whether anything else excludes the tree.
+    const dir = tmp();
+    const only = '!.cortex/embeddings/\n';
+    writeFileSync(join(dir, '.gitignore'), only);
+    expect(ensureCortexIgnored(dir)).toBe(false);
+    expect(readFileSync(join(dir, '.gitignore'), 'utf8')).toBe(only);
+  });
+
+  // The opposite failure from the one the scoped-ignore fix addressed: a rule
+  // about ONE subdirectory says nothing about the rest, and treating it as
+  // coverage leaves the several-MB model and the embedding store committable.
+  // The callers print nothing when this returns false, so the user gets no
+  // warning at all.
+  it('still adds the block when only a .cortex subdirectory is ignored', () => {
+    for (const rule of ['.cortex/backups/', '.cortex/models/', '.cortex/out']) {
+      const dir = tmp();
+      writeFileSync(join(dir, '.gitignore'), `${rule}\n`);
+      expect(ensureCortexIgnored(dir), rule).toBe(true);
+      expect(readFileSync(join(dir, '.gitignore'), 'utf8')).toContain('\n.cortex/');
     }
   });
 

@@ -57,10 +57,16 @@ export async function runStageA({ systems, questions, ctx }) {
           // bare TypeError from inside metrics.mjs — naming neither the
           // question nor the field. This is a malformed dataset rather than a
           // system failure, so it still stops the run; it just says why.
-          if (!Array.isArray(q.nearMissPaths)) {
+          // Length, not just shape. metrics.mjs scores an empty target set as
+          // 0, and it justifies that by pointing at dataset.mjs rejecting the
+          // shape at load — true only for the .jsonl path, which is exactly
+          // what this guard exists because inline questions bypass. An empty
+          // array would publish `nearMissHitRateAt5: 0` with `scoredNearMiss:
+          // 1`: an invented measurement reading as "measured, not tempted".
+          if (!Array.isArray(q.nearMissPaths) || q.nearMissPaths.length === 0) {
             throw new Error(
               `question "${q.id}" is declared a trap (answerable: false) but has no ` +
-                'nearMissPaths array — a trap must name the notes that make it a near miss',
+                'nearMissPaths — a trap must name the notes that make it a near miss',
             );
           }
           nearMissHits.push(hitAtK(r.citedPaths, q.nearMissPaths, 5));
