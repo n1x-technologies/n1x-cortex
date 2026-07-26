@@ -307,6 +307,48 @@ describe('runStageB', () => {
     },
   };
 
+  // The failure that showed up in the first live Stage B run: grep-agent
+  // searched for a fact the corpus does not contain, found nothing, returned an
+  // empty payload, and the "a grounded system with nothing to say is a broken
+  // run" guard threw. On a trap that guard has its premise inverted — there is
+  // nothing to find — so correct behaviour was recorded as an error, the trap
+  // left grep-agent's denominator, and its rates stopped being publishable.
+  it('scores a trap a system found nothing for, instead of erroring on it', async () => {
+    const searchesAndFindsNothing = {
+      name: 'grep-agent',
+      async run(q) {
+        // Finds context for the answerable question, nothing for the trap.
+        return q === 'TRAP'
+          ? { promptPayload: '', citedPaths: [], latencyMs: 1, retrievalTokens: 0 }
+          : { promptPayload: 'ALPHA', citedPaths: ['a.md'], latencyMs: 1, retrievalTokens: 0 };
+      },
+    };
+    const r = await runStageB({
+      systems: [searchesAndFindsNothing],
+      questions: [ans('q1', 'ALPHA'), trap],
+      ctx: {}, llm, judgeLlm: bothJudge,
+    });
+    const s = r.perSystem['grep-agent'];
+    expect(s.errors).toHaveLength(0);         // not a broken run
+    expect(s.trapScored).toBe(1);             // the trap stayed in the denominator
+    expect(s.inventionRate).not.toBeNull();
+    expect(s.scored).toBe(1);                 // the answerable half is unaffected
+  });
+
+  it('still errors when a system finds nothing for an ANSWERABLE question', async () => {
+    // The exemption is scoped to traps. Where an answer exists and the system
+    // returned nothing, that is still a broken run.
+    const broken = {
+      name: 'grep-agent',
+      async run() { return { promptPayload: '', citedPaths: [], latencyMs: 1, retrievalTokens: 0 }; },
+    };
+    const r = await runStageB({
+      systems: [broken], questions: [ans('q1', 'ALPHA')], ctx: {}, llm, judgeLlm: bothJudge,
+    });
+    expect(r.perSystem['grep-agent'].errors).toHaveLength(1);
+    expect(r.perSystem['grep-agent'].errors[0].message).toMatch(/empty promptPayload/);
+  });
+
   it('routes a trap to the trap judge and reports inventionRate', async () => {
     const r = await runStageB({
       systems: [sys('s', 'ALPHA')],
