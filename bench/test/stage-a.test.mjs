@@ -211,6 +211,18 @@ describe('runStageA', () => {
     expect(r.perSystem.s.nearMissHitRateAt5).toBe(0);
   });
 
+  it('refuses a trap whose nearMissPaths is empty rather than scoring it 0', async () => {
+    // metrics.mjs scores an empty target set as 0, so such a trap would publish
+    // nearMissHitRateAt5: 0 with scoredNearMiss: 1 — an invented measurement
+    // reading as "measured, not tempted". loadDataset rejects the shape, but
+    // inline question objects bypass it, which is why this guard exists at all.
+    await expect(runStageA({
+      systems: [citing('s', ['b.md'])],
+      questions: [trapQ('t1')],   // no near-miss paths
+      ctx: {},
+    })).rejects.toThrow(/t1.*no nearMissPaths/s);
+  });
+
   it('reports nearMissHitRateAt5 as null when the dataset has no traps', async () => {
     const r = await runStageA({
       systems: [citing('s', ['a.md'])], questions: [answerableQ('a1', 'a.md')], ctx: {},

@@ -70,13 +70,31 @@ export function checkGate(results, baseline) {
     // There is deliberately no backward-compatible skip for a baseline written
     // before a metric existed: regenerating is one command, and an old
     // baseline that silently gates less is exactly what this catches.
-    const missingKeys = ['recallAt5', 'nearMissHitRateAt5', 'medianTokens', 'questionMix']
-      .filter(k => base[k] === undefined);
-    if (missingKeys.length) {
+    //
+    // PRESENCE IS NOT ENOUGH, and checking only presence was the first version
+    // of this guard. `"n/a"` or `{}` in a baseline satisfies a `!== undefined`
+    // test and then NaNs out every `drop > LIMIT` below, which is the same
+    // silent pass by a different route: setting the three metrics to `"n/a"`
+    // and breaking a retriever printed "bench gate passed" exactly as the
+    // absent-key version did. A non-number also reaches `.toFixed()` in the
+    // failure messages and crashes the run. So a baseline value must be null
+    // or a finite number, the same bar the results side already had to clear.
+    if (base === null || typeof base !== 'object') {
       failures.push(
-        `${name}: baseline entry is missing ${missingKeys.join(', ')} — an absent key ` +
-          'silently disables that check rather than comparing it. Re-baseline: ' +
+        `${name}: baseline entry is ${describe(base)}, not an object. Re-baseline: ` +
           'node bench/run.mjs --stage a --corpus fixtures --update-baseline 1',
+      );
+      continue;
+    }
+    const badKeys = ['recallAt5', 'nearMissHitRateAt5', 'medianTokens']
+      .filter(k => !(base[k] === null || measured(base[k])))
+      .concat(base.questionMix === undefined || !validMix(base.questionMix) ? ['questionMix'] : []);
+    if (badKeys.length) {
+      failures.push(
+        `${name}: baseline entry has unusable ${badKeys.join(', ')} ` +
+          `(${badKeys.map(k => `${k}=${describe(base[k])}`).join(', ')}) — a key that is ` +
+          'absent or not a number silently disables that check rather than comparing it. ' +
+          'Re-baseline: node bench/run.mjs --stage a --corpus fixtures --update-baseline 1',
       );
       continue;
     }
@@ -143,12 +161,17 @@ export function checkGate(results, baseline) {
     // So the mix is compared first. If it changed, the token comparison is not
     // wrong so much as meaningless, and reporting it would tell the operator a
     // false story about their retrieval change. Fail pointing at the dataset
-    // and skip the cost check. An absent baseline mix means a baseline written
-    // before this guard existed — nothing to compare, same rule as the
-    // near-miss key.
-    const mixChanged =
-      base.questionMix === null || !sameMix(base.questionMix, curMix(cur));
-    if (mixChanged) {
+    // and skip the cost check. The BASELINE mix is already known valid — the
+    // shape check above rejected anything else — so only the results side can
+    // be unusable here, and that is a different failure with a different fix.
+    if (!validMix(curMix(cur))) {
+      failures.push(
+        `${name}: results carry no usable question-mix denominators ` +
+        `(scoredRanking/scoredNearMiss/scoredCost = ${fmtMix(curMix(cur))}) — ` +
+        'the cost check cannot tell a dataset change from a cost regression without them. ' +
+        'This is a results-side problem: re-baselining will not fix it.',
+      );
+    } else if (!sameMix(base.questionMix, curMix(cur))) {
       // The cost number is still REPORTED, just not blamed. Withholding it
       // entirely opened a laundering path: a PR that adds trap questions AND
       // regresses cost fails once on the mix, gets re-baselined per the
@@ -168,6 +191,11 @@ export function checkGate(results, baseline) {
         `set it cannot compare.${rise} Re-baseline: ` +
         'node bench/run.mjs --stage a --corpus fixtures --update-baseline 1',
       );
+    } else if (base.medianTokens === null) {
+      // Same "not applicable" rule the two ranking metrics follow. The shape
+      // check declares null legal, so the comparison must handle it: dividing
+      // by it produced `median tokens rose Infinity%` against a real current
+      // value, and `0/0 = NaN` — which passes — against a current 0.
     } else if (!measured(cur.medianTokens)) {
       failures.push(
         `${name}: medianTokens is ${describe(cur.medianTokens)} but baseline expected a number ` +
@@ -229,14 +257,28 @@ const curMix = s => ({
 // that stringifies would otherwise fail with "the question set changed
 // (15/4/19 -> 15/4/19)" — identical values on both sides of the arrow, which
 // tells the reader nothing and looks like a bug in the gate.
+/**
+ * A mix is usable only if all three denominators are finite numbers. Coercing
+ * blindly meant a results object that stopped emitting them compared
+ * `Number(undefined)` — NaN, never equal to itself — and the gate failed with
+ * `15/4/19 -> undefined/undefined/undefined`. Following the "re-baseline"
+ * remedy in that message then wrote `questionMix: {}` (JSON.stringify drops
+ * undefined members), and the NEXT run failed with
+ * `undefined/undefined/undefined -> undefined/undefined/undefined`: the exact
+ * x -> x pathology the numeric comparison was added to remove, made permanent
+ * by the one action the message recommends.
+ */
+const validMix = m =>
+  m !== null && typeof m === 'object' &&
+  ['ranking', 'nearMiss', 'cost'].every(k => measured(Number(m[k])) && m[k] !== null && m[k] !== '');
+
 const sameMix = (a, b) =>
-  a !== null && a !== undefined &&
   Number(a.ranking) === Number(b.ranking) &&
   Number(a.nearMiss) === Number(b.nearMiss) &&
   Number(a.cost) === Number(b.cost);
 
 const fmtMix = m =>
-  m === null || m === undefined ? 'none recorded' : `${m.ranking}/${m.nearMiss}/${m.cost}`;
+  !validMix(m) ? 'not recorded' : `${m.ranking}/${m.nearMiss}/${m.cost}`;
 
 /**
  * Guards against silent degradation: Cortex's semanticQueryRanking swallows

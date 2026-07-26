@@ -215,7 +215,7 @@ describe('checkGate', () => {
       { perSystem: { s: { recallAt5: 1, medianTokens: 100 } } },
     );
     expect(r.pass).toBe(false);
-    expect(r.failures.join('\n')).toMatch(/baseline entry is missing nearMissHitRateAt5, questionMix/);
+    expect(r.failures.join('\n')).toMatch(/unusable nearMissHitRateAt5, questionMix/);
   });
 
   it('fails when a system with a real near-miss baseline reports null', () => {
@@ -243,7 +243,67 @@ describe('checkGate', () => {
         { perSystem: { s: base } },
       );
       expect(r.pass, `baseline missing ${key}`).toBe(false);
-      expect(r.failures.join('\n')).toMatch(new RegExp(`baseline entry is missing ${key}`));
+      expect(r.failures.join('\n')).toMatch(new RegExp(`unusable.*${key}`));
+    }
+  });
+
+  // Presence is not enough, and checking only presence was the first version
+  // of this guard. A non-number satisfies `!== undefined` and then NaNs out
+  // every `drop > LIMIT`, which is the same silent pass by another route.
+  it('fails when a baseline value is present but not a number', () => {
+    for (const bad of ['n/a', {}, [], NaN, true]) {
+      for (const key of ['recallAt5', 'nearMissHitRateAt5', 'medianTokens']) {
+        const r = checkGate(
+          { perSystem: { s: sysResult({ recallAt5: 0, nearMissHitRateAt5: 0, medianTokens: 9999 }) } },
+          { perSystem: { s: sysBase({ [key]: bad }) } },
+        );
+        expect(r.pass, `${key} = ${JSON.stringify(bad)}`).toBe(false);
+        expect(r.failures.join('\n')).toMatch(new RegExp(`unusable.*${key}`));
+      }
+    }
+  });
+
+  it('fails when a baseline questionMix is unusable rather than comparing NaN', () => {
+    for (const bad of [{}, null, { ranking: 15 }, { ranking: 'x', nearMiss: 4, cost: 19 }]) {
+      const r = checkGate(
+        { perSystem: { s: sysResult() } },
+        { perSystem: { s: sysBase({ questionMix: bad }) } },
+      );
+      expect(r.pass, JSON.stringify(bad)).toBe(false);
+      expect(r.failures.join('\n')).toMatch(/unusable.*questionMix/);
+    }
+  });
+
+  it('fails when a baseline entry is not an object at all', () => {
+    for (const bad of [null, 'x', 5]) {
+      const r = checkGate({ perSystem: { s: sysResult() } }, { perSystem: { s: bad } });
+      expect(r.pass, String(bad)).toBe(false);
+      expect(r.failures.join('\n')).toMatch(/baseline entry is .* not an object/);
+    }
+  });
+
+  // The results side can also stop emitting the denominators — a rename in
+  // stage-a.mjs. That is a different failure from a changed question set, and
+  // it must not be reported as "15/4/19 -> undefined/undefined/undefined" with
+  // a re-baseline remedy that writes questionMix:{} and makes it permanent.
+  it('names a results-side mix problem instead of calling it a changed set', () => {
+    const cur = sysResult();
+    delete cur.scoredRanking; delete cur.scoredNearMiss; delete cur.scoredCost;
+    const r = checkGate({ perSystem: { s: cur } }, { perSystem: { s: sysBase() } });
+    expect(r.pass).toBe(false);
+    expect(r.failures.join('\n')).toMatch(/results carry no usable question-mix denominators/);
+    expect(r.failures.join('\n')).toMatch(/re-baselining will not fix it/i);
+  });
+
+  it('skips the cost check when the baseline recorded a null median', () => {
+    // null is declared legal by the shape check, so the comparison must handle
+    // it: dividing by null gave "rose Infinity%", and 0/0 = NaN passed.
+    for (const curTokens of [900, 0]) {
+      const r = checkGate(
+        { perSystem: { s: sysResult({ medianTokens: curTokens }) } },
+        { perSystem: { s: sysBase({ medianTokens: null }) } },
+      );
+      expect(r.failures.join('\n')).not.toMatch(/Infinity|NaN/);
     }
   });
 
@@ -330,7 +390,10 @@ describe('checkGate', () => {
     expect(r.pass).toBe(true);
   });
 
-  it('treats a null questionMix as a changed set, not as nothing to compare', () => {
+  it('rejects a null questionMix as an unusable baseline, not as a changed set', () => {
+    // Previously null was routed into the changed-set branch. Calling it a
+    // dataset change is wrong — nothing is known about the old set — and it
+    // sent the operator to re-baseline for what is a malformed baseline.
     const base = sysBase();
     base.questionMix = null;
     const r = checkGate(
@@ -338,7 +401,8 @@ describe('checkGate', () => {
       { perSystem: { s: base } },
     );
     expect(r.pass).toBe(false);
-    expect(r.failures.join('\n')).toMatch(/question set changed.*none recorded -> 15\/4\/19/s);
+    expect(r.failures.join('\n')).toMatch(/unusable.*questionMix/);
+    expect(r.failures.join('\n')).not.toMatch(/question set changed/);
   });
 
   it('compares the mix numerically so the message is never x -> x', () => {
