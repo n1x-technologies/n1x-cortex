@@ -17,29 +17,46 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
  * @param {{complete(system: string, user: string): Promise<string>}} llm
  * @param {string} question
  * @param {string} promptPayload  '' for the closed-book control
- * @param {{retries?: number, backoffMs?: number, isClosedBook?: boolean, systemName?: string}} [opts]
+ * @param {{retries?: number, backoffMs?: number, isClosedBook?: boolean, systemName?: string, answerable?: boolean}} [opts]
  *   `isClosedBook` selects the closed-book system prompt. It must be set
  *   ONLY for the system that declares `export const closedBook = true`
  *   (bench/lib/systems/closed-book.mjs) — never inferred from an empty
- *   payload. Any OTHER system returning '' is a broken run (e.g. an agent
- *   that answered on turn 0 before using any tool, or a retriever with zero
- *   hits), not a quietly different measurement, so it throws instead of
- *   silently falling back to the closed-book prompt. `systemName` is used
- *   only to name the offending system in that error.
+ *   payload. On an ANSWERABLE question, any other system returning '' is a
+ *   broken run (e.g. an agent that answered on turn 0 before using any tool,
+ *   or a retriever with zero hits), not a quietly different measurement, so
+ *   it throws instead of silently falling back to the closed-book prompt.
+ *   `systemName` is used only to name the offending system in that error.
+ *
+ *   `answerable: false` exempts the question from that rule, because on a
+ *   TRAP the premise inverts. The rule reads an empty payload as "this system
+ *   is broken" — true when an answer exists to be found and the system found
+ *   nothing. On a trap there is nothing to find, so an agent that searches and
+ *   comes back empty-handed did the right thing, and throwing turns correct
+ *   behaviour into a dropped question. That is not hypothetical: grep-agent
+ *   hit exactly this on t1 in the first live Stage B run, losing a trap from
+ *   its denominator and taking its rates out of publishable range.
+ *
+ *   The empty payload is passed through to the GROUNDED prompt, not the
+ *   closed-book one — "I searched and found nothing" is a grounded result, and
+ *   the grounded prompt's instruction to reply "I don't know" when the context
+ *   lacks the answer is exactly the right response to it. Scoring it as
+ *   `declined` is then a real measurement rather than an error.
  * @returns {Promise<string>}
  */
 export async function answer(llm, question, promptPayload, opts = {}) {
   const retries = opts.retries ?? 3;
   const backoffMs = opts.backoffMs ?? 1000;
   const isClosedBook = opts.isClosedBook ?? false;
+  const answerable = opts.answerable ?? true;
 
-  if (!promptPayload && !isClosedBook) {
+  if (!promptPayload && !isClosedBook && answerable) {
     throw new Error(
       `answer: system "${opts.systemName ?? 'unknown'}" returned an empty promptPayload ` +
-        'but is not declared closed-book. A grounded system with nothing to say is a ' +
-        'broken run, not a closed-book answer — if this system IS the contamination ' +
-        'control, it must declare `export const closedBook = true` ' +
-        '(see bench/lib/systems/closed-book.mjs).',
+        'on an ANSWERABLE question but is not declared closed-book. A grounded system ' +
+        'with nothing to say where an answer exists is a broken run, not a closed-book ' +
+        'answer — if this system IS the contamination control, it must declare ' +
+        '`export const closedBook = true` (see bench/lib/systems/closed-book.mjs). ' +
+        'On a trap question an empty payload is allowed: there is nothing to find.',
     );
   }
 
