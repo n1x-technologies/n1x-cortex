@@ -294,8 +294,14 @@ if (args.gate !== undefined) {
   // Cortex's semanticQueryRanking swallows the embedder's throw and falls
   // back to lexical-only retrieval with no error and (on this fixture) no
   // recall drop either. Catch the stale cache directly, not its symptom.
+  // Both halves of the cache: the question vectors AND the naive-rag chunk
+  // passage vectors that live in the same file.
   const cacheFailures = usingFixtures
-    ? checkCacheCompleteness(questions, resolve(here, 'fixtures/query-vectors.json'))
+    ? checkCacheCompleteness(
+        questions,
+        resolve(here, 'fixtures/query-vectors.json'),
+        (await import('./lib/systems/naive-rag.mjs')).buildChunks(vaultDir).map(c => c.text),
+      )
     : [];
 
   const baseline = JSON.parse(readFileSync(baselinePath, 'utf8'));

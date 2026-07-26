@@ -495,4 +495,41 @@ describe('checkCacheCompleteness', () => {
     const failures = checkCacheCompleteness(questions, p);
     expect(failures.length).toBe(2);
   });
+
+  // The same file holds a `passage: ` vector per naive-rag chunk, and the
+  // check covered only the question half while its docstring claimed
+  // completeness. A missing chunk vector does fail loudly today — the embedder
+  // throws and the errors check catches it — but "something else happens to
+  // catch it" is how a guard ends up inert when that something else changes.
+  const chunks = ['chunk one body', 'chunk two body'];
+
+  it('also checks the chunk passage vectors that share the file', () => {
+    const p = writeCache({
+      'What is the house target development time ratio?': [1, 0, 0],
+      'At what temperature does first crack occur?': [0, 1, 0],
+      'passage: chunk one body': [0, 0, 1],
+      // 'chunk two body' deliberately absent
+    });
+    const failures = checkCacheCompleteness(questions, p, chunks);
+    expect(failures).toHaveLength(1);
+    expect(failures[0]).toMatch(/chunk 1: no cached passage vector/);
+    expect(failures[0]).toMatch(/build-fixture-embeddings\.mjs/);
+  });
+
+  it('passes when both halves are present', () => {
+    const p = writeCache({
+      'What is the house target development time ratio?': [1, 0, 0],
+      'At what temperature does first crack occur?': [0, 1, 0],
+      'passage: chunk one body': [0, 0, 1],
+      'passage: chunk two body': [1, 1, 0],
+    });
+    expect(checkCacheCompleteness(questions, p, chunks)).toEqual([]);
+  });
+
+  it('still checks the question half when no chunks are supplied', () => {
+    // The chunk list is optional so a caller without a vault handy gets half a
+    // check rather than none — but the half it gets must still be a check.
+    const p = writeCache({ 'What is the house target development time ratio?': [1, 0, 0] });
+    expect(checkCacheCompleteness(questions, p)).toHaveLength(1);
+  });
 });
