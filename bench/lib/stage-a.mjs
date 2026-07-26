@@ -9,7 +9,7 @@ export async function runStageA({ systems, questions, ctx }) {
   const perSystem = {};
 
   for (const system of systems) {
-    const recalls = [], rrs = [], ndcgs = [], tokens = [], latencies = [];
+    const recalls = [], rrs = [], ndcgs = [], nearMissRecalls = [], tokens = [], latencies = [];
     const errors = [];
 
     // A system declares `export const ranks = false` (e.g. full-context.mjs)
@@ -28,9 +28,24 @@ export async function runStageA({ systems, questions, ctx }) {
         continue;
       }
       if (ranksRetrieval) {
-        recalls.push(recallAtK(r.citedPaths, q.goldPaths, 5));
-        rrs.push(reciprocalRank(r.citedPaths, q.goldPaths, 10));
-        ndcgs.push(ndcgAtK(r.citedPaths, q.goldPaths, 10));
+        // Same default as dataset.mjs's loader: a question that does not
+        // declare itself a trap is answerable. Applying it here too is not
+        // inferring membership — it is the one documented default, restated
+        // so a question object built inline (every test fixture predating
+        // traps) is not misread as a trap and fed an undefined nearMissPaths.
+        if (q.answerable !== false) {
+          recalls.push(recallAtK(r.citedPaths, q.goldPaths, 5));
+          rrs.push(reciprocalRank(r.citedPaths, q.goldPaths, 10));
+          ndcgs.push(ndcgAtK(r.citedPaths, q.goldPaths, 10));
+        } else {
+          // A trap has no gold document — the retriever is not wrong to return
+          // the topically relevant notes, the fact simply is not in any of
+          // them. What IS measurable is whether the system was tempted at all:
+          // a system that never retrieved a near-miss note and then declined
+          // to answer looks identical to one that resisted temptation, and
+          // only this number tells them apart.
+          nearMissRecalls.push(recallAtK(r.citedPaths, q.nearMissPaths, 5));
+        }
       }
       tokens.push(countTokens(r.promptPayload) + r.retrievalTokens);
       latencies.push(r.latencyMs);
@@ -38,17 +53,26 @@ export async function runStageA({ systems, questions, ctx }) {
 
     perSystem[system.name] = {
       name: system.name,
-      // null means "not applicable" for a declared non-ranking system — it
-      // must never be coerced to 0 downstream (same rule as Task 14's null
-      // medianTokens): 0 would read as "measured zero relevance", which is
-      // not what a non-ranking system's absence of a ranking means.
-      recallAt5: ranksRetrieval ? round(mean(recalls)) : null,
-      mrr: ranksRetrieval ? round(mean(rrs)) : null,
-      ndcgAt10: ranksRetrieval ? round(mean(ndcgs)) : null,
+      // null means "not applicable", and it covers TWO distinct absences: the
+      // system declared it does not rank, or the dataset contained no question
+      // of that kind (no traps, or no answerable questions). Neither may be
+      // coerced to 0 downstream — 0 reads as "measured zero relevance", and a
+      // trap-free dataset publishing "0" for near-miss recall would read as a
+      // result rather than as an absence of data.
+      recallAt5: ranksRetrieval && recalls.length ? round(mean(recalls)) : null,
+      mrr: ranksRetrieval && rrs.length ? round(mean(rrs)) : null,
+      ndcgAt10: ranksRetrieval && ndcgs.length ? round(mean(ndcgs)) : null,
+      nearMissRecallAt5: ranksRetrieval && nearMissRecalls.length ? round(mean(nearMissRecalls)) : null,
       medianTokens: Math.round(percentile(tokens, 0.5)),
       p95Tokens: Math.round(percentile(tokens, 0.95)),
       medianLatencyMs: Math.round(percentile(latencies, 0.5)),
       p95LatencyMs: Math.round(percentile(latencies, 0.95)),
+      // Every rate is published next to its n. Three separate denominators,
+      // because the three metric families are computed over three different
+      // subsets of the run.
+      scoredRanking: recalls.length,
+      scoredNearMiss: nearMissRecalls.length,
+      scoredCost: tokens.length,
       errors,
     };
   }

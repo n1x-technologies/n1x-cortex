@@ -112,4 +112,81 @@ describe('runStageA', () => {
     expect(Object.keys(r.perSystem).sort()).toEqual(['perfect', 'useless']);
     expect(r.questionCount).toBe(2);
   });
+
+  // A trap question is one the corpus does not answer (dataset.mjs's
+  // `answerable: false`). It has no gold document, so ordinal retrieval
+  // metrics have no defined value for it — but its token and latency cost is
+  // real. nearMissRecallAt5 measures whether the system retrieved the
+  // tempting-but-insufficient notes at all, which is the only thing that
+  // separates "resisted temptation" from "was never tempted".
+  const answerableQ = (id, gold) => ({
+    id, question: `Q${id}`, goldPaths: [gold], goldAnswer: 'A',
+    sourceUrl: null, answerable: true, nearMissPaths: [],
+  });
+  const trapQ = (id, near) => ({
+    id, question: `T${id}`, goldPaths: [], goldAnswer: null,
+    sourceUrl: null, answerable: false, nearMissPaths: [near],
+  });
+
+  it('excludes trap questions from ranking metrics but counts them for cost', async () => {
+    // Cites the near-miss note on every question. On the answerable question
+    // that is a miss (gold is a different note); on the trap it is a hit.
+    const sys = {
+      name: 's',
+      async run() {
+        return { promptPayload: 'hello world', citedPaths: ['b.md'], latencyMs: 5, retrievalTokens: 0 };
+      },
+    };
+    const r = await runStageA({
+      systems: [sys],
+      questions: [answerableQ('a1', 'a.md'), trapQ('t1', 'b.md')],
+      ctx: {},
+    });
+    const s = r.perSystem.s;
+    expect(s.recallAt5).toBe(0);          // one answerable question, gold not cited
+    expect(s.nearMissRecallAt5).toBe(1);  // one trap, near-miss note cited
+    expect(s.scoredRanking).toBe(1);
+    expect(s.scoredNearMiss).toBe(1);
+    expect(s.scoredCost).toBe(2);         // cost counts BOTH questions
+  });
+
+  it('reports nearMissRecallAt5 as null when the dataset has no traps', async () => {
+    const sys = {
+      name: 's',
+      async run() {
+        return { promptPayload: 'x', citedPaths: ['a.md'], latencyMs: 1, retrievalTokens: 0 };
+      },
+    };
+    const r = await runStageA({ systems: [sys], questions: [answerableQ('a1', 'a.md')], ctx: {} });
+    expect(r.perSystem.s.nearMissRecallAt5).toBeNull();
+    expect(r.perSystem.s.scoredNearMiss).toBe(0);
+  });
+
+  it('reports every ranking metric as null for a declared non-ranking system, traps included', async () => {
+    const sys = {
+      name: 'nr',
+      ranks: false,
+      async run() {
+        return { promptPayload: 'x', citedPaths: ['a.md', 'b.md'], latencyMs: 1, retrievalTokens: 0 };
+      },
+    };
+    const r = await runStageA({
+      systems: [sys],
+      questions: [answerableQ('a1', 'a.md'), trapQ('t1', 'b.md')],
+      ctx: {},
+    });
+    const s = r.perSystem.nr;
+    expect(s.recallAt5).toBeNull();
+    expect(s.nearMissRecallAt5).toBeNull();
+    expect(s.medianTokens).toBeGreaterThan(0); // cost is still measured
+  });
+
+  it('treats a question with no `answerable` field as answerable, like loadDataset does', async () => {
+    // The pre-existing fixtures above omit the field entirely. Misreading them
+    // as traps would call recallAtK with an undefined nearMissPaths and crash
+    // the run, so the default is load-bearing rather than cosmetic.
+    const r = await runStageA({ systems: [perfect], questions, ctx: {} });
+    expect(r.perSystem.perfect.scoredRanking).toBe(2);
+    expect(r.perSystem.perfect.scoredNearMiss).toBe(0);
+  });
 });
