@@ -40,7 +40,7 @@ Imagine your knowledge base is **300 pages**. To answer one question, most setup
 
 - **Retrieval instead of a full dump.** Answers are built from cited, retrieved excerpts, not the whole vault, so per-question cost doesn't scale with corpus size the way "read everything" does.
 - **Cited, not paraphrased.** Every answer points to the exact source note it came from, quoted word-for-word.
-- **Measured, not asserted.** A reproducible benchmark suite compares Cortex against baselines built to be hard to beat (whole-context, a grep-based agent, a cost-matched fixed-chunk RAG), using a real BPE tokenizer instead of a character-count estimate. It currently reports results only on a small CI regression fixture, not a public-corpus comparison — see [`bench/README.md`](bench/README.md) for the method, the current numbers, and exactly what they do and don't show.
+- **Measured, not asserted.** A reproducible benchmark suite compares Cortex against baselines built to be hard to beat (whole-context, a grep-based agent, a cost-matched fixed-chunk RAG), using a real BPE tokenizer instead of a character-count estimate. Both stages now run end to end — retrieval cost offline, and judged answer quality against a live model whose judge was validated at 94.7% agreement with a human labeller. It still reports on a small CI regression fixture, which saturates: every system scores identically there, so it compares nothing and no cross-system claim is drawn from it. The public corpus that could is fetchable but its question set is not written yet. See [`bench/README.md`](bench/README.md) for the method, the current numbers, and exactly what they do and don't show.
 
 ## Why it clicks
 
