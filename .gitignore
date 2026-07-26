@@ -33,3 +33,8 @@ node_modules/
 bench/out/
 bench/fixtures/ci-vault/.cortex/models/
 bench/fixtures/ci-vault/.cortex/backups/
+
+# Public benchmark corpus — fetched, never vendored. 398 files of CC BY 4.0
+# documentation belonging to someone else; bench/scripts/fetch-public-corpus.mjs
+# pins the commit, which gives reproducibility without redistribution.
+bench/corpora/
