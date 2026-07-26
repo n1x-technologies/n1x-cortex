@@ -103,6 +103,46 @@ describe('renderSpotCheck', () => {
     expect(md).not.toMatch(/\*\*Gold answer:\*\* *(undefined|null)/);
   });
 
+  // Every real trap in bench/fixtures/ci-questions.jsonl names TWO near-miss
+  // notes. A fixture with one cannot tell `join(', ')` from `[0]`, so the human
+  // could be shown half the evidence the file promises them.
+  it('renders every near-miss note, not just the first', () => {
+    const twoNotes = [
+      { id: 'tC', question: 'Trap C', goldPaths: [], goldAnswer: null, sourceUrl: null,
+        answerable: false, nearMissPaths: ['notes/drum-temperature.md', 'notes/grind-size.md'] },
+    ];
+    const res = { perSystem: { cortex: { name: 'cortex', records: [
+      { id: 'tC', answerable: false, verdict: 'invented', candidate: 'About 50.', tokens: 10 },
+    ] } } };
+    const md = renderSpotCheck(res, twoNotes, 30);
+    expect(md).toMatch(/notes\/drum-temperature\.md/);
+    expect(md).toMatch(/notes\/grind-size\.md/);
+  });
+
+  it('samples a record whose verdict is outside the five known classes', () => {
+    // An unrecognised label is the most interesting thing a human could be
+    // shown. Bucketing only the known five dropped it from the sample silently.
+    const res = { perSystem: { cortex: { name: 'cortex', records: [
+      { id: 'q1', answerable: true, verdict: 'bewildered', candidate: 'Hmm.', tokens: 10 },
+    ] } } };
+    const md = renderSpotCheck(res, questions, 30);
+    expect(md).toMatch(/### q1/);
+    expect(md).toMatch(/judge: `bewildered`/);
+  });
+
+  it('names the systems it has when asked for one that did not run', () => {
+    expect(() => renderSpotCheck(withTraps, trapQuestions, 30, 'grep-agent'))
+      .toThrow(/no system named "grep-agent".*have: cortex/s);
+  });
+
+  it('reports a results/questions mismatch instead of throwing a TypeError', () => {
+    const res = { perSystem: { cortex: { name: 'cortex', records: [
+      { id: 'ghost', answerable: true, verdict: 'correct', candidate: 'x', tokens: 1 },
+    ] } } };
+    expect(() => renderSpotCheck(res, questions, 30))
+      .toThrow(/record "ghost".*different runs/s);
+  });
+
   it('stratifies across the trap verdicts as well as the answerable ones', () => {
     const md = renderSpotCheck(withTraps, trapQuestions, 5);
     expect(md).toMatch(/judge: `declined`/);

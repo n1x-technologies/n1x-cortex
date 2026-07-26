@@ -50,6 +50,19 @@ export async function runStageA({ systems, questions, ctx }) {
           // system was tempted. Averaging per-trap coverage instead would
           // answer a question nobody asked and would move with the number of
           // near-miss paths an author happened to list. See hitAtK.
+          //
+          // loadDataset rejects a trap without nearMissPaths, but a question
+          // object built inline (every test fixture, any future --questions
+          // adapter) bypasses it, and an undefined here used to escape as a
+          // bare TypeError from inside metrics.mjs — naming neither the
+          // question nor the field. This is a malformed dataset rather than a
+          // system failure, so it still stops the run; it just says why.
+          if (!Array.isArray(q.nearMissPaths)) {
+            throw new Error(
+              `question "${q.id}" is declared a trap (answerable: false) but has no ` +
+                'nearMissPaths array — a trap must name the notes that make it a near miss',
+            );
+          }
           nearMissHits.push(hitAtK(r.citedPaths, q.nearMissPaths, 5));
         }
       }

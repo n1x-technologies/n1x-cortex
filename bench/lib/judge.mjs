@@ -3,9 +3,24 @@
 // because fabrication rate (incorrect AND not abstained) is the metric the
 // grounding claim rests on.
 //
-// Abstention is detected locally rather than delegated to the judge: it is a
-// closed set of phrasings fixed by the answering prompt, and spending a model
-// call on it would add noise to a deterministic decision.
+// On the ANSWERABLE path, abstention is detected locally rather than delegated
+// to the judge, on the theory that it is a closed set of phrasings fixed by the
+// answering prompt. That theory has two known holes, and this comment used to
+// assert it without them while the trap-path comment 70 lines below argued the
+// opposite — a reader could not tell which governed.
+//
+//   1. The set is not closed for every system. grep-agent's output is a ReAct
+//      loop, not a single prompt-constrained completion.
+//   2. ABSTENTION is ^-anchored, so a MIXED answer — one that declines in its
+//      first clause and then supplies a figure anyway — matches the prefix and
+//      is recorded as a clean abstention, leaving the fabricationRate
+//      numerator. That is not a conservative bias: it DEFLATES the headline
+//      metric, and it is why the trap path below deliberately does not reuse
+//      this regex.
+//
+// Hole 2 predates trap questions (it arrived with the two-stage engine) and is
+// being fixed separately against main. No Stage B fabricationRate or
+// accuracyUncontaminated figure is publishable until that lands.
 
 export const JUDGE_SYSTEM =
   'You grade a candidate answer against a known-correct gold answer. ' +
@@ -28,6 +43,20 @@ const ABSTENTION = new RegExp(
 );
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/**
+ * `?? 3` protects undefined but not an explicit 0, which skipped the loop
+ * entirely and threw "could not parse a verdict after 0 attempts" without ever
+ * calling the model — a confusing way to say "you asked for no attempts".
+ * validateSubsample in stage-b.mjs rejects a 0 explicitly for the same reason.
+ */
+function resolveRetries(v) {
+  if (v === undefined) return 3;
+  if (!Number.isInteger(v) || v < 1) {
+    throw new Error(`retries must be a positive integer, got ${JSON.stringify(v)}`);
+  }
+  return v;
+}
 
 // Both prompts ask for exactly one word, and both parsers scan for the label
 // anywhere in the reply so a judge that adds a sentence still parses. That
@@ -61,7 +90,7 @@ export function parseVerdict(raw) {
  * @returns {Promise<'correct'|'incorrect'|'abstained'>}
  */
 export async function judge(llm, item, opts = {}) {
-  const retries = opts.retries ?? 3;
+  const retries = resolveRetries(opts.retries);
   const backoffMs = opts.backoffMs ?? 1000;
 
   if (ABSTENTION.test(item.candidate.trim())) return 'abstained';
@@ -130,7 +159,7 @@ export function parseTrapVerdict(raw) {
  * @returns {Promise<'invented'|'declined'>}
  */
 export async function judgeTrap(llm, item, opts = {}) {
-  const retries = opts.retries ?? 3;
+  const retries = resolveRetries(opts.retries);
   const backoffMs = opts.backoffMs ?? 1000;
 
   const user =
