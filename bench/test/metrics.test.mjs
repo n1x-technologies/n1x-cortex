@@ -1,5 +1,37 @@
 import { describe, it, expect } from 'vitest';
-import { recallAtK, reciprocalRank, ndcgAtK, percentile, mean } from '../lib/metrics.mjs';
+import { recallAtK, hitAtK, reciprocalRank, ndcgAtK, percentile, mean } from '../lib/metrics.mjs';
+
+// This module's header says it is separately tested because a silent bug here
+// corrupts every published number without failing anything. hitAtK shipped
+// with no unit test at all — its coverage was indirect, through stage-a, and
+// pinned only the exclusion side. `slice(0, k)` -> `slice(0, k - 1)` passed
+// the whole suite and the gate.
+describe('hitAtK', () => {
+  it('is 1 when any target is in the top k, whatever the coverage', () => {
+    expect(hitAtK(['a', 'b', 'c'], ['b'], 5)).toBe(1);
+    expect(hitAtK(['a', 'b', 'c'], ['b', 'z'], 5)).toBe(1);      // 1 of 2 == 1
+    expect(hitAtK(['a', 'b', 'c'], ['b', 'c'], 5)).toBe(1);      // 2 of 2 == 1
+  });
+
+  it('is 0 when no target is in the top k', () => {
+    expect(hitAtK(['a', 'b'], ['z'], 5)).toBe(0);
+  });
+
+  it('includes rank exactly k and excludes rank k+1', () => {
+    // The boundary the indirect coverage never pinned.
+    expect(hitAtK(['1', '2', '3', '4', 'x'], ['x'], 5)).toBe(1);
+    expect(hitAtK(['1', '2', '3', '4', '5', 'x'], ['x'], 5)).toBe(0);
+  });
+
+  it('treats an empty target set as 0, like recallAtK', () => {
+    expect(hitAtK(['a'], [], 5)).toBe(0);
+  });
+
+  it('consumes the k window the same way duplicates do in recallAtK', () => {
+    // Duplicates occupy ranks; they do not extend the window.
+    expect(hitAtK(['a', 'a', 'a', 'a', 'a', 'x'], ['x'], 5)).toBe(0);
+  });
+});
 
 describe('recallAtK', () => {
   it('is 1 when the only gold doc is in the top k', () => {

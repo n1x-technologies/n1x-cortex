@@ -24,8 +24,12 @@ __pycache__/
 docs/superpowers/
 .superpowers/
 
+# Dependency and tool caches, anywhere. `bench/node_modules/` alone left the
+# repo root uncovered, and running a test runner from the root creates one
+# there (a bare `.vite` cache) — untracked, easy to commit by accident.
+node_modules/
+
 # Bench build artifacts
-bench/node_modules/
 bench/out/
 bench/fixtures/ci-vault/.cortex/models/
 bench/fixtures/ci-vault/.cortex/backups/

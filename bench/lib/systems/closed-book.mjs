@@ -13,6 +13,13 @@ export const name = 'closed-book';
 // answer() so the closed-book prompt is chosen explicitly.
 export const closedBook = true;
 
+// It retrieves nothing, so it ranks nothing. Without this, an explicit
+// `--systems closed-book --stage a` published recall@5 0.000 and near-miss
+// 0.000 for a system with no retriever — fabricated data points that read as
+// "measured zero relevance" rather than "not applicable". The default Stage A
+// system list excludes it, so only an explicit invocation ever hit this.
+export const ranks = false;
+
 export async function run() {
   return { promptPayload: '', citedPaths: [], latencyMs: 0, retrievalTokens: 0 };
 }

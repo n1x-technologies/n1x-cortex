@@ -14,15 +14,33 @@
 // text below say so explicitly so the caveat survives being read out of
 // context (e.g. pasted into a report without the surrounding markdown).
 
-const VERDICTS = ['correct', 'incorrect', 'abstained'];
+// Five strata, not three. Without the two trap verdicts a 30-item sample is
+// drawn entirely from the answerable side, and the trap judge — the newer and
+// less validated of the two judge paths — would never be checked by a human.
+const VERDICTS = ['correct', 'incorrect', 'abstained', 'declined', 'invented'];
 
 export function renderSpotCheck(results, questions, sampleSize = 30, systemName) {
   const byId = new Map(questions.map(q => [q.id, q]));
   const name = systemName ?? Object.keys(results.perSystem)[0];
-  const records = results.perSystem[name].records;
+  const system = results.perSystem[name];
+  if (!system) {
+    throw new Error(
+      `renderSpotCheck: no system named "${name}" in this run ` +
+        `(have: ${Object.keys(results.perSystem).join(', ') || 'none'})`,
+    );
+  }
+  const records = system.records;
 
-  // Round-robin across verdict classes so every class is represented.
-  const buckets = VERDICTS.map(v => records.filter(r => r.verdict === v));
+  // Round-robin across verdict classes so every class is represented. A verdict
+  // outside the five known classes gets its own bucket rather than being
+  // dropped: an unrecognised label is the single most interesting thing a human
+  // could be shown, and silently excluding it from the sample would hide the
+  // one case where the judge did something nobody anticipated.
+  const known = new Set(VERDICTS);
+  const buckets = [
+    ...VERDICTS.map(v => records.filter(r => r.verdict === v)),
+    records.filter(r => !known.has(r.verdict)),
+  ];
   const picked = [];
   for (let i = 0; picked.length < Math.min(sampleSize, records.length); i++) {
     let progressed = false;
@@ -41,19 +59,36 @@ export function renderSpotCheck(results, questions, sampleSize = 30, systemName)
     `${picked.length} of ${records.length} records, stratified across verdict classes.`,
     `Judge-human agreement computed from this file measures the \`${name}\` system's ` +
       'records only — it does not represent judge quality on any other system in the run.',
-    'Fill in each `human:` line with correct / incorrect / abstained, then compute agreement.',
+    'Fill in each `human:` line with correct / incorrect / abstained for an answerable ' +
+      'question, or declined / invented for a trap, then compute agreement.',
     '',
   ];
 
   for (const rec of picked) {
     const q = byId.get(rec.id);
+    if (!q) {
+      throw new Error(
+        `renderSpotCheck: record "${rec.id}" from system "${name}" has no matching ` +
+          'question — the results and the question set are from different runs',
+      );
+    }
+    const isTrap = q.answerable === false;
     lines.push(
       `### ${rec.id}`,
       '',
       `**Question:** ${q.question}`,
-      `**Gold answer:** ${q.goldAnswer}`,
+      // A trap has no gold answer. Showing the near-miss notes instead is not
+      // a cosmetic swap: the question looks answerable, and those notes are
+      // what the system was actually shown, so they are the only basis on
+      // which a human can judge whether declining was the right call.
+      isTrap
+        ? `**Near-miss notes:** ${q.nearMissPaths.join(', ')}`
+        : `**Gold answer:** ${q.goldAnswer}`,
       `**Candidate:** ${rec.candidate}`,
       '',
+      ...(isTrap
+        ? ['_Trap: the corpus does not answer this. Declining is correct; supplying a specific answer is an invention._', '']
+        : []),
       `judge: \`${rec.verdict}\``,
       'human: ______',
       '',
