@@ -72,6 +72,29 @@ const { stageA: stageANames, stageB: stageBNames } = selectSystemNames({
   stage,
   requested: args.systems ? args.systems.split(',') : undefined,
 });
+
+// Build the Stage B clients BEFORE Stage A runs, purely so a bad --model or a
+// missing API key fails now rather than after the work.
+//
+// They used to be constructed inside the `stage === 'ab'` block below, so
+// `--stage ab` with no ANTHROPIC_API_KEY did the whole of Stage A and then died
+// on `Missing ANTHROPIC_API_KEY`. On the fixture that costs two seconds. On a
+// real corpus Stage A downloads an embedding model and embeds the entire vault
+// first — minutes of work thrown away over an unset environment variable, and
+// the error arrives far enough from the cause to look unrelated.
+//
+// Constructing a client makes no network call; it only parses the spec and
+// reads the key.
+let llm, judgeLlm;
+if (stage === 'ab') {
+  if (!args.model) {
+    console.error('Stage B needs --model provider:model (e.g. --model anthropic:claude-sonnet-5)');
+    process.exit(1);
+  }
+  const { makeLlm } = await import('./lib/llm.mjs');
+  llm = makeLlm(args.model, args['base-url']);
+  judgeLlm = makeLlm(args['judge-model'] || args.model, args['base-url']);
+}
 const stageASystems = await Promise.all(
   stageANames.map(n => import(`./lib/systems/${n}.mjs`)),
 );
@@ -130,21 +153,13 @@ if (Object.values(results.perSystem).some(s => s.scoredNearMiss > 0)) {
 console.log(`\n${results.questionCount} questions · wrote ${join(outDir, 'results.json')}`);
 
 if (stage === 'ab') {
-  const { makeLlm } = await import('./lib/llm.mjs');
   const { runStageB } = await import('./lib/stage-b.mjs');
   const { renderSpotCheck } = await import('./lib/spot-check.mjs');
 
-  if (!args.model) {
-    console.error('Stage B needs --model provider:model (e.g. --model anthropic:claude-sonnet-5)');
-    process.exit(1);
-  }
-
+  // llm and judgeLlm were built before Stage A — see the note up there.
   const stageBSystems = await Promise.all(
     stageBNames.map(n => import(`./lib/systems/${n}.mjs`)),
   );
-
-  const llm = makeLlm(args.model, args['base-url']);
-  const judgeLlm = makeLlm(args['judge-model'] || args.model, args['base-url']);
 
   // full-context sends the entire corpus per question, so on a real corpus it
   // dominates the run's cost. It answers a subsample; the size is recorded in
