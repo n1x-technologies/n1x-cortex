@@ -61,13 +61,16 @@ export async function runStageB({ systems, questions, ctx, llm, judgeLlm, subsam
     for (const q of asked) {
       try {
         const r = await system.run(q.question, ctx);
-        const candidate = await answer(llm, q.question, r.promptPayload, {
-          isClosedBook: !!system.closedBook,
-          systemName: system.name,
-        });
         // Same default as dataset.mjs's loader, restated so a question object
         // built inline is not misread as a trap.
         const answerable = q.answerable !== false;
+        const candidate = await answer(llm, q.question, r.promptPayload, {
+          isClosedBook: !!system.closedBook,
+          systemName: system.name,
+          // A trap has nothing to find, so an empty payload is a result there,
+          // not a broken run. See answer.mjs.
+          answerable,
+        });
         const verdict = answerable
           ? await judge(judgeLlm, {
               question: q.question,
