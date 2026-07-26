@@ -3,29 +3,41 @@
 // because fabrication rate (incorrect AND not abstained) is the metric the
 // grounding claim rests on.
 //
-// Abstention is detected locally rather than delegated to the judge: it is a
-// closed set of phrasings fixed by the answering prompt, and spending a model
-// call on it would add noise to a deterministic decision.
+// Abstention is decided by the judge, not by a local pattern.
+//
+// It used to be a ^-anchored regex over a closed list of phrasings, on the
+// argument that the answering prompt fixes those phrasings and a model call
+// would add noise to a deterministic decision. The premise does not hold, and
+// the failure is not symmetric.
+//
+// Because the regex is anchored to the PREFIX, a mixed answer — one that
+// declines in its first clause and then supplies a figure anyway — matches and
+// is recorded as a clean abstention, with zero model calls. `"I don't know. It
+// is 42."` is scored `abstained`, leaves the fabricationRate numerator
+// entirely, and a system that answers that way to every question fabricates on
+// 100% of them while publishing `fabricate 0.000`.
+//
+// That also corrupts the contamination control: a `closed-book` answer that
+// prefixes a decline is never graded `correct`, so a question the model
+// provably knew from pretraining counts as uncontaminated, and
+// accuracyUncontaminated can read 1.000 over a fully contaminated set.
+//
+// A judge that reads the whole answer is the only thing that can tell a
+// refusal from a refusal-shaped preamble, so the third label moves into the
+// prompt with the mixed case named explicitly. The cost is one model call per
+// abstention that previously short-circuited, which is a minority of any run
+// and cheap next to publishing a fabrication rate that is wrong in the
+// flattering direction.
 
 export const JUDGE_SYSTEM =
   'You grade a candidate answer against a known-correct gold answer. ' +
   'Reply with exactly one word: CORRECT if the candidate conveys the same fact ' +
-  'as the gold answer (wording, rounding and extra detail may differ), or ' +
-  'INCORRECT if it conveys a different or contradictory fact. Reply with the ' +
-  'single word only.';
-
-// Apostrophes are written as escapes, not literals: models emit U+2019 (right
-// single quotation mark) and U+02BC (modifier letter apostrophe) regardless of
-// the prompt asking for a plain `I don't know.`, and a literal class is too easy
-// to get wrong by eye. A missed abstention is graded `incorrect` and inflates
-// fabrication rate — the headline metric — so this class is load-bearing.
-const APOS = '[\\u0027\\u2019\\u02bc]?';
-const ABSTENTION = new RegExp(
-  `^\\s*(i don${APOS}t know|i do not know|unknown|not sure|no information|` +
-    `the context (does not|doesn${APOS}t) (contain|include|provide)|` +
-    `cannot determine|unable to determine)`,
-  'i',
-);
+  'as the gold answer (wording, rounding and extra detail may differ), ' +
+  'INCORRECT if it conveys a different or contradictory fact, or ' +
+  'ABSTAINED if the candidate declines to answer — saying it does not know, or ' +
+  'that the context does not contain the information. If the candidate declines ' +
+  'AND THEN still supplies a specific answer, that is NOT an abstention: grade ' +
+  'the answer it gave, CORRECT or INCORRECT. Reply with the single word only.';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -50,13 +62,11 @@ export async function judge(llm, item, opts = {}) {
   const retries = opts.retries ?? 3;
   const backoffMs = opts.backoffMs ?? 1000;
 
-  if (ABSTENTION.test(item.candidate.trim())) return 'abstained';
-
   const user =
     `Question: ${item.question}\n` +
     `Gold answer: ${item.goldAnswer}\n` +
     `Candidate answer: ${item.candidate}\n\n` +
-    `Is the candidate CORRECT or INCORRECT?`;
+    `Is the candidate CORRECT, INCORRECT, or ABSTAINED?`;
 
   let last = '';
   for (let attempt = 0; attempt < retries; attempt++) {

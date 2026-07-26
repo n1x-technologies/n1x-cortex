@@ -26,19 +26,55 @@ describe('judge', () => {
     expect(await judge(stub('CORRECT'), { question: 'Q', goldAnswer: 'A', candidate: 'A' })).toBe('correct');
   });
 
-  it('short-circuits an explicit abstention without calling the model', async () => {
-    let called = false;
-    const llm = { async complete() { called = true; return 'CORRECT'; } };
-    const v = await judge(llm, { question: 'Q', goldAnswer: 'A', candidate: "I don't know." });
-    expect(v).toBe('abstained');
-    expect(called).toBe(false);
+  it('returns abstained when the judge says so', async () => {
+    expect(await judge(stub('ABSTAINED'), { question: 'Q', goldAnswer: 'A', candidate: "I don't know." }))
+      .toBe('abstained');
   });
 
-  it('recognises abstention phrasings', async () => {
-    const llm = stub('CORRECT');
-    for (const c of ["I don't know", 'I do not know.', 'The context does not contain the answer.']) {
-      expect(await judge(llm, { question: 'Q', goldAnswer: 'A', candidate: c })).toBe('abstained');
+  // THE case this change exists for. The local pattern was ^-anchored, so a
+  // reply that declines and then answers anyway matched the prefix and was
+  // recorded as a clean abstention with no model call — leaving the
+  // fabricationRate numerator entirely. A system answering this way to every
+  // question fabricates on 100% of them and publishes `fabricate 0.000`.
+  it('sends a mixed decline-then-answer to the judge rather than scoring it abstained', async () => {
+    for (const candidate of [
+      "I don't know. It is 42.",
+      'The context does not contain the drum RPM, but a typical drum runs 40-60.',
+      'Unknown. However the charge temperature is 205 C.',
+      'Cannot determine from the context. It is 84.',
+    ]) {
+      let calls = 0;
+      let seen = '';
+      const llm = { async complete(_s, user) { calls++; seen = user; return 'INCORRECT'; } };
+      const v = await judge(llm, { question: 'Q', goldAnswer: 'A', candidate });
+      expect(v, candidate).toBe('incorrect');
+      expect(calls, candidate).toBe(1);
+      // ...and the judge was shown the clause that matters, not just the hedge.
+      expect(seen).toContain(candidate);
     }
+  });
+
+  it('always consults the model, whatever the candidate looks like', async () => {
+    // No candidate shape short-circuits any more. A local pattern cannot tell a
+    // refusal from a refusal-shaped preamble, which is the whole defect.
+    for (const candidate of ["I don't know.", "I don’t know.", 'I dont know.',
+      'The context doesn’t contain the answer.', 'Unknown.', 'The answer is 196 C.']) {
+      let calls = 0;
+      const llm = { async complete() { calls++; return 'ABSTAINED'; } };
+      await judge(llm, { question: 'Q', goldAnswer: 'A', candidate });
+      expect(calls, candidate).toBe(1);
+    }
+  });
+
+  // The paraphrased refusal the old pattern could not see. It used to be graded
+  // `incorrect` and counted as a fabrication; the README documented that as a
+  // known one-directional bias. A judge reading the whole sentence gets it.
+  it('scores a paraphrased refusal as abstained, not as a fabrication', async () => {
+    const v = await judge(stub('ABSTAINED'), {
+      question: 'Q', goldAnswer: 'A',
+      candidate: "Based on the provided context, I don't know.",
+    });
+    expect(v).toBe('abstained');
   });
 
   it('passes question, gold answer and candidate to the model', async () => {
@@ -57,65 +93,6 @@ describe('judge', () => {
       judge(llm, { question: 'Q', goldAnswer: 'A', candidate: 'B' }, { retries: 2, backoffMs: 1 }),
     ).rejects.toThrow(/could not parse/i);
     expect(n).toBe(2);
-  });
-
-  it("recognises 'don't know.' (straight apostrophe U+0027) as abstention without calling model", async () => {
-    let called = false;
-    const llm = { async complete() { called = true; return 'CORRECT'; } };
-    const v = await judge(llm, { question: 'Q', goldAnswer: 'A', candidate: "I don't know." });
-    expect(v).toBe('abstained');
-    expect(called).toBe(false);
-  });
-
-  it("recognises 'don’t know.' (right single quotation mark U+2019) as abstention without calling model", async () => {
-    let called = false;
-    const llm = { async complete() { called = true; return 'CORRECT'; } };
-    const v = await judge(llm, { question: 'Q', goldAnswer: 'A', candidate: "I don’t know." });
-    expect(v).toBe('abstained');
-    expect(called).toBe(false);
-  });
-
-  it("recognises 'donʼt know.' (modifier letter apostrophe U+02BC) as abstention without calling model", async () => {
-    let called = false;
-    const llm = { async complete() { called = true; return 'CORRECT'; } };
-    const v = await judge(llm, { question: 'Q', goldAnswer: 'A', candidate: "I donʼt know." });
-    expect(v).toBe('abstained');
-    expect(called).toBe(false);
-  });
-
-  it("recognises 'dont know.' (no apostrophe) as abstention without calling model", async () => {
-    let called = false;
-    const llm = { async complete() { called = true; return 'CORRECT'; } };
-    const v = await judge(llm, { question: 'Q', goldAnswer: 'A', candidate: "I dont know." });
-    expect(v).toBe('abstained');
-    expect(called).toBe(false);
-  });
-
-  it("recognises 'doesn’t contain' (right single quotation mark U+2019) as abstention without calling model", async () => {
-    let called = false;
-    const llm = { async complete() { called = true; return 'CORRECT'; } };
-    const v = await judge(llm, { question: 'Q', goldAnswer: 'A', candidate: "The context doesn’t contain the answer." });
-    expect(v).toBe('abstained');
-    expect(called).toBe(false);
-  });
-
-  // FIX 7 (Important, honest-boundary disclosure): ABSTENTION is a
-  // ^-anchored regex over a fixed phrase list. A paraphrased refusal that
-  // doesn't start with one of those exact phrasings is NOT recognised
-  // locally and falls through to the judge model — where, absent a matching
-  // gold answer, it is graded 'incorrect' and counted in the
-  // fabrication-rate numerator. This pins that known limitation in the
-  // suite (bench/README.md's honest boundary states it in prose) rather
-  // than leaving it visible only in judge.mjs's module comment. This is a
-  // documented gap, NOT something to fix by widening the regex here.
-  it('does NOT recognise a paraphrased refusal as abstention (documented limitation, see README honest boundary)', async () => {
-    const llm = stub('INCORRECT');
-    const v = await judge(llm, {
-      question: 'Q',
-      goldAnswer: 'A',
-      candidate: "Based on the provided context, I don't know.",
-    });
-    expect(v).toBe('incorrect');
   });
 
   it('does not treat legitimate answers containing the word "know" as abstentions', async () => {
