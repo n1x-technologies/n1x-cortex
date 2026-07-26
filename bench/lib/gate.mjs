@@ -292,11 +292,23 @@ const fmtMix = m =>
  * (`fixture-embedder.mjs`'s `normalise`) so a `query: `/`passage: ` prefix on
  * either side of the comparison never produces a false failure.
  *
+ * Covers BOTH populations in the file. It used to check only the question
+ * vectors, while the same cache also holds one `passage: ` vector per naive-rag
+ * chunk — half the artifact, guarded by a docstring that claimed completeness.
+ * A missing chunk vector fails loudly today (`fixture-embedder.mjs` throws, the
+ * errors check catches it), so this was a coverage gap rather than a live hole;
+ * but "it happens to fail somewhere else" is exactly the reasoning that leaves
+ * a guard inert when the thing downstream changes.
+ *
+ * `chunkTexts` is optional so a caller with no vault handy still gets the
+ * question half, rather than the check silently becoming all-or-nothing.
+ *
  * @param {{id: string, question: string}[]} questions
  * @param {string} cachePath  JSON: { model, dim, vectors: { [text]: number[] } }
- * @returns {string[]} failure messages, one per question missing a cached vector
+ * @param {string[]} [chunkTexts]  naive-rag chunk bodies, cached as `passage: <text>`
+ * @returns {string[]} failure messages, one per missing vector
  */
-export function checkCacheCompleteness(questions, cachePath) {
+export function checkCacheCompleteness(questions, cachePath, chunkTexts = []) {
   const cache = JSON.parse(readFileSync(cachePath, 'utf8'));
   const cached = new Set(Object.keys(cache.vectors).map(normalise));
 
@@ -305,6 +317,14 @@ export function checkCacheCompleteness(questions, cachePath) {
     if (!cached.has(normalise(q.question))) {
       failures.push(
         `${q.id}: no cached query vector for "${q.question}" in ${cachePath}. ` +
+        `Re-run: node bench/scripts/build-fixture-embeddings.mjs`,
+      );
+    }
+  }
+  for (const [i, text] of chunkTexts.entries()) {
+    if (!cached.has(normalise(text))) {
+      failures.push(
+        `chunk ${i}: no cached passage vector for "${text.slice(0, 60)}..." in ${cachePath}. ` +
         `Re-run: node bench/scripts/build-fixture-embeddings.mjs`,
       );
     }
