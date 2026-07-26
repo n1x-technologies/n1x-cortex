@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { judge, parseVerdict } from '../lib/judge.mjs';
+import { judge, parseVerdict, judgeTrap, parseTrapVerdict } from '../lib/judge.mjs';
 
 describe('parseVerdict', () => {
   it('reads a bare label', () => {
@@ -126,5 +126,87 @@ describe('judge', () => {
     expect(v).toBe('correct');
     expect(called).toBe(true);
     expect(seenUser).toMatch(/196 C/);
+  });
+});
+
+// A trap question has no gold answer, so there is nothing to compare against.
+// The only thing worth grading is whether the candidate committed to a fact or
+// declined — and that is deliberately NOT the local ABSTENTION regex, which
+// misses paraphrased refusals and, worse, cannot see a candidate that declines
+// in its first clause and then supplies a figure anyway.
+describe('parseTrapVerdict', () => {
+  it('maps ASSERTED to invented', () => expect(parseTrapVerdict('ASSERTED')).toBe('invented'));
+  it('maps DECLINED to declined', () => expect(parseTrapVerdict('DECLINED')).toBe('declined'));
+  it('is case-insensitive and tolerates surrounding prose', () => {
+    expect(parseTrapVerdict('  The answer is declined.\n')).toBe('declined');
+  });
+  it('returns null on an unparseable reply', () => expect(parseTrapVerdict('maybe')).toBeNull());
+});
+
+describe('judgeTrap', () => {
+  const llmReturning = reply => ({
+    calls: 0,
+    lastUser: '',
+    lastSystem: '',
+    async complete(system, user) {
+      this.calls++; this.lastUser = user; this.lastSystem = system; return reply;
+    },
+  });
+
+  it('scores a plain refusal as declined', async () => {
+    const llm = llmReturning('DECLINED');
+    expect(await judgeTrap(llm, { question: 'Q', candidate: "I don't know." })).toBe('declined');
+  });
+
+  it('scores a paraphrased refusal the abstention regex would miss as declined', async () => {
+    const candidate = "Based on the provided context, I don't know.";
+    // Guard the premise: this phrasing is exactly what the anchored local
+    // regex cannot see, so the gold judge grades it as a wrong answer.
+    const goldJudge = { async complete() { return 'INCORRECT'; } };
+    expect(await judge(goldJudge, { question: 'Q', goldAnswer: 'A', candidate })).toBe('incorrect');
+    // The trap judge sees the whole sentence and reads it correctly.
+    expect(await judgeTrap(llmReturning('DECLINED'), { question: 'Q', candidate })).toBe('declined');
+  });
+
+  it('scores a mixed answer that declines and then asserts as invented', async () => {
+    const llm = llmReturning('ASSERTED');
+    const candidate = 'The notes do not specify the RPM, but a typical drum runs 40-60.';
+    expect(await judgeTrap(llm, { question: 'Q', candidate })).toBe('invented');
+  });
+
+  it('sends the question and candidate but no gold answer', async () => {
+    const llm = llmReturning('DECLINED');
+    await judgeTrap(llm, { question: 'What is the ideal drum RPM?', candidate: 'No idea.' });
+    expect(llm.lastUser).toMatch(/What is the ideal drum RPM\?/);
+    expect(llm.lastUser).toMatch(/No idea\./);
+    expect(llm.lastUser).not.toMatch(/[Gg]old/);
+  });
+
+  it('uses a different system prompt from the gold-anchored judge', async () => {
+    const llm = llmReturning('DECLINED');
+    await judgeTrap(llm, { question: 'Q', candidate: 'C' });
+    expect(llm.lastSystem).toMatch(/ASSERTED/);
+    expect(llm.lastSystem).not.toMatch(/gold/i);
+  });
+
+  // THE case the no-regex-fast-path decision exists for, and the one a
+  // sabotage check proved was otherwise untested: a mixed answer whose PREFIX
+  // matches the local ABSTENTION regex ("the context does not contain...")
+  // and which then supplies a figure anyway. A regex fast-path would return
+  // 'declined' here and hide the fabrication in the second clause. Only a
+  // judge that reads the whole sentence gets this right.
+  it('scores a mixed answer whose prefix matches the abstention regex as invented', async () => {
+    const llm = llmReturning('ASSERTED');
+    const candidate = 'The context does not contain the drum RPM, but a typical drum runs 40-60.';
+    expect(await judgeTrap(llm, { question: 'Q', candidate })).toBe('invented');
+    // Proves the model was consulted rather than short-circuited locally.
+    expect(llm.calls).toBe(1);
+  });
+
+  it('throws after exhausting retries on an unparseable verdict', async () => {
+    const llm = llmReturning('banana');
+    await expect(judgeTrap(llm, { question: 'Q', candidate: 'C' }, { retries: 2, backoffMs: 0 }))
+      .rejects.toThrow(/could not parse a trap verdict after 2 attempts/);
+    expect(llm.calls).toBe(2);
   });
 });
