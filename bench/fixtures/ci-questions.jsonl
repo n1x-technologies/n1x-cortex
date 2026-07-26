@@ -1,0 +1,15 @@
+{"id":"f1","question":"What is the house target development time ratio?","goldPaths":["notes/roast-profile.md"],"goldAnswer":"22%."}
+{"id":"f2","question":"At what temperature does first crack occur?","goldPaths":["notes/first-crack.md"],"goldAnswer":"Around 196 C."}
+{"id":"f3","question":"What is the standard charge temperature for a 12 kg batch?","goldPaths":["notes/drum-temperature.md"],"goldAnswer":"205 C."}
+{"id":"f4","question":"What moisture content must green coffee have on arrival?","goldPaths":["notes/green-storage.md"],"goldAnswer":"Between 10% and 12%."}
+{"id":"f5","question":"What cupping score qualifies as specialty?","goldPaths":["notes/cupping-protocol.md"],"goldAnswer":"84 or above on the 100-point scale."}
+{"id":"f6","question":"What grind size range is used for espresso?","goldPaths":["notes/grind-size.md"],"goldAnswer":"200 to 300 microns."}
+{"id":"f7","question":"What is the accepted extraction yield window?","goldPaths":["notes/extraction-yield.md"],"goldAnswer":"18% to 22%."}
+{"id":"f8","question":"What total dissolved solids does brew water target?","goldPaths":["notes/water-chemistry.md"],"goldAnswer":"150 ppm."}
+{"id":"f9","question":"What weight loss range is normal for a roast batch?","goldPaths":["notes/batch-logging.md"],"goldAnswer":"Between 14% and 17%."}
+{"id":"f10","question":"How many full defects per 300 g sample are acceptable?","goldPaths":["notes/defect-sorting.md"],"goldAnswer":"Fewer than five."}
+{"id":"f11","question":"How long is roasted coffee rested before shipping?","goldPaths":["notes/packaging.md"],"goldAnswer":"48 hours."}
+{"id":"f12","question":"How often is the chaff collector emptied?","goldPaths":["notes/equipment-maintenance.md"],"goldAnswer":"After every four batches."}
+{"id":"f13","question":"Which factor most directly controls extraction yield?","goldPaths":["notes/grind-size.md","notes/extraction-yield.md"],"goldAnswer":"Grind size."}
+{"id":"f14","question":"Why does a bag need a one-way valve?","goldPaths":["notes/packaging.md"],"goldAnswer":"Carbon dioxide released after roasting would otherwise inflate and burst the bag."}
+{"id":"f15","question":"What is the most common cause of roaster fires?","goldPaths":["notes/equipment-maintenance.md"],"goldAnswer":"Skipping chaff removal."}

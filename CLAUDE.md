@@ -20,7 +20,7 @@ Where to start: the engine and its commands are in `toolkit/`.
 | `templates/` | `typst/` (branded PDF templates used by `cortex doc`), `collaboration/` (git onboarding), and `readme/` (the README standard + template). |
 | `plugin/` | Claude Code plugin: `hooks.json` wires the SessionStart/Stop/PostToolUse/UserPromptSubmit/SessionEnd lifecycle to the `cortex-hook` shim, which fail-opens to `cortex hook <event>` (never blocks a session). |
 | `sync/` | `cortex-sync` — pull the shared templates into a downstream repo with one command (`manifest` marks each file `overwrite` for generic engine files or `notify` for localized instance files). |
-| `bench/` | Reproducible measurements behind the README's value claims: `token-reduction.mjs` (per-query token savings on any vault) and `grounding-eval.mjs` (closed-book vs Cortex-grounded fabrication rate, via a local ollama endpoint). |
+| `bench/` | A two-stage evaluation engine (`run.mjs`) comparing Cortex (hybrid + lexical/semantic ablations) against `full-context`, `grep-agent`, `naive-rag` (cost-matched fixed-chunk RAG) and a `closed-book` control. Stage A measures retrieval quality and token/latency cost with no model call; Stage B adds one answering model plus a gold-anchored three-label judge (correct/incorrect/abstained) for fabrication rate. A committed 12-note synthetic fixture backs a Stage A CI regression gate (`--gate`, `.github/workflows/bench.yml`). `bench/README.md` documents the method, the current (fixture-only) numbers, and their honest boundary. |
 | `docs/` | `assets/hero.png` (the branded hero banner) and `use-cases/` (e.g. `symbiont.md`, the ambient-agent pattern). |
 | `CLAUDE.md` | This file. |
 | `README.md` / `README.es.md` | Entry point for humans (EN / ES). |
