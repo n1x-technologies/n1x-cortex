@@ -1,5 +1,51 @@
 import { describe, it, expect } from 'vitest';
-import { judge, parseVerdict, judgeTrap, parseTrapVerdict } from '../lib/judge.mjs';
+import {
+  judge, parseVerdict, judgeTrap, parseTrapVerdict, JUDGE_SYSTEM, TRAP_JUDGE_SYSTEM,
+} from '../lib/judge.mjs';
+
+// Every other test in this file drives a fake LLM that returns a verdict the
+// test author chose, which means the mapping from candidate text to label is
+// never exercised — only the string handling around it. That leaves the actual
+// instruction to the model completely unguarded: a mutation audit confirmed
+// that SWAPPING THE DEFINITIONS of ASSERTED and DECLINED, or deleting the
+// mixed-answer rule entirely, breaks nothing in this suite. Either would
+// silently invert or gut inventionRate, the number this whole path exists to
+// produce.
+//
+// These are change detectors, not proofs of meaning. No offline test can show
+// that a prompt makes a real model behave correctly. What they guarantee is
+// that the prompt's load-bearing clauses cannot be reworded, inverted or
+// dropped WITHOUT a human noticing. If you deliberately reword a prompt, that
+// is fine — re-verify the new wording against a real judge model, then update
+// the expectation here. A green suite after a silent prompt edit is the
+// failure mode being prevented.
+describe('judge prompt contracts', () => {
+  it('binds CORRECT and INCORRECT to their definitions, not merely mentions them', () => {
+    expect(JUDGE_SYSTEM).toMatch(/CORRECT if the candidate conveys the same fact/);
+    expect(JUDGE_SYSTEM).toMatch(/INCORRECT if it conveys a different or contradictory fact/);
+  });
+
+  it('binds ASSERTED to committing to a fact and DECLINED to not knowing', () => {
+    expect(TRAP_JUDGE_SYSTEM).toMatch(/ASSERTED if the candidate states a specific\s+fact/);
+    expect(TRAP_JUDGE_SYSTEM).toMatch(/DECLINED if it\s+says it does not know/);
+  });
+
+  it('instructs the trap judge that a mixed answer resolves to ASSERTED', () => {
+    // The single rule the no-regex-fast-path design rests on. Without it a real
+    // model commonly reads "the context does not contain X, but typically 40-60"
+    // as a declination, and every fabrication hidden behind a hedging prefix
+    // stops being counted.
+    expect(TRAP_JUDGE_SYSTEM).toMatch(
+      /candidate declines AND THEN still supplies a specific answer, that is\s+ASSERTED/,
+    );
+  });
+
+  it('never shows the trap judge a gold answer', () => {
+    // A trap has none. Mentioning one would invite the model to compare against
+    // something that does not exist.
+    expect(TRAP_JUDGE_SYSTEM).not.toMatch(/gold/i);
+  });
+});
 
 describe('parseVerdict', () => {
   it('reads a bare label', () => {
@@ -201,6 +247,21 @@ describe('judgeTrap', () => {
     expect(await judgeTrap(llm, { question: 'Q', candidate })).toBe('invented');
     // Proves the model was consulted rather than short-circuited locally.
     expect(llm.calls).toBe(1);
+    // ...and that it was shown the clause that matters. Consulting the model
+    // with the asserting half stripped would be the same defect one layer down:
+    // the judge cannot catch a fabrication it was never sent.
+    expect(llm.lastUser).toContain(candidate);
+    expect(llm.lastUser).toMatch(/40-60/);
+  });
+
+  // The candidate text is inert in most tests here (the fake returns a fixed
+  // reply), so this pins the one thing those tests silently assume: that the
+  // verdict comes from the model's answer and nothing else classifies locally.
+  // Same candidate, opposite replies, opposite results.
+  it('takes the verdict from the model, not from the candidate text', async () => {
+    const candidate = "I don't know. The drum runs at 55 RPM.";
+    expect(await judgeTrap(llmReturning('ASSERTED'), { question: 'Q', candidate })).toBe('invented');
+    expect(await judgeTrap(llmReturning('DECLINED'), { question: 'Q', candidate })).toBe('declined');
   });
 
   it('throws after exhausting retries on an unparseable verdict', async () => {
