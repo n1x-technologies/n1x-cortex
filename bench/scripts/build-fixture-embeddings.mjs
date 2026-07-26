@@ -45,5 +45,27 @@ for (const c of buildChunks(VAULT)) {
 }
 console.log('cached chunk passage vectors');
 
-writeFileSync(resolve(here, '../fixtures/query-vectors.json'), JSON.stringify(cache));
+// One entry per line, vectors kept compact.
+//
+// `JSON.stringify(cache)` wrote the whole file as a single line, so every
+// regeneration produced a one-line whole-file diff — 31 vectors changing or
+// one, it looked identical in review, and there was no way to attribute a
+// semantic-ranking change to the edit that caused it. `JSON.stringify(cache,
+// null, 2)` is the opposite failure: 384 floats each on their own line, ~12k
+// lines of noise.
+//
+// This is the granularity that matters — one line per cached text, so adding
+// or rewording a question shows up as exactly one added or changed line.
+const entries = Object.entries(cache.vectors)
+  .map(([k, v]) => `    ${JSON.stringify(k)}: ${JSON.stringify(v)}`)
+  .join(',\n');
+const serialised =
+  '{\n' +
+  `  "model": ${JSON.stringify(cache.model)},\n` +
+  `  "dim": ${cache.dim},\n` +
+  '  "vectors": {\n' +
+  entries +
+  '\n  }\n}\n';
+
+writeFileSync(resolve(here, '../fixtures/query-vectors.json'), serialised);
 console.log(`wrote ${questions.length} query vectors`);
