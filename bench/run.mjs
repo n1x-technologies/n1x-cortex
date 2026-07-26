@@ -82,9 +82,12 @@ for (const s of Object.values(results.perSystem)) {
   const recall = s.recallAt5 === null ? 'n/a' : s.recallAt5.toFixed(3);
   const mrr = s.mrr === null ? 'n/a' : s.mrr.toFixed(3);
   const ndcg = s.ndcgAt10 === null ? 'n/a' : s.ndcgAt10.toFixed(3);
+  const nearMiss = s.nearMissRecallAt5 === null ? 'n/a' : s.nearMissRecallAt5.toFixed(3);
   console.log(
     `${s.name.padEnd(18)} recall@5 ${recall.padStart(5)}  ` +
     `MRR ${mrr.padStart(5)}  nDCG@10 ${ndcg.padStart(5)}  ` +
+    `near-miss ${nearMiss.padStart(5)}  ` +
+    `n ${s.scoredRanking}/${s.scoredNearMiss}/${s.scoredCost}  ` +
     `tok(med) ${String(s.medianTokens).padStart(6)}  ` +
     `lat(med) ${String(s.medianLatencyMs).padStart(5)}ms` +
     (s.errors.length ? `  [${s.errors.length} errors]` : ''),
@@ -97,6 +100,14 @@ if (results.perSystem['full-context']?.recallAt5 === null) {
     'describe directory order rather than retrieval quality. Its token cost is\n' +
     'still measured — that IS the point of including it: the reference cost a\n' +
     'retriever must beat.',
+  );
+}
+if (Object.values(results.perSystem).some(s => s.scoredNearMiss > 0)) {
+  console.log(
+    '\nnear-miss: on trap questions the corpus cannot answer, the fraction where the\n' +
+    'system retrieved at least one tempting-but-insufficient note. Read it next to\n' +
+    "Stage B's invented column: low invention with low near-miss recall means the\n" +
+    'system was never tempted, not that it resisted.',
   );
 }
 console.log(`\n${results.questionCount} questions · wrote ${join(outDir, 'results.json')}`);
@@ -160,9 +171,10 @@ if (stage === 'ab') {
       `${s.name.padEnd(18)} acc ${s.accuracy.toFixed(3)}  ` +
       `acc(clean) ${s.accuracyUncontaminated.toFixed(3)}  ` +
       `abstain ${s.abstentionRate.toFixed(3)}  ` +
+      `invented ${s.inventionRate === null ? 'n/a' : s.inventionRate.toFixed(3)}  ` +
       `fabricate ${s.fabricationRate.toFixed(3)}  ` +
       `fabricate(clean) ${s.fabricationRateUncontaminated.toFixed(3)}  ` +
-      `n ${s.scored}/${s.scoredUncontaminated}  ` +
+      `n ${s.scored}/${s.scoredUncontaminated}/${s.trapScored}  ` +
       `tok(med) ${tok.padStart(7)}` +
       (s.errors.length ? `  [${s.errors.length} errors]` : ''),
     );
@@ -190,7 +202,11 @@ if (args['update-baseline'] !== undefined) {
 
   const next = { perSystem: {} };
   for (const [name, s] of Object.entries(results.perSystem)) {
-    next.perSystem[name] = { recallAt5: s.recallAt5, medianTokens: s.medianTokens };
+    next.perSystem[name] = {
+      recallAt5: s.recallAt5,
+      nearMissRecallAt5: s.nearMissRecallAt5,
+      medianTokens: s.medianTokens,
+    };
   }
   writeFileSync(baselinePath, JSON.stringify(next, null, 2) + '\n');
   console.log(`\nbaseline updated: ${baselinePath}`);

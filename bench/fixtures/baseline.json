@@ -2,22 +2,27 @@
   "perSystem": {
     "cortex": {
       "recallAt5": 1,
-      "medianTokens": 982
+      "nearMissRecallAt5": 0.875,
+      "medianTokens": 809
     },
     "cortex-lexical": {
       "recallAt5": 1,
+      "nearMissRecallAt5": 0.875,
       "medianTokens": 714
     },
     "cortex-semantic": {
       "recallAt5": 1,
+      "nearMissRecallAt5": 1,
       "medianTokens": 1077
     },
     "naive-rag": {
       "recallAt5": 1,
+      "nearMissRecallAt5": 0.875,
       "medianTokens": 1081
     },
     "full-context": {
       "recallAt5": null,
+      "nearMissRecallAt5": null,
       "medianTokens": 1033
     }
   }
