@@ -214,6 +214,13 @@ if (args['update-baseline'] !== undefined) {
       recallAt5: s.recallAt5,
       nearMissHitRateAt5: s.nearMissHitRateAt5,
       medianTokens: s.medianTokens,
+      // Recorded so the gate can tell a dataset change from a cost regression
+      // — medianTokens moves with the question mix, not only with the system.
+      questionMix: {
+        ranking: s.scoredRanking,
+        nearMiss: s.scoredNearMiss,
+        cost: s.scoredCost,
+      },
     };
   }
   writeFileSync(baselinePath, JSON.stringify(next, null, 2) + '\n');

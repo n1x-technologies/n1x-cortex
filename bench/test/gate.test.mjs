@@ -187,6 +187,50 @@ describe('checkGate', () => {
     expect(r.failures.join('\n')).toMatch(/near-miss hit rate is null but baseline expected a number/);
   });
 
+  // ---- question mix vs cost ----
+  // medianTokens is a median over every question asked, so the question set is
+  // half of what it measures. Adding four traps to the CI fixture moved cortex
+  // 982 -> 809 with no code change; traps that happened to be dearer would have
+  // failed CI as a 12% cost regression that never happened.
+  const mixed = (ranking, nearMiss, cost) => ({ ranking, nearMiss, cost });
+
+  it('reports a changed question set instead of blaming the system for cost', () => {
+    const r = checkGate(
+      { perSystem: { s: sysResult({ scoredRanking: 15, scoredNearMiss: 6, scoredCost: 21, medianTokens: 200 }) } },
+      { perSystem: { s: sysBase({ questionMix: mixed(15, 4, 19), medianTokens: 100 }) } },
+    );
+    expect(r.pass).toBe(false);
+    expect(r.failures.join('\n')).toMatch(/question set changed.*15\/4\/19 -> 15\/6\/21/s);
+    // The token check is skipped, not merely accompanied: a doubled median must
+    // not also be reported as a cost regression on a set that is not comparable.
+    expect(r.failures.join('\n')).not.toMatch(/median tokens rose/);
+  });
+
+  it('still checks cost when the question set is unchanged', () => {
+    const r = checkGate(
+      { perSystem: { s: sysResult({ scoredRanking: 15, scoredNearMiss: 4, scoredCost: 19, medianTokens: 200 }) } },
+      { perSystem: { s: sysBase({ questionMix: mixed(15, 4, 19), medianTokens: 100 }) } },
+    );
+    expect(r.pass).toBe(false);
+    expect(r.failures.join('\n')).toMatch(/median tokens rose 100\.0%/);
+  });
+
+  it('passes an unchanged question set with unchanged cost', () => {
+    const r = checkGate(
+      { perSystem: { s: sysResult({ scoredRanking: 15, scoredNearMiss: 4, scoredCost: 19, medianTokens: 100 }) } },
+      { perSystem: { s: sysBase({ questionMix: mixed(15, 4, 19) }) } },
+    );
+    expect(r.pass).toBe(true);
+  });
+
+  it('skips the mix check for a baseline written before it existed', () => {
+    const r = checkGate(
+      { perSystem: { s: sysResult({ scoredRanking: 1, scoredNearMiss: 1, scoredCost: 2 }) } },
+      { perSystem: { s: sysBase() } },  // no questionMix key
+    );
+    expect(r.pass).toBe(true);
+  });
+
   // A results object that has STOPPED emitting the key is not the same as one
   // reporting null, and it must not fall through to `base - undefined` -> NaN,
   // where every comparison is false and the gate silently stops checking.

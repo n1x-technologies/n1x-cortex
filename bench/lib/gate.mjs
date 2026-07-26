@@ -103,12 +103,39 @@ export function checkGate(results, baseline) {
       }
     }
 
-    const tokenRise = (cur.medianTokens - base.medianTokens) / base.medianTokens;
-    if (tokenRise > TOKEN_RISE_LIMIT) {
+    // medianTokens is a median over EVERY question asked, answerable and trap
+    // alike (scoring traps for cost is deliberate — a trap costs a real
+    // retrieval). That makes it a property of the system AND of the question
+    // set, not of the system alone. Adding four traps to this fixture moved
+    // cortex from 982 to 809 with no code change; traps that happened to be
+    // more expensive would have produced "median tokens rose 12.0%, limit 10%"
+    // and blamed a cost regression that never happened.
+    //
+    // So the mix is compared first. If it changed, the token comparison is not
+    // wrong so much as meaningless, and reporting it would tell the operator a
+    // false story about their retrieval change. Fail pointing at the dataset
+    // and skip the cost check. An absent baseline mix means a baseline written
+    // before this guard existed — nothing to compare, same rule as the
+    // near-miss key.
+    const mixChanged =
+      base.questionMix !== undefined && !sameMix(base.questionMix, curMix(cur));
+    if (mixChanged) {
       failures.push(
-        `${name}: median tokens rose ${(tokenRise * 100).toFixed(1)}% ` +
-        `(${base.medianTokens} -> ${cur.medianTokens}), limit ${TOKEN_RISE_LIMIT * 100}%`,
+        `${name}: the question set changed since the baseline ` +
+        `(ranking/near-miss/cost ${fmtMix(base.questionMix)} -> ${fmtMix(curMix(cur))}). ` +
+        'medianTokens is a median over every question asked, so this moves it ' +
+        'independently of retrieval cost — the cost check is skipped rather than ' +
+        'blamed on the system. Re-baseline: ' +
+        'node bench/run.mjs --stage a --corpus fixtures --update-baseline 1',
       );
+    } else {
+      const tokenRise = (cur.medianTokens - base.medianTokens) / base.medianTokens;
+      if (tokenRise > TOKEN_RISE_LIMIT) {
+        failures.push(
+          `${name}: median tokens rose ${(tokenRise * 100).toFixed(1)}% ` +
+          `(${base.medianTokens} -> ${cur.medianTokens}), limit ${TOKEN_RISE_LIMIT * 100}%`,
+        );
+      }
     }
 
     if (cur.errors?.length) {
@@ -118,6 +145,18 @@ export function checkGate(results, baseline) {
 
   return { pass: failures.length === 0, failures };
 }
+
+/** The three denominators runStageA already publishes next to every rate. */
+const curMix = s => ({
+  ranking: s.scoredRanking,
+  nearMiss: s.scoredNearMiss,
+  cost: s.scoredCost,
+});
+
+const sameMix = (a, b) =>
+  a.ranking === b.ranking && a.nearMiss === b.nearMiss && a.cost === b.cost;
+
+const fmtMix = m => `${m.ranking}/${m.nearMiss}/${m.cost}`;
 
 /**
  * Guards against silent degradation: Cortex's semanticQueryRanking swallows

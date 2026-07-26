@@ -3,27 +3,52 @@
     "cortex": {
       "recallAt5": 1,
       "nearMissHitRateAt5": 1,
-      "medianTokens": 809
+      "medianTokens": 809,
+      "questionMix": {
+        "ranking": 15,
+        "nearMiss": 4,
+        "cost": 19
+      }
     },
     "cortex-lexical": {
       "recallAt5": 1,
       "nearMissHitRateAt5": 1,
-      "medianTokens": 714
+      "medianTokens": 714,
+      "questionMix": {
+        "ranking": 15,
+        "nearMiss": 4,
+        "cost": 19
+      }
     },
     "cortex-semantic": {
       "recallAt5": 1,
       "nearMissHitRateAt5": 1,
-      "medianTokens": 1077
+      "medianTokens": 1077,
+      "questionMix": {
+        "ranking": 15,
+        "nearMiss": 4,
+        "cost": 19
+      }
     },
     "naive-rag": {
       "recallAt5": 1,
       "nearMissHitRateAt5": 1,
-      "medianTokens": 1081
+      "medianTokens": 1081,
+      "questionMix": {
+        "ranking": 15,
+        "nearMiss": 4,
+        "cost": 19
+      }
     },
     "full-context": {
       "recallAt5": null,
       "nearMissHitRateAt5": null,
-      "medianTokens": 1033
+      "medianTokens": 1033,
+      "questionMix": {
+        "ranking": 0,
+        "nearMiss": 0,
+        "cost": 19
+      }
     }
   }
 }
