@@ -187,6 +187,42 @@ describe('checkGate', () => {
     expect(r.failures.join('\n')).toMatch(/near-miss hit rate is null but baseline expected a number/);
   });
 
+  // ---- a gate that cannot be fooled into passing ----
+  // Every comparison here is `drop > LIMIT`, and every comparison against NaN
+  // is false, so a NaN or an absent key made the gate pass in silence — the one
+  // behaviour a regression gate must never have.
+  it('fails rather than passes when a current metric is NaN or missing', () => {
+    const cases = [
+      ['recallAt5', 'recall@5'],
+      ['nearMissHitRateAt5', 'near-miss hit rate'],
+      ['medianTokens', 'medianTokens'],
+    ];
+    for (const [key, label] of cases) {
+      const nan = checkGate(
+        { perSystem: { s: sysResult({ [key]: NaN }) } },
+        { perSystem: { s: sysBase() } },
+      );
+      expect(nan.pass, `${key} = NaN`).toBe(false);
+      expect(nan.failures.join('\n')).toMatch(new RegExp(`${label} is NaN`));
+
+      const cur = sysResult();
+      delete cur[key];
+      const absent = checkGate({ perSystem: { s: cur } }, { perSystem: { s: sysBase() } });
+      expect(absent.pass, `${key} absent`).toBe(false);
+      expect(absent.failures.join('\n')).toMatch(new RegExp(`${label} is missing`));
+    }
+  });
+
+  it('reports a non-numeric metric as a failure instead of throwing', () => {
+    // A hand-edited results.json is exactly the input a gate must survive.
+    const r = checkGate(
+      { perSystem: { s: sysResult({ recallAt5: '0' }) } },
+      { perSystem: { s: sysBase() } },
+    );
+    expect(r.pass).toBe(false);
+    expect(r.failures.join('\n')).toMatch(/recall@5 is "0"/);
+  });
+
   // ---- question mix vs cost ----
   // medianTokens is a median over every question asked, so the question set is
   // half of what it measures. Adding four traps to the CI fixture moved cortex
@@ -242,7 +278,9 @@ describe('checkGate', () => {
       { perSystem: { s: sysBase({ nearMissHitRateAt5: 0.9 }) } },
     );
     expect(r.pass).toBe(false);
-    expect(r.failures.join('\n')).toMatch(/near-miss hit rate is null but baseline expected a number/);
+    // "missing", not "null" — the two states have different fixes, so the
+    // message distinguishes them.
+    expect(r.failures.join('\n')).toMatch(/near-miss hit rate is missing but baseline expected a number/);
   });
 
 });

@@ -174,8 +174,15 @@ function capAnswerable(questions, cap) {
   return questions.filter(q => (q.answerable === false ? true : kept++ < cap));
 }
 
+/**
+ * null, not 0, on an empty population — the same rule inventionRate and
+ * medianTokens already follow, applied to the three metrics that were missed.
+ * A 0 here reads as "measured zero fabrication", which is the best possible
+ * score on the metric the grounding claim rests on. A system that threw on
+ * every question, or a trap-only dataset, published exactly that.
+ */
 function rate(records, verdict) {
-  if (!records.length) return 0;
+  if (!records.length) return null;
   return round(records.filter(r => r.verdict === verdict).length / records.length);
 }
 

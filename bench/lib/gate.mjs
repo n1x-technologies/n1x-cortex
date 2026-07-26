@@ -60,11 +60,11 @@ export function checkGate(results, baseline) {
     // null, that is a system that stopped reporting a ranking metric it
     // used to report — a regression the gate must still catch, not a
     // declaration it can wave through.
-    if (base.recallAt5 === null) {
+    if (base.recallAt5 === null || base.recallAt5 === undefined) {
       // Nothing to compare: declared non-ranking, skip.
-    } else if (cur.recallAt5 === null) {
+    } else if (!measured(cur.recallAt5)) {
       failures.push(
-        `${name}: recall@5 is null but baseline expected a number ` +
+        `${name}: recall@5 is ${describe(cur.recallAt5)} but baseline expected a number ` +
         `(${base.recallAt5.toFixed(3)}) — a ranking system stopped reporting a ranking metric`,
       );
     } else {
@@ -87,9 +87,9 @@ export function checkGate(results, baseline) {
     // metric it used to report, which is a regression to catch.
     if (base.nearMissHitRateAt5 === undefined || base.nearMissHitRateAt5 === null) {
       // Nothing to compare.
-    } else if (cur.nearMissHitRateAt5 === undefined || cur.nearMissHitRateAt5 === null) {
+    } else if (!measured(cur.nearMissHitRateAt5)) {
       failures.push(
-        `${name}: near-miss hit rate is null but baseline expected a number ` +
+        `${name}: near-miss hit rate is ${describe(cur.nearMissHitRateAt5)} but baseline expected a number ` +
         `(${base.nearMissHitRateAt5.toFixed(3)}) — a system stopped reporting a metric it used to report`,
       );
     } else {
@@ -128,6 +128,11 @@ export function checkGate(results, baseline) {
         'blamed on the system. Re-baseline: ' +
         'node bench/run.mjs --stage a --corpus fixtures --update-baseline 1',
       );
+    } else if (!measured(cur.medianTokens)) {
+      failures.push(
+        `${name}: medianTokens is ${describe(cur.medianTokens)} but baseline expected a number ` +
+        `(${base.medianTokens}) — the cost check cannot run`,
+      );
     } else {
       const tokenRise = (cur.medianTokens - base.medianTokens) / base.medianTokens;
       if (tokenRise > TOKEN_RISE_LIMIT) {
@@ -145,6 +150,24 @@ export function checkGate(results, baseline) {
 
   return { pass: failures.length === 0, failures };
 }
+
+/**
+ * A metric the gate can actually compare against a threshold.
+ *
+ * Every comparison here is `drop > LIMIT`, and every comparison against NaN is
+ * false — so a NaN, an absent key, or a string from a hand-edited results.json
+ * made the gate PASS in silence, which is the one behaviour a regression gate
+ * must never have. A non-number also used to reach `.toFixed()` and throw,
+ * crashing the run instead of reporting a failure.
+ *
+ * `null` is deliberately NOT measured: it means "not applicable" (a
+ * non-ranking system, a dataset with no traps) and is handled by the
+ * baseline-side checks above before this is ever consulted.
+ */
+const measured = v => typeof v === 'number' && Number.isFinite(v);
+
+const describe = v =>
+  v === undefined ? 'missing' : v === null ? 'null' : Number.isNaN(v) ? 'NaN' : JSON.stringify(v);
 
 /** The three denominators runStageA already publishes next to every rate. */
 const curMix = s => ({

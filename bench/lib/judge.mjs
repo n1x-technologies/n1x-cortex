@@ -29,9 +29,23 @@ const ABSTENTION = new RegExp(
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+// Both prompts ask for exactly one word, and both parsers scan for the label
+// anywhere in the reply so a judge that adds a sentence still parses. That
+// leniency has a failure mode: a NEGATED mention reads as an assertion of the
+// label. "Not INCORRECT — the candidate matches the gold" scored a correct
+// answer as a fabrication; "the candidate DECLINED, it never ASSERTED a value"
+// scored a correctly-declining system as inventing.
+//
+// A reply carrying a negation is not a verdict this parser can be trusted to
+// read, so it returns null and the caller's retry loop asks again — which is
+// what the retry loop is for. Failing toward "ask again" is the only direction
+// that cannot silently corrupt a published rate.
+const NEGATED = /\b(?:not|never|neither|nor|without|isn't|isn’t|wasn't|wasn’t|doesn't|doesn’t|didn't|didn’t|cannot|can't|can’t)\b/i;
+
 /** @returns {'correct'|'incorrect'|'abstained'|null} */
 export function parseVerdict(raw) {
   if (!raw) return null;
+  if (NEGATED.test(raw)) return null;
   const t = raw.toUpperCase();
   // INCORRECT contains CORRECT, so it must be tested first.
   if (t.includes('INCORRECT')) return 'incorrect';
@@ -97,7 +111,13 @@ export const TRAP_JUDGE_SYSTEM =
  */
 export function parseTrapVerdict(raw) {
   if (!raw) return null;
+  if (NEGATED.test(raw)) return null;
   const t = raw.toUpperCase();
+  // Both labels in one reply is a judge describing its reasoning rather than
+  // answering. Order-of-testing would pick a winner arbitrarily, and here that
+  // arbitrary winner has a direction: ASSERTED is tested first, so every
+  // ambiguous reply would be recorded as an invention.
+  if (t.includes('ASSERTED') && t.includes('DECLINED')) return null;
   if (t.includes('ASSERTED')) return 'invented';
   if (t.includes('DECLINED')) return 'declined';
   return null;

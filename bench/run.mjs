@@ -163,9 +163,24 @@ if (stage === 'ab') {
   // Explicit, not accidental: sample cortex's records for the published
   // judge-human agreement figure, rather than whichever system happened to
   // land first in stageBNames' insertion order.
-  writeFileSync(join(outDir, 'spot-check.md'), renderSpotCheck(b, questions, 30, 'cortex'));
+  //
+  // It is not always present, though: `--systems grep-agent` is a legitimate
+  // run. Dereferencing it unconditionally threw a TypeError AFTER every paid
+  // model call had been made and results-stage-b.json written, so the operator
+  // paid for the run and got a stack trace instead of the summary table. Fall
+  // back to the first system that did run, and say so.
+  const spotName = b.perSystem.cortex ? 'cortex' : Object.keys(b.perSystem)[0];
+  writeFileSync(join(outDir, 'spot-check.md'), renderSpotCheck(b, questions, 30, spotName));
+  if (spotName !== 'cortex') {
+    console.log(`\nspot-check sampled ${spotName}: cortex was not part of this run.`);
+  }
 
-  console.log(`\ncontaminated: ${b.contaminatedIds.length}/${b.questionCount} questions ` +
+  // Denominator is the ANSWERABLE count, not questionCount. contaminatedIds is
+  // computed over answerable records only — a trap has no corpus answer the
+  // model could have known — so dividing by the full set deflated the reported
+  // contamination rate by every trap added, with no change in actual
+  // contamination.
+  console.log(`\ncontaminated: ${b.contaminatedIds.length}/${b.answerableCount} answerable questions ` +
               `(answered correctly with no context)\n`);
   for (const s of Object.values(b.perSystem)) {
     // Every rate is printed beside the denominator it was computed over
@@ -175,13 +190,17 @@ if (stage === 'ab') {
     // an honest system that answered everything. medianTokens is printed as
     // "n/a", never coerced to 0, when the system errored on every question.
     const tok = s.medianTokens === null ? 'n/a' : String(s.medianTokens);
+    // Every rate prints "n/a" on an empty population rather than 0.000. A
+    // broken system that answered nothing must not publish the best possible
+    // fabrication score.
+    const r = v => (v === null ? '  n/a' : v.toFixed(3));
     console.log(
-      `${s.name.padEnd(18)} acc ${s.accuracy.toFixed(3)}  ` +
-      `acc(clean) ${s.accuracyUncontaminated.toFixed(3)}  ` +
-      `abstain ${s.abstentionRate.toFixed(3)}  ` +
-      `invented ${s.inventionRate === null ? 'n/a' : s.inventionRate.toFixed(3)}  ` +
-      `fabricate ${s.fabricationRate.toFixed(3)}  ` +
-      `fabricate(clean) ${s.fabricationRateUncontaminated.toFixed(3)}  ` +
+      `${s.name.padEnd(18)} acc ${r(s.accuracy)}  ` +
+      `acc(clean) ${r(s.accuracyUncontaminated)}  ` +
+      `abstain ${r(s.abstentionRate)}  ` +
+      `invented ${r(s.inventionRate)}  ` +
+      `fabricate ${r(s.fabricationRate)}  ` +
+      `fabricate(clean) ${r(s.fabricationRateUncontaminated)}  ` +
       `n ${s.scored}/${s.scoredUncontaminated}/${s.trapScored}  ` +
       `tok(med) ${tok.padStart(7)}` +
       (s.errors.length ? `  [${s.errors.length} errors]` : ''),

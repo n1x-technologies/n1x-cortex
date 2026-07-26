@@ -63,6 +63,15 @@ describe('parseVerdict', () => {
     expect(parseVerdict('I am not sure what to say')).toBeNull();
     expect(parseVerdict('')).toBeNull();
   });
+
+  // A scan for the label anywhere in the reply cannot tell an assertion from a
+  // denial. Returning null sends it back through the retry loop, which is the
+  // only direction that cannot silently corrupt a published rate.
+  it('refuses a negated mention rather than reading it as the verdict', () => {
+    expect(parseVerdict('Not INCORRECT — the candidate matches the gold.')).toBeNull();
+    expect(parseVerdict('This is not correct.')).toBeNull();
+    expect(parseVerdict('I cannot say whether it is CORRECT.')).toBeNull();
+  });
 });
 
 describe('judge', () => {
@@ -187,6 +196,21 @@ describe('parseTrapVerdict', () => {
     expect(parseTrapVerdict('  The answer is declined.\n')).toBe('declined');
   });
   it('returns null on an unparseable reply', () => expect(parseTrapVerdict('maybe')).toBeNull());
+
+  // Every misparse in this class pointed the same way — ASSERTED is tested
+  // first, so a judge explaining that the candidate declined was recorded as
+  // inventing, and a correctly-abstaining system took the penalty.
+  it('refuses a negated or two-label reply instead of guessing', () => {
+    expect(parseTrapVerdict('The candidate DECLINED to answer; it never ASSERTED a value.')).toBeNull();
+    expect(parseTrapVerdict('It DECLINED. Not ASSERTED.')).toBeNull();
+    expect(parseTrapVerdict('The candidate neither ASSERTED nor DECLINED clearly.')).toBeNull();
+    expect(parseTrapVerdict('ASSERTED? No. DECLINED.')).toBeNull();
+  });
+
+  it('still reads a bare label with ordinary surrounding prose', () => {
+    expect(parseTrapVerdict('ASSERTED')).toBe('invented');
+    expect(parseTrapVerdict('Verdict: DECLINED.')).toBe('declined');
+  });
 });
 
 describe('judgeTrap', () => {

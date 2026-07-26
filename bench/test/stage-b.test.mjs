@@ -225,6 +225,15 @@ describe('runStageB', () => {
     expect(s.errors).toHaveLength(2);
     expect(s.medianTokens).toBeNull();
     expect(JSON.parse(JSON.stringify(s)).medianTokens).toBeNull();
+
+    // A system that answered nothing must not publish the best possible score
+    // on the metric the grounding claim rests on. 0.000 reads as "measured
+    // zero fabrication"; there was no measurement at all.
+    expect(s.fabricationRate).toBeNull();
+    expect(s.accuracy).toBeNull();
+    expect(s.abstentionRate).toBeNull();
+    expect(s.accuracyUncontaminated).toBeNull();
+    expect(s.fabricationRateUncontaminated).toBeNull();
   });
   // ---- trap questions (answerable: false) ----
   // A trap is a question the corpus does not answer. The three judge labels
@@ -300,6 +309,36 @@ describe('runStageB', () => {
     // ...and the cap still did its job on the expensive half.
     expect(r.perSystem['full-context'].scored).toBe(1);
     expect(r.perSystem.cortex.scored).toBe(3);
+  });
+
+  it('reports the answerable rates as null on a trap-only dataset', async () => {
+    // The mirror of "inventionRate is null when there are no traps": with no
+    // answerable questions there is no accuracy or fabrication to report, and
+    // 0.000 in those columns would read as a result.
+    const r = await runStageB({
+      systems: [sys('s', 'ALPHA')],
+      questions: [trap, trap2],
+      ctx: {}, llm, judgeLlm: bothJudge,
+    });
+    const s = r.perSystem.s;
+    expect(s.scored).toBe(0);
+    expect(s.accuracy).toBeNull();
+    expect(s.fabricationRate).toBeNull();
+    expect(s.abstentionRate).toBeNull();
+    expect(s.inventionRate).toBe(1);   // the half that WAS measured still reports
+    expect(s.trapScored).toBe(2);
+  });
+
+  it('reports contamination against the answerable count, not the whole set', async () => {
+    // contaminatedIds excludes traps by construction, so dividing by
+    // questionCount deflated the reported rate by every trap added.
+    const r = await runStageB({
+      systems: [sys('s', 'ALPHA')],
+      questions: tailTraps,
+      ctx: {}, llm, judgeLlm: bothJudge,
+    });
+    expect(r.questionCount).toBe(5);
+    expect(r.answerableCount).toBe(3);
   });
 
   it('reports inventionRate as null when the dataset has no traps', async () => {
