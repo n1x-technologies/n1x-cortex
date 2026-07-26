@@ -211,15 +211,22 @@ describe('loadDataset', () => {
     }
   });
 
-  // The canonical checks are string tests, and macOS matches paths
-  // case-insensitively, so a wrongly-cased path satisfies both normalize() and
-  // existsSync() and then matches no citedPath — the exact defect the check
-  // was added for, arriving by a different route.
+  // A wrongly-cased path must be rejected, but WHICH guard catches it depends
+  // on the filesystem, so the assertion is on the rejection rather than on the
+  // message. On a case-sensitive filesystem (Linux CI) `existsSync` fails
+  // first. On a case-insensitive one (macOS, the default developer machine)
+  // both `normalize(p) === p` and `existsSync` pass, and only the realpath
+  // comparison catches it — which is why that comparison exists: without it
+  // the path validates locally and then matches no citedPath, surfacing as a
+  // multi-system retrieval regression the failure message cannot explain.
+  //
+  // Asserting the macOS message here is what failed CI on the first push.
   it('rejects a path whose case does not match the file on disk', () => {
     writeFileSync(jsonl, rec({
       id: 'a1', question: 'Q', goldPaths: ['notes/A.md'], goldAnswer: 'A',
     }));
-    expect(() => loadDataset(jsonl, vault)).toThrow(/does not match the file on disk.*notes\/a\.md/s);
+    expect(() => loadDataset(jsonl, vault))
+      .toThrow(/does not match the file on disk|does not exist in corpus/);
   });
 
   it('accepts a real file whose name begins with dots', () => {
