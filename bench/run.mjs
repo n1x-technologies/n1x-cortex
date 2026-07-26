@@ -134,7 +134,13 @@ if (stage === 'ab') {
   // full-context sends the entire corpus per question, so on a real corpus it
   // dominates the run's cost. It answers a subsample; the size is recorded in
   // the output and MUST be stated wherever its number is published.
-  const fullContextSample = Number(args['full-context-sample'] ?? questions.length);
+  //
+  // The cap applies to ANSWERABLE questions only — traps are always asked in
+  // full, or full-context drops out of the invention comparison entirely. See
+  // runStageB's subsample docstring. The default is the answerable count, i.e.
+  // no cap.
+  const answerableCount = questions.filter(q => q.answerable !== false).length;
+  const fullContextSample = Number(args['full-context-sample'] ?? answerableCount);
 
   const b = await runStageB({
     systems: stageBSystems,

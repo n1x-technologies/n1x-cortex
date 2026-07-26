@@ -21,16 +21,28 @@ import { judge, judgeTrap } from './judge.mjs';
 
 /**
  * @param {object} p
- * @param {{[name: string]: number}} [p.subsample] cap on questions per system.
- *   full-context sends the whole corpus per question and would otherwise
- *   dominate the run's cost. The cap is deterministic (leading slice), so
- *   every capped system sees the same questions. A supplied cap must be a
- *   positive integer — a falsy-but-present value like 0 is a deliberate "ask
- *   this system nothing", not "no cap", and is rejected rather than silently
- *   reinterpreted as uncapped. `closed-book` may never appear here: it is the
- *   contamination control, and subsampling it would measure contamination on
- *   a slice while questionCount/uncontaminatedCount stay computed against the
- *   full set, silently corrupting every uncontaminated headline metric.
+ * @param {{[name: string]: number}} [p.subsample] cap on ANSWERABLE questions
+ *   per system. full-context sends the whole corpus per question and would
+ *   otherwise dominate the run's cost. The cap is deterministic (leading
+ *   slice), so every capped system sees the same questions. A supplied cap
+ *   must be a positive integer — a falsy-but-present value like 0 is a
+ *   deliberate "ask this system nothing", not "no cap", and is rejected
+ *   rather than silently reinterpreted as uncapped. `closed-book` may never
+ *   appear here: it is the contamination control, and subsampling it would
+ *   measure contamination on a slice while questionCount/uncontaminatedCount
+ *   stay computed against the full set, silently corrupting every
+ *   uncontaminated headline metric.
+ *
+ *   Traps are NEVER subsampled — the cap applies to answerable questions only.
+ *   A plain leading slice over the whole dataset drops them all, because traps
+ *   are authored at the tail: on the CI fixture any cap below 16 asked
+ *   full-context zero traps, so the reference system every other system is
+ *   measured against reported `invented n/a` with no warning, in exactly the
+ *   configuration meant for publication. Proportional stratification would
+ *   only soften that — one system computing inventionRate over 3 traps and
+ *   another over 4 puts two incomparable numbers in the same column. The
+ *   column is only meaningful if every system faced the same traps, and traps
+ *   are hand-authored and few, so exempting them costs little.
  * @returns {Promise<{perSystem: object, contaminatedIds: string[], questionCount: number, uncontaminatedCount: number}>}
  */
 export async function runStageB({ systems, questions, ctx, llm, judgeLlm, subsample = {} }) {
@@ -44,7 +56,7 @@ export async function runStageB({ systems, questions, ctx, llm, judgeLlm, subsam
     const tokens = [];
 
     const cap = subsample[system.name];
-    const asked = cap === undefined ? questions : questions.slice(0, cap);
+    const asked = cap === undefined ? questions : capAnswerable(questions, cap);
 
     for (const q of asked) {
       try {
@@ -149,6 +161,17 @@ function validateSubsample(subsample) {
       );
     }
   }
+}
+
+/**
+ * Leading slice of the ANSWERABLE questions, keeping every trap. Preserves the
+ * dataset's original order so the run stays deterministic and the records read
+ * in file order. See the subsample docstring on runStageB for why traps are
+ * exempt rather than proportionally sampled.
+ */
+function capAnswerable(questions, cap) {
+  let kept = 0;
+  return questions.filter(q => (q.answerable === false ? true : kept++ < cap));
 }
 
 function rate(records, verdict) {

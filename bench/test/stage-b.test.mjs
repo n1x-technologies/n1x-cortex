@@ -262,6 +262,46 @@ describe('runStageB', () => {
     expect(s.scored).toBe(1);          // answerable denominator excludes the trap
   });
 
+  // Traps are authored at the tail of a dataset, so a plain leading slice drops
+  // every one of them. That silently removed full-context — the reference
+  // system — from the only fabrication-on-absent-facts comparison, in exactly
+  // the configuration meant for publication.
+  const trap2 = { id: 't2', question: 'TRAP2', goldPaths: [], goldAnswer: null,
+    sourceUrl: null, answerable: false, nearMissPaths: ['b.md'] };
+  const tailTraps = [ans('q1', 'ALPHA'), ans('q2', 'ALPHA'), ans('q3', 'ALPHA'), trap, trap2];
+
+  it('subsamples answerable questions but asks every trap', async () => {
+    const r = await runStageB({
+      systems: [sys('full-context', 'ALPHA')],
+      questions: tailTraps,
+      ctx: {}, llm, judgeLlm: bothJudge,
+      subsample: { 'full-context': 2 },
+    });
+    const s = r.perSystem['full-context'];
+    expect(s.scored).toBe(2);       // capped to two answerable questions
+    expect(s.trapScored).toBe(2);   // both traps asked despite the cap
+    expect(s.asked).toBe(4);
+  });
+
+  it('gives a capped and an uncapped system the same trap denominator', async () => {
+    // The invention column is only meaningful if every system faced the same
+    // traps. A proportional sample would put one system's rate over 3 traps and
+    // another's over 4 in the same column and call them comparable.
+    const r = await runStageB({
+      systems: [sys('full-context', 'ALPHA'), sys('cortex', 'ALPHA')],
+      questions: tailTraps,
+      ctx: {}, llm, judgeLlm: bothJudge,
+      subsample: { 'full-context': 1 },
+    });
+    expect(r.perSystem['full-context'].trapScored).toBe(2);
+    expect(r.perSystem.cortex.trapScored).toBe(2);
+    expect(r.perSystem['full-context'].inventionRate)
+      .toBe(r.perSystem.cortex.inventionRate);
+    // ...and the cap still did its job on the expensive half.
+    expect(r.perSystem['full-context'].scored).toBe(1);
+    expect(r.perSystem.cortex.scored).toBe(3);
+  });
+
   it('reports inventionRate as null when the dataset has no traps', async () => {
     const r = await runStageB({
       systems: [sys('s', 'ALPHA')], questions: [ans('q1', 'ALPHA')],
