@@ -68,4 +68,95 @@ describe('renderSpotCheck', () => {
     expect(md).not.toMatch(/^\*\*Candidate:\*\* Answer \d/m);
     expect(md).toMatch(/agreement[^\n]*measures[^\n]*grep-agent/i);
   });
+
+  // ---- trap questions ----
+  // A trap has no gold answer, so the human labelling the sample needs the
+  // near-miss notes instead: the question looks answerable, and those notes
+  // are what the system was actually shown. Without them there is no way to
+  // judge whether declining was right.
+  const trapQuestions = [
+    ...questions,
+    { id: 'tA', question: 'Trap A', goldPaths: [], goldAnswer: null, sourceUrl: null,
+      answerable: false, nearMissPaths: ['notes/drum-temperature.md'] },
+    { id: 'tB', question: 'Trap B', goldPaths: [], goldAnswer: null, sourceUrl: null,
+      answerable: false, nearMissPaths: ['notes/grind-size.md'] },
+  ];
+  const withTraps = {
+    perSystem: {
+      cortex: {
+        name: 'cortex',
+        records: [
+          ...results.perSystem.cortex.records.map(r => ({ ...r, answerable: true })),
+          { id: 'tA', answerable: false, verdict: 'declined', candidate: 'No idea.', tokens: 10 },
+          { id: 'tB', answerable: false, verdict: 'invented', candidate: 'About 50.', tokens: 10 },
+        ],
+      },
+    },
+  };
+
+  it('renders the near-miss notes instead of a gold answer for a trap', () => {
+    const md = renderSpotCheck(withTraps, trapQuestions, 30);
+    expect(md).toMatch(/### tB/);
+    expect(md).toMatch(/\*\*Near-miss notes:\*\*.*notes\/grind-size\.md/);
+    // A trap has no gold answer; printing "undefined" would be worse than
+    // useless to the person labelling it.
+    expect(md).not.toMatch(/\*\*Gold answer:\*\* *(undefined|null)/);
+  });
+
+  // Every real trap in bench/fixtures/ci-questions.jsonl names TWO near-miss
+  // notes. A fixture with one cannot tell `join(', ')` from `[0]`, so the human
+  // could be shown half the evidence the file promises them.
+  it('renders every near-miss note, not just the first', () => {
+    const twoNotes = [
+      { id: 'tC', question: 'Trap C', goldPaths: [], goldAnswer: null, sourceUrl: null,
+        answerable: false, nearMissPaths: ['notes/drum-temperature.md', 'notes/grind-size.md'] },
+    ];
+    const res = { perSystem: { cortex: { name: 'cortex', records: [
+      { id: 'tC', answerable: false, verdict: 'invented', candidate: 'About 50.', tokens: 10 },
+    ] } } };
+    const md = renderSpotCheck(res, twoNotes, 30);
+    expect(md).toMatch(/notes\/drum-temperature\.md/);
+    expect(md).toMatch(/notes\/grind-size\.md/);
+  });
+
+  it('samples a record whose verdict is outside the five known classes', () => {
+    // An unrecognised label is the most interesting thing a human could be
+    // shown. Bucketing only the known five dropped it from the sample silently.
+    const res = { perSystem: { cortex: { name: 'cortex', records: [
+      { id: 'q1', answerable: true, verdict: 'bewildered', candidate: 'Hmm.', tokens: 10 },
+    ] } } };
+    const md = renderSpotCheck(res, questions, 30);
+    expect(md).toMatch(/### q1/);
+    expect(md).toMatch(/judge: `bewildered`/);
+  });
+
+  it('names the systems it has when asked for one that did not run', () => {
+    expect(() => renderSpotCheck(withTraps, trapQuestions, 30, 'grep-agent'))
+      .toThrow(/no system named "grep-agent".*have: cortex/s);
+  });
+
+  it('reports a results/questions mismatch instead of throwing a TypeError', () => {
+    const res = { perSystem: { cortex: { name: 'cortex', records: [
+      { id: 'ghost', answerable: true, verdict: 'correct', candidate: 'x', tokens: 1 },
+    ] } } };
+    expect(() => renderSpotCheck(res, questions, 30))
+      .toThrow(/record "ghost".*different runs/s);
+  });
+
+  it('stratifies across the trap verdicts as well as the answerable ones', () => {
+    const md = renderSpotCheck(withTraps, trapQuestions, 5);
+    expect(md).toMatch(/judge: `declined`/);
+    expect(md).toMatch(/judge: `invented`/);
+  });
+
+  it('tells the human which labels are valid for a trap', () => {
+    const md = renderSpotCheck(withTraps, trapQuestions, 30);
+    expect(md).toMatch(/declined \/ invented/);
+  });
+
+  it('marks a trap section so the labeller knows declining is the correct answer', () => {
+    const md = renderSpotCheck(withTraps, trapQuestions, 30);
+    expect(md).toMatch(/corpus does not answer this/i);
+  });
+
 });

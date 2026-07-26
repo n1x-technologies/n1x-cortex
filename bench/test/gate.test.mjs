@@ -6,11 +6,21 @@ import { checkGate, checkCacheCompleteness } from '../lib/gate.mjs';
 
 const baseline = {
   perSystem: {
-    cortex: { recallAt5: 0.9, medianTokens: 1000 },
+    cortex: {
+      recallAt5: 0.9,
+      nearMissHitRateAt5: null,
+      medianTokens: 1000,
+      questionMix: { ranking: 15, nearMiss: 0, cost: 15 },
+    },
   },
 };
 const results = (recallAt5, medianTokens) => ({
-  perSystem: { cortex: { name: 'cortex', recallAt5, medianTokens, errors: [] } },
+  perSystem: {
+    cortex: {
+      name: 'cortex', recallAt5, nearMissHitRateAt5: null, medianTokens, errors: [],
+      scoredRanking: 15, scoredNearMiss: 0, scoredCost: 15,
+    },
+  },
 });
 
 describe('checkGate', () => {
@@ -30,6 +40,19 @@ describe('checkGate', () => {
     const r = checkGate(results(0.87, 1000), baseline);
     expect(r.pass).toBe(false);
     expect(r.failures[0]).toMatch(/recall@5/);
+  });
+
+  // Both sides, tightly. The pair above (0.885 passes, 0.87 fails) leaves the
+  // 1.5-3.0-point band free: RECALL_DROP_LIMIT could be loosened from 0.02 to
+  // 0.029 — 45% looser — and the whole suite stayed green. The near-miss
+  // threshold got this treatment when it was added; the metric it was modelled
+  // on never had it.
+  //
+  // 1.9 and 2.1 points rather than a clean 2.0 boundary, for the same IEEE 754
+  // reason as the near-miss pin below.
+  it('pins the recall threshold from both sides: 1.9 points passes, 2.1 fails', () => {
+    expect(checkGate(results(0.881, 1000), baseline).pass).toBe(true);
+    expect(checkGate(results(0.879, 1000), baseline).pass).toBe(false);
   });
 
   it('tolerates a token rise within 10%', () => {
@@ -68,11 +91,21 @@ describe('checkGate', () => {
   // "recall dropped to nothing" failure -- there is no threshold to check
   // for a system that never claimed to rank.
   it('skips the recall@5 threshold when baseline recall is null (a declared non-ranking system)', () => {
+    // A complete baseline entry: null is the VALUE for a non-ranking system,
+    // which is a different thing from the key being absent.
     const nonRankingBaseline = {
-      perSystem: { 'full-context': { recallAt5: null, medianTokens: 1000 } },
+      perSystem: {
+        'full-context': {
+          recallAt5: null, nearMissHitRateAt5: null, medianTokens: 1000,
+          questionMix: { ranking: 0, nearMiss: 0, cost: 19 },
+        },
+      },
     };
     const r = checkGate(
-      { perSystem: { 'full-context': { name: 'full-context', recallAt5: null, medianTokens: 1000, errors: [] } } },
+      { perSystem: { 'full-context': {
+        name: 'full-context', recallAt5: null, nearMissHitRateAt5: null, medianTokens: 1000,
+        errors: [], scoredRanking: 0, scoredNearMiss: 0, scoredCost: 19,
+      } } },
       nonRankingBaseline,
     );
     expect(r.pass).toBe(true);
@@ -113,6 +146,302 @@ describe('checkGate', () => {
     expect(r.pass).toBe(false);
     expect(r.failures.some(f => /recall@5 is null/i.test(f))).toBe(true);
   });
+
+  // ---- near-miss hit rate ----
+  const sysResult = over => ({
+    name: 's', recallAt5: 1, nearMissHitRateAt5: 1, medianTokens: 100, errors: [],
+    scoredRanking: 15, scoredNearMiss: 4, scoredCost: 19, ...over,
+  });
+  const sysBase = over => ({
+    recallAt5: 1, nearMissHitRateAt5: 1, medianTokens: 100,
+    questionMix: { ranking: 15, nearMiss: 4, cost: 19 }, ...over,
+  });
+
+  it('fails when the near-miss hit rate falls past the limit', () => {
+    const r = checkGate(
+      { perSystem: { s: sysResult({ nearMissHitRateAt5: 0.9 }) } },
+      { perSystem: { s: sysBase() } },
+    );
+    expect(r.pass).toBe(false);
+    expect(r.failures.join('\n')).toMatch(/near-miss hit rate fell 10\.0 points/);
+  });
+
+  // The threshold is pinned from BOTH sides. Asserting only that a large drop
+  // fails and a tiny one passes leaves the whole band between them free: the
+  // limit could be loosened several-fold and every test would still be green.
+  //
+  // 1.9 and 2.1 points rather than a clean 2.0 boundary, because binary
+  // floating point puts `1 - 0.98` at 0.020000000000000018 — a drop of exactly
+  // the limit lands on whichever side the representation error falls. Pinning
+  // to within 0.2 points is the tightest assertion that is actually about the
+  // threshold rather than about IEEE 754.
+  it('pins the near-miss threshold from both sides: 1.9 points passes, 2.1 fails', () => {
+    const within = checkGate(
+      { perSystem: { s: sysResult({ nearMissHitRateAt5: 0.981 }) } },
+      { perSystem: { s: sysBase() } },
+    );
+    expect(within.pass).toBe(true);
+
+    const past = checkGate(
+      { perSystem: { s: sysResult({ nearMissHitRateAt5: 0.979 }) } },
+      { perSystem: { s: sysBase() } },
+    );
+    expect(past.pass).toBe(false);
+  });
+
+  it('does not fail when the near-miss hit rate RISES', () => {
+    const r = checkGate(
+      { perSystem: { s: sysResult({ nearMissHitRateAt5: 1 }) } },
+      { perSystem: { s: sysBase({ nearMissHitRateAt5: 0.5 }) } },
+    );
+    expect(r.pass).toBe(true);
+  });
+
+  it('skips the near-miss hit rate when the baseline recorded null', () => {
+    const r = checkGate(
+      { perSystem: { s: sysResult({ nearMissHitRateAt5: null }) } },
+      { perSystem: { s: sysBase({ nearMissHitRateAt5: null }) } },
+    );
+    expect(r.pass).toBe(true);
+  });
+
+  // Previously this asserted the opposite — that a baseline written before the
+  // metric existed should be waved through. That backward-compatible skip IS
+  // the hole: it cannot be told apart from a rename that forgot baseline.json,
+  // and it silently gates less. Regenerating is one command, so absence fails.
+  it('refuses a baseline written before the near-miss metric existed', () => {
+    const r = checkGate(
+      { perSystem: { s: sysResult({ nearMissHitRateAt5: 0.5 }) } },
+      { perSystem: { s: { recallAt5: 1, medianTokens: 100 } } },
+    );
+    expect(r.pass).toBe(false);
+    expect(r.failures.join('\n')).toMatch(/unusable nearMissHitRateAt5, questionMix/);
+  });
+
+  it('fails when a system with a real near-miss baseline reports null', () => {
+    const r = checkGate(
+      { perSystem: { s: sysResult({ nearMissHitRateAt5: null }) } },
+      { perSystem: { s: sysBase({ nearMissHitRateAt5: 0.9 }) } },
+    );
+    expect(r.pass).toBe(false);
+    expect(r.failures.join('\n')).toMatch(/near-miss hit rate is null but baseline expected a number/);
+  });
+
+  // ---- the BASELINE side is as untrusted as the results side ----
+  // Every check is guarded by a `base.X === undefined` test meaning "nothing to
+  // compare", so an absent baseline key silently turned that check OFF. Proved
+  // end to end: strip the three metrics from one system's baseline entry, break
+  // its retriever so recall@5 is 0.000, and the gate printed "bench gate
+  // passed". A rename that updates the code and forgets baseline.json is
+  // exactly how it happens.
+  it('fails when a baseline entry is missing a metric key', () => {
+    for (const key of ['recallAt5', 'nearMissHitRateAt5', 'medianTokens', 'questionMix']) {
+      const base = sysBase({ questionMix: mixed(15, 4, 19) });
+      delete base[key];
+      const r = checkGate(
+        { perSystem: { s: sysResult({ scoredRanking: 15, scoredNearMiss: 4, scoredCost: 19 }) } },
+        { perSystem: { s: base } },
+      );
+      expect(r.pass, `baseline missing ${key}`).toBe(false);
+      expect(r.failures.join('\n')).toMatch(new RegExp(`unusable.*${key}`));
+    }
+  });
+
+  // Presence is not enough, and checking only presence was the first version
+  // of this guard. A non-number satisfies `!== undefined` and then NaNs out
+  // every `drop > LIMIT`, which is the same silent pass by another route.
+  it('fails when a baseline value is present but not a number', () => {
+    for (const bad of ['n/a', {}, [], NaN, true]) {
+      for (const key of ['recallAt5', 'nearMissHitRateAt5', 'medianTokens']) {
+        const r = checkGate(
+          { perSystem: { s: sysResult({ recallAt5: 0, nearMissHitRateAt5: 0, medianTokens: 9999 }) } },
+          { perSystem: { s: sysBase({ [key]: bad }) } },
+        );
+        expect(r.pass, `${key} = ${JSON.stringify(bad)}`).toBe(false);
+        expect(r.failures.join('\n')).toMatch(new RegExp(`unusable.*${key}`));
+      }
+    }
+  });
+
+  it('fails when a baseline questionMix is unusable rather than comparing NaN', () => {
+    for (const bad of [{}, null, { ranking: 15 }, { ranking: 'x', nearMiss: 4, cost: 19 }]) {
+      const r = checkGate(
+        { perSystem: { s: sysResult() } },
+        { perSystem: { s: sysBase({ questionMix: bad }) } },
+      );
+      expect(r.pass, JSON.stringify(bad)).toBe(false);
+      expect(r.failures.join('\n')).toMatch(/unusable.*questionMix/);
+    }
+  });
+
+  it('fails when a baseline entry is not an object at all', () => {
+    for (const bad of [null, 'x', 5]) {
+      const r = checkGate({ perSystem: { s: sysResult() } }, { perSystem: { s: bad } });
+      expect(r.pass, String(bad)).toBe(false);
+      expect(r.failures.join('\n')).toMatch(/baseline entry is .* not an object/);
+    }
+  });
+
+  // The results side can also stop emitting the denominators — a rename in
+  // stage-a.mjs. That is a different failure from a changed question set, and
+  // it must not be reported as "15/4/19 -> undefined/undefined/undefined" with
+  // a re-baseline remedy that writes questionMix:{} and makes it permanent.
+  it('names a results-side mix problem instead of calling it a changed set', () => {
+    const cur = sysResult();
+    delete cur.scoredRanking; delete cur.scoredNearMiss; delete cur.scoredCost;
+    const r = checkGate({ perSystem: { s: cur } }, { perSystem: { s: sysBase() } });
+    expect(r.pass).toBe(false);
+    expect(r.failures.join('\n')).toMatch(/results carry no usable question-mix denominators/);
+    expect(r.failures.join('\n')).toMatch(/re-baselining will not fix it/i);
+  });
+
+  it('skips the cost check when the baseline recorded a null median', () => {
+    // null is declared legal by the shape check, so the comparison must handle
+    // it: dividing by null gave "rose Infinity%", and 0/0 = NaN passed.
+    for (const curTokens of [900, 0]) {
+      const r = checkGate(
+        { perSystem: { s: sysResult({ medianTokens: curTokens }) } },
+        { perSystem: { s: sysBase({ medianTokens: null }) } },
+      );
+      expect(r.failures.join('\n')).not.toMatch(/Infinity|NaN/);
+    }
+  });
+
+  it('still accepts null in a baseline entry — null is a value, absence is not', () => {
+    const r = checkGate(
+      { perSystem: { s: sysResult({ recallAt5: null, nearMissHitRateAt5: null, scoredRanking: 0, scoredNearMiss: 0, scoredCost: 19 }) } },
+      { perSystem: { s: { recallAt5: null, nearMissHitRateAt5: null, medianTokens: 100, questionMix: mixed(0, 0, 19) } } },
+    );
+    expect(r.pass).toBe(true);
+  });
+
+  // ---- a gate that cannot be fooled into passing ----
+  // Every comparison here is `drop > LIMIT`, and every comparison against NaN
+  // is false, so a NaN or an absent key made the gate pass in silence — the one
+  // behaviour a regression gate must never have.
+  it('fails rather than passes when a current metric is NaN or missing', () => {
+    const cases = [
+      ['recallAt5', 'recall@5'],
+      ['nearMissHitRateAt5', 'near-miss hit rate'],
+      ['medianTokens', 'medianTokens'],
+    ];
+    for (const [key, label] of cases) {
+      const nan = checkGate(
+        { perSystem: { s: sysResult({ [key]: NaN }) } },
+        { perSystem: { s: sysBase() } },
+      );
+      expect(nan.pass, `${key} = NaN`).toBe(false);
+      expect(nan.failures.join('\n')).toMatch(new RegExp(`${label} is NaN`));
+
+      const cur = sysResult();
+      delete cur[key];
+      const absent = checkGate({ perSystem: { s: cur } }, { perSystem: { s: sysBase() } });
+      expect(absent.pass, `${key} absent`).toBe(false);
+      expect(absent.failures.join('\n')).toMatch(new RegExp(`${label} is missing`));
+    }
+  });
+
+  it('reports a non-numeric metric as a failure instead of throwing', () => {
+    // A hand-edited results.json is exactly the input a gate must survive.
+    const r = checkGate(
+      { perSystem: { s: sysResult({ recallAt5: '0' }) } },
+      { perSystem: { s: sysBase() } },
+    );
+    expect(r.pass).toBe(false);
+    expect(r.failures.join('\n')).toMatch(/recall@5 is "0"/);
+  });
+
+  // ---- question mix vs cost ----
+  // medianTokens is a median over every question asked, so the question set is
+  // half of what it measures. Adding four traps to the CI fixture moved cortex
+  // 982 -> 809 with no code change; traps that happened to be dearer would have
+  // failed CI as a 12% cost regression that never happened.
+  const mixed = (ranking, nearMiss, cost) => ({ ranking, nearMiss, cost });
+
+  it('reports a changed question set instead of blaming the system for cost', () => {
+    const r = checkGate(
+      { perSystem: { s: sysResult({ scoredRanking: 15, scoredNearMiss: 6, scoredCost: 21, medianTokens: 200 }) } },
+      { perSystem: { s: sysBase({ questionMix: mixed(15, 4, 19), medianTokens: 100 }) } },
+    );
+    expect(r.pass).toBe(false);
+    expect(r.failures.join('\n')).toMatch(/question set changed.*15\/4\/19 -> 15\/6\/21/s);
+    // The cost THRESHOLD is not applied, but the number is still reported.
+    // Withholding it opened a laundering path: a PR that changes the question
+    // set and regresses cost fails once, gets re-baselined per the instruction
+    // in this very message, and ships the regression unmeasured.
+    expect(r.failures.join('\n')).not.toMatch(/median tokens rose/);
+    expect(r.failures.join('\n')).toMatch(/median tokens moved 100\.0% \(100 -> 200\)/);
+  });
+
+  it('still checks cost when the question set is unchanged', () => {
+    const r = checkGate(
+      { perSystem: { s: sysResult({ scoredRanking: 15, scoredNearMiss: 4, scoredCost: 19, medianTokens: 200 }) } },
+      { perSystem: { s: sysBase({ questionMix: mixed(15, 4, 19), medianTokens: 100 }) } },
+    );
+    expect(r.pass).toBe(false);
+    expect(r.failures.join('\n')).toMatch(/median tokens rose 100\.0%/);
+  });
+
+  it('passes an unchanged question set with unchanged cost', () => {
+    const r = checkGate(
+      { perSystem: { s: sysResult({ scoredRanking: 15, scoredNearMiss: 4, scoredCost: 19, medianTokens: 100 }) } },
+      { perSystem: { s: sysBase({ questionMix: mixed(15, 4, 19) }) } },
+    );
+    expect(r.pass).toBe(true);
+  });
+
+  it('rejects a null questionMix as an unusable baseline, not as a changed set', () => {
+    // Previously null was routed into the changed-set branch. Calling it a
+    // dataset change is wrong — nothing is known about the old set — and it
+    // sent the operator to re-baseline for what is a malformed baseline.
+    const base = sysBase();
+    base.questionMix = null;
+    const r = checkGate(
+      { perSystem: { s: sysResult() } },
+      { perSystem: { s: base } },
+    );
+    expect(r.pass).toBe(false);
+    expect(r.failures.join('\n')).toMatch(/unusable.*questionMix/);
+    expect(r.failures.join('\n')).not.toMatch(/question set changed/);
+  });
+
+  it('compares the mix numerically so the message is never x -> x', () => {
+    // A baseline round-tripped through a tool that stringifies must not fail
+    // with "the question set changed (15/4/19 -> 15/4/19)".
+    const r = checkGate(
+      { perSystem: { s: sysResult() } },
+      { perSystem: { s: sysBase({ questionMix: { ranking: '15', nearMiss: '4', cost: '19' } }) } },
+    );
+    expect(r.pass).toBe(true);
+  });
+
+  it('fails when results carry no errors array instead of waving it through', () => {
+    for (const bad of [undefined, null, 'boom', {}]) {
+      const cur = sysResult();
+      cur.errors = bad;
+      if (bad === undefined) delete cur.errors;
+      const r = checkGate({ perSystem: { s: cur } }, { perSystem: { s: sysBase() } });
+      expect(r.pass, String(bad)).toBe(false);
+      expect(r.failures.join('\n')).toMatch(/results carry no errors array/);
+    }
+  });
+
+  // A results object that has STOPPED emitting the key is not the same as one
+  // reporting null, and it must not fall through to `base - undefined` -> NaN,
+  // where every comparison is false and the gate silently stops checking.
+  it('fails when the current results omit the near-miss key entirely', () => {
+    const cur = sysResult();
+    delete cur.nearMissHitRateAt5;
+    const r = checkGate(
+      { perSystem: { s: cur } },
+      { perSystem: { s: sysBase({ nearMissHitRateAt5: 0.9 }) } },
+    );
+    expect(r.pass).toBe(false);
+    // "missing", not "null" — the two states have different fixes, so the
+    // message distinguishes them.
+    expect(r.failures.join('\n')).toMatch(/near-miss hit rate is missing but baseline expected a number/);
+  });
+
 });
 
 describe('checkCacheCompleteness', () => {

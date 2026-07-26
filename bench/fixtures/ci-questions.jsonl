@@ -13,3 +13,7 @@
 {"id":"f13","question":"Which factor most directly controls extraction yield?","goldPaths":["notes/grind-size.md","notes/extraction-yield.md"],"goldAnswer":"Grind size."}
 {"id":"f14","question":"Why does a bag need a one-way valve?","goldPaths":["notes/packaging.md"],"goldAnswer":"Carbon dioxide released after roasting would otherwise inflate and burst the bag."}
 {"id":"f15","question":"What is the most common cause of roaster fires?","goldPaths":["notes/equipment-maintenance.md"],"goldAnswer":"Skipping chaff removal."}
+{"id":"t1","question":"What drum rotation speed in RPM should be used during a roast?","answerable":false,"nearMissPaths":["notes/drum-temperature.md","notes/roast-profile.md"]}
+{"id":"t2","question":"What grind size is used for cupping?","answerable":false,"nearMissPaths":["notes/cupping-protocol.md","notes/grind-size.md"]}
+{"id":"t3","question":"How long does roasted coffee stay fresh after packaging?","answerable":false,"nearMissPaths":["notes/packaging.md","notes/green-storage.md"]}
+{"id":"t4","question":"What is the roaster's maximum batch capacity?","answerable":false,"nearMissPaths":["notes/drum-temperature.md","notes/batch-logging.md"]}
