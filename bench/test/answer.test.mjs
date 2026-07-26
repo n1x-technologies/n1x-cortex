@@ -49,6 +49,40 @@ describe('answer', () => {
     await expect(answer(llm, 'Q', '')).rejects.toThrow(/empty promptPayload/);
   });
 
+  // The rule above reads an empty payload as "this system is broken", which is
+  // true only when an answer exists to be found. On a TRAP there is nothing to
+  // find, so a search that comes back empty-handed is the CORRECT outcome and
+  // throwing turns it into a dropped question. grep-agent hit exactly this on
+  // t1 in the first live Stage B run: one trap lost from its denominator, and
+  // its rates out of publishable range.
+  it('allows an empty payload on a trap, where there is nothing to find', async () => {
+    const llm = spy();
+    const out = await answer(llm, 'Q', '', { systemName: 'grep-agent', answerable: false });
+    expect(llm.calls).toHaveLength(1);
+    expect(out).toBeTruthy();
+  });
+
+  it('uses the GROUNDED prompt for an empty trap payload, not the closed-book one', async () => {
+    // "I searched and found nothing" is a grounded result. The grounded
+    // prompt's instruction to reply "I don't know" when the context lacks the
+    // answer is exactly the right response — routing it to the closed-book
+    // prompt would instead invite the model to answer from memory, which on a
+    // trap is precisely the invention being measured.
+    const llm = spy();
+    await answer(llm, 'Q', '', { systemName: 'grep-agent', answerable: false });
+    expect(llm.calls[0].system).toBe(ANSWER_SYSTEM_GROUNDED);
+    expect(llm.calls[0].system).not.toBe(ANSWER_SYSTEM_CLOSED_BOOK);
+  });
+
+  it('still throws for an empty payload on an answerable question', async () => {
+    // The exemption is scoped to traps and must not widen: on an answerable
+    // question an empty payload is still a broken run.
+    const llm = spy();
+    await expect(answer(llm, 'Q', '', { systemName: 'grep-agent', answerable: true }))
+      .rejects.toThrow(/grep-agent/);
+    expect(llm.calls).toHaveLength(0);
+  });
+
   it('includes both the payload and the question in the user message', async () => {
     const llm = spy();
     await answer(llm, 'What temperature?', 'FIRST CRACK IS 196 C');
