@@ -113,6 +113,57 @@ describe('checkGate', () => {
     expect(r.pass).toBe(false);
     expect(r.failures.some(f => /recall@5 is null/i.test(f))).toBe(true);
   });
+
+  // ---- near-miss recall, gated on the same rule as recall@5 ----
+  const sysResult = over => ({
+    name: 's', recallAt5: 1, nearMissRecallAt5: 1, medianTokens: 100, errors: [], ...over,
+  });
+  const sysBase = over => ({ recallAt5: 1, nearMissRecallAt5: 1, medianTokens: 100, ...over });
+
+  it('fails when near-miss recall falls past the limit', () => {
+    const r = checkGate(
+      { perSystem: { s: sysResult({ nearMissRecallAt5: 0.9 }) } },
+      { perSystem: { s: sysBase() } },
+    );
+    expect(r.pass).toBe(false);
+    expect(r.failures.join('\n')).toMatch(/near-miss recall@5 fell 10\.0 points/);
+  });
+
+  it('passes when near-miss recall moves within the limit', () => {
+    const r = checkGate(
+      { perSystem: { s: sysResult({ nearMissRecallAt5: 0.99 }) } },
+      { perSystem: { s: sysBase() } },
+    );
+    expect(r.pass).toBe(true);
+  });
+
+  it('skips near-miss recall when the baseline recorded null', () => {
+    const r = checkGate(
+      { perSystem: { s: sysResult({ nearMissRecallAt5: null }) } },
+      { perSystem: { s: sysBase({ nearMissRecallAt5: null }) } },
+    );
+    expect(r.pass).toBe(true);
+  });
+
+  it('skips near-miss recall for a baseline written before the metric existed', () => {
+    // An older baseline.json has no nearMissRecallAt5 key at all. That must not
+    // fail the whole gate — the system's other thresholds still apply.
+    const r = checkGate(
+      { perSystem: { s: sysResult({ nearMissRecallAt5: 0.5 }) } },
+      { perSystem: { s: { recallAt5: 1, medianTokens: 100 } } },
+    );
+    expect(r.pass).toBe(true);
+  });
+
+  it('fails when a system with a real near-miss baseline reports null', () => {
+    const r = checkGate(
+      { perSystem: { s: sysResult({ nearMissRecallAt5: null }) } },
+      { perSystem: { s: sysBase({ nearMissRecallAt5: 0.9 }) } },
+    );
+    expect(r.pass).toBe(false);
+    expect(r.failures.join('\n')).toMatch(/near-miss recall@5 is null but baseline expected a number/);
+  });
+
 });
 
 describe('checkCacheCompleteness', () => {

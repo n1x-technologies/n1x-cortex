@@ -64,6 +64,31 @@ export function checkGate(results, baseline) {
       }
     }
 
+    // Same rule and threshold as recall@5, and the same asymmetry. A null (or
+    // absent key) in the BASELINE means the metric never applied when the
+    // baseline was captured — a non-ranking system, a dataset with no trap
+    // questions, or a baseline written before this metric existed — so there
+    // is nothing to compare and the system's other thresholds still apply. A
+    // null that appears only in the CURRENT run is a system that stopped
+    // reporting a metric it used to report, which is a regression to catch.
+    if (base.nearMissRecallAt5 === undefined || base.nearMissRecallAt5 === null) {
+      // Nothing to compare.
+    } else if (cur.nearMissRecallAt5 === undefined || cur.nearMissRecallAt5 === null) {
+      failures.push(
+        `${name}: near-miss recall@5 is null but baseline expected a number ` +
+        `(${base.nearMissRecallAt5.toFixed(3)}) — a system stopped reporting a metric it used to report`,
+      );
+    } else {
+      const nearMissDrop = base.nearMissRecallAt5 - cur.nearMissRecallAt5;
+      if (nearMissDrop > RECALL_DROP_LIMIT) {
+        failures.push(
+          `${name}: near-miss recall@5 fell ${(nearMissDrop * 100).toFixed(1)} points ` +
+          `(${base.nearMissRecallAt5.toFixed(3)} -> ${cur.nearMissRecallAt5.toFixed(3)}), ` +
+          `limit ${RECALL_DROP_LIMIT * 100} points`,
+        );
+      }
+    }
+
     const tokenRise = (cur.medianTokens - base.medianTokens) / base.medianTokens;
     if (tokenRise > TOKEN_RISE_LIMIT) {
       failures.push(
