@@ -72,4 +72,68 @@ describe('loadDataset', () => {
     ].join('\n'));
     expect(() => loadDataset(jsonl, vault)).toThrow(/line 2/);
   });
+
+  it('loads a trap question with answerable:false and nearMissPaths', () => {
+    writeFileSync(jsonl, rec({
+      id: 't1', question: 'What is the ideal drum RPM?',
+      answerable: false, nearMissPaths: ['notes/a.md'],
+    }));
+    const [q] = loadDataset(jsonl, vault);
+    expect(q.answerable).toBe(false);
+    expect(q.nearMissPaths).toEqual(['notes/a.md']);
+    expect(q.goldPaths).toEqual([]);
+    expect(q.goldAnswer).toBeNull();
+  });
+
+  it('defaults answerable to true and nearMissPaths to empty', () => {
+    writeFileSync(jsonl, rec({ id: 'a1', question: 'Q', goldPaths: ['notes/a.md'], goldAnswer: 'A' }));
+    const [q] = loadDataset(jsonl, vault);
+    expect(q.answerable).toBe(true);
+    expect(q.nearMissPaths).toEqual([]);
+  });
+
+  it('loads a file mixing answerable and trap questions', () => {
+    writeFileSync(jsonl, [
+      rec({ id: 'a1', question: 'Q', goldPaths: ['notes/a.md'], goldAnswer: 'A' }),
+      rec({ id: 't1', question: 'T', answerable: false, nearMissPaths: ['notes/b.md'] }),
+    ].join('\n'));
+    const qs = loadDataset(jsonl, vault);
+    expect(qs.map(q => q.answerable)).toEqual([true, false]);
+  });
+
+  it('rejects a trap that still carries a goldAnswer', () => {
+    writeFileSync(jsonl, rec({
+      id: 't2', question: 'T', answerable: false,
+      nearMissPaths: ['notes/a.md'], goldAnswer: 'leftover',
+    }));
+    expect(() => loadDataset(jsonl, vault)).toThrow(/t2.*goldAnswer/s);
+  });
+
+  it('rejects a trap that still carries goldPaths', () => {
+    writeFileSync(jsonl, rec({
+      id: 't3', question: 'T', answerable: false,
+      nearMissPaths: ['notes/a.md'], goldPaths: ['notes/a.md'],
+    }));
+    expect(() => loadDataset(jsonl, vault)).toThrow(/t3.*goldPaths/s);
+  });
+
+  it('rejects a trap with no nearMissPaths', () => {
+    writeFileSync(jsonl, rec({ id: 't4', question: 'T', answerable: false }));
+    expect(() => loadDataset(jsonl, vault)).toThrow(/t4.*nearMissPaths/s);
+  });
+
+  it('rejects a trap whose nearMissPath is not in the corpus', () => {
+    writeFileSync(jsonl, rec({
+      id: 't5', question: 'T', answerable: false, nearMissPaths: ['notes/ghost.md'],
+    }));
+    expect(() => loadDataset(jsonl, vault)).toThrow(/t5.*nearMissPath "notes\/ghost\.md"/s);
+  });
+
+  it('rejects an answerable question carrying nearMissPaths', () => {
+    writeFileSync(jsonl, rec({
+      id: 'a2', question: 'Q', goldPaths: ['notes/a.md'], goldAnswer: 'A',
+      nearMissPaths: ['notes/b.md'],
+    }));
+    expect(() => loadDataset(jsonl, vault)).toThrow(/a2.*nearMissPaths/s);
+  });
 });
