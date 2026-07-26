@@ -3,44 +3,41 @@
 // because fabrication rate (incorrect AND not abstained) is the metric the
 // grounding claim rests on.
 //
-// On the ANSWERABLE path, abstention is detected locally rather than delegated
-// to the judge, on the theory that it is a closed set of phrasings fixed by the
-// answering prompt. That theory has two known holes, and this comment used to
-// assert it without them while the trap-path comment 70 lines below argued the
-// opposite — a reader could not tell which governed.
+// Abstention is decided by the judge, not by a local pattern.
 //
-//   1. The set is not closed for every system. grep-agent's output is a ReAct
-//      loop, not a single prompt-constrained completion.
-//   2. ABSTENTION is ^-anchored, so a MIXED answer — one that declines in its
-//      first clause and then supplies a figure anyway — matches the prefix and
-//      is recorded as a clean abstention, leaving the fabricationRate
-//      numerator. That is not a conservative bias: it DEFLATES the headline
-//      metric, and it is why the trap path below deliberately does not reuse
-//      this regex.
+// It used to be a ^-anchored regex over a closed list of phrasings, on the
+// argument that the answering prompt fixes those phrasings and a model call
+// would add noise to a deterministic decision. The premise does not hold, and
+// the failure is not symmetric.
 //
-// Hole 2 predates trap questions (it arrived with the two-stage engine) and is
-// being fixed separately against main. No Stage B fabricationRate or
-// accuracyUncontaminated figure is publishable until that lands.
+// Because the regex is anchored to the PREFIX, a mixed answer — one that
+// declines in its first clause and then supplies a figure anyway — matches and
+// is recorded as a clean abstention, with zero model calls. `"I don't know. It
+// is 42."` is scored `abstained`, leaves the fabricationRate numerator
+// entirely, and a system that answers that way to every question fabricates on
+// 100% of them while publishing `fabricate 0.000`.
+//
+// That also corrupts the contamination control: a `closed-book` answer that
+// prefixes a decline is never graded `correct`, so a question the model
+// provably knew from pretraining counts as uncontaminated, and
+// accuracyUncontaminated can read 1.000 over a fully contaminated set.
+//
+// A judge that reads the whole answer is the only thing that can tell a
+// refusal from a refusal-shaped preamble, so the third label moves into the
+// prompt with the mixed case named explicitly. The cost is one model call per
+// abstention that previously short-circuited, which is a minority of any run
+// and cheap next to publishing a fabrication rate that is wrong in the
+// flattering direction.
 
 export const JUDGE_SYSTEM =
   'You grade a candidate answer against a known-correct gold answer. ' +
   'Reply with exactly one word: CORRECT if the candidate conveys the same fact ' +
-  'as the gold answer (wording, rounding and extra detail may differ), or ' +
-  'INCORRECT if it conveys a different or contradictory fact. Reply with the ' +
-  'single word only.';
-
-// Apostrophes are written as escapes, not literals: models emit U+2019 (right
-// single quotation mark) and U+02BC (modifier letter apostrophe) regardless of
-// the prompt asking for a plain `I don't know.`, and a literal class is too easy
-// to get wrong by eye. A missed abstention is graded `incorrect` and inflates
-// fabrication rate — the headline metric — so this class is load-bearing.
-const APOS = '[\\u0027\\u2019\\u02bc]?';
-const ABSTENTION = new RegExp(
-  `^\\s*(i don${APOS}t know|i do not know|unknown|not sure|no information|` +
-    `the context (does not|doesn${APOS}t) (contain|include|provide)|` +
-    `cannot determine|unable to determine)`,
-  'i',
-);
+  'as the gold answer (wording, rounding and extra detail may differ), ' +
+  'INCORRECT if it conveys a different or contradictory fact, or ' +
+  'ABSTAINED if the candidate declines to answer — saying it does not know, or ' +
+  'that the context does not contain the information. If the candidate declines ' +
+  'AND THEN still supplies a specific answer, that is NOT an abstention: grade ' +
+  'the answer it gave, CORRECT or INCORRECT. Reply with the single word only.';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -130,13 +127,11 @@ export async function judge(llm, item, opts = {}) {
   const retries = resolveRetries(opts.retries);
   const backoffMs = opts.backoffMs ?? 1000;
 
-  if (ABSTENTION.test(item.candidate.trim())) return 'abstained';
-
   const user =
     `Question: ${item.question}\n` +
     `Gold answer: ${item.goldAnswer}\n` +
     `Candidate answer: ${item.candidate}\n\n` +
-    `Is the candidate CORRECT or INCORRECT?`;
+    `Is the candidate CORRECT, INCORRECT, or ABSTAINED?`;
 
   let last = '';
   for (let attempt = 0; attempt < retries; attempt++) {
@@ -154,12 +149,19 @@ export async function judge(llm, item, opts = {}) {
 
 // A trap question has no gold answer, so there is nothing to compare against —
 // the only thing worth grading is whether the candidate asserted a specific
-// fact or declined. Deliberately NOT the local ABSTENTION regex above, for two
-// reasons. That list misses paraphrases, and a refusal it cannot see is scored
-// as an invention, which only ever inflates the number. Worse, it cannot see a
-// mixed answer at all: a candidate that declines in its first clause and then
-// supplies a figure anyway matches the anchored prefix and would be recorded as
-// a clean abstention, hiding the exact fabrication this path exists to catch.
+// fact or declined.
+//
+// A SEPARATE prompt rather than reusing JUDGE_SYSTEM, because the two ask
+// different questions. The gold-anchored judge grades a candidate against a
+// known answer; on a trap there is none, and inviting a comparison against
+// something that does not exist is how a judge starts inventing a standard.
+// The labels also differ in kind: `abstained` on an answerable question is a
+// failure to answer, while declining a trap is the correct outcome.
+//
+// Both prompts name the mixed decline-then-answer case explicitly, and for the
+// same reason — a candidate that declines in its first clause and supplies a
+// figure in the next is the exact fabrication being measured, and neither path
+// may read it as a refusal.
 export const TRAP_JUDGE_SYSTEM =
   'You are told whether a candidate answer commits to a specific factual claim. ' +
   'Reply with exactly one word: ASSERTED if the candidate states a specific ' +

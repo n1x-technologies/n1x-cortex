@@ -47,8 +47,10 @@ trap it is the correct response. Averaging them would be meaningless.
   its tokens are real. What Stage A does measure is `near-miss` (below).
 - **Stage B** routes traps to a second judge prompt that asks a different
   question: did the candidate *commit to a specific claim* (`invented`) or say
-  it does not know (`declined`)? This judge is never the local abstention
-  pattern, deliberately — see the honest boundary.
+  it does not know (`declined`)? A separate prompt rather than the
+  gold-anchored one, because a trap has no gold answer to compare against, and
+  because `abstained` on an answerable question is a failure while declining a
+  trap is the correct outcome.
 
 `inventionRate` and `fabricationRate` are never merged into one number, and
 `inventionRate` is always published next to `abstentionRate`, because either
@@ -278,36 +280,34 @@ otherwise, until that labelling happens and clears the bar.
   *lower* fabrication rate under this definition. This is the number the
   grounding claim rests on, and it has not been measured yet (see Stage B
   above).
-- **Abstention is detected by a fixed local pattern, not by the judge model**
-  (`ABSTENTION` in `lib/judge.mjs`): a closed list of phrasings anchored to
-  the start of the answer. A reply that abstains in different words — *"Based
-  on the provided context, I don't know."* or *"There is no information in
-  the notes about X."* — does not match, is sent to the judge, and is graded
-  `incorrect` rather than `abstained`, inflating the fabrication rate. The
-  intended control is judge-human spot-checking (`out/spot-check.md`, see
-  above): a labeller reviewing the sample would catch a paraphrased refusal
-  scored as a fabrication.
-- **That local pattern has a second, opposite failure, and it is the one that
-  blocks publication.** An earlier version of this file claimed the bias above
-  "can only inflate fabrication rate, never deflate it". That claim is false.
-  The pattern is anchored to the *start* of the answer, so a MIXED reply —
-  one that declines in its first clause and then supplies a figure anyway,
-  *"I don't know. It is 42."* — matches the prefix and is recorded as a clean
-  abstention with no model call at all. It leaves the fabrication numerator
-  entirely. A system that answers that way to everything fabricates on 100%
-  of questions and publishes `fabricate 0.000`.
+- **Abstention is decided by the judge model, not by a local pattern.** It
+  used to be a `^`-anchored regex over a closed list of phrasings, on the
+  argument that the answering prompt fixes those phrasings. An earlier version
+  of this section called the resulting error "a one-directional bias that can
+  only inflate fabrication rate, never deflate it". **That was false**, and it
+  is worth stating plainly because it was the load-bearing reassurance for the
+  headline metric.
 
-  The same short-circuit corrupts the contamination control: a `closed-book`
-  answer that prefixes a decline is never graded `correct`, so a question the
-  model provably knew from pretraining is counted as uncontaminated, and
-  `accuracyUncontaminated` can read 1.000 over a fully contaminated set.
+  Because the pattern was anchored to the *prefix*, a reply that declined and
+  then answered anyway — *"I don't know. It is 42."* — matched and was recorded
+  as a clean abstention with no model call, leaving the fabrication numerator
+  entirely. A system answering that way to every question fabricates on 100% of
+  them and publishes `fabricate 0.000`. The same short-circuit let a
+  `closed-book` answer that hedged before answering escape the contamination
+  control, so a question the model provably knew from pretraining counted as
+  uncontaminated and `accuracyUncontaminated` could read 1.000 over a fully
+  contaminated set.
 
-  This predates trap questions — it arrived with the two-stage engine — and
-  is being fixed separately. **No Stage B `fabricationRate` or
-  `*Uncontaminated` figure is publishable until that lands.** It is also
-  exactly why the trap judge does not reuse this pattern: on the trap path a
-  mixed answer is precisely the fabrication being measured, so that path
-  always asks the model.
+  The third label now lives in the judge prompt, with the mixed case named
+  explicitly: a candidate that declines and then supplies an answer is graded
+  on the answer it gave. This costs one model call per abstention that
+  previously short-circuited. It also fixes the *other* direction the old
+  paragraph described — a paraphrased refusal is now read as an abstention
+  rather than counted as a fabrication.
+
+  The remaining control is unchanged: judge-human spot-checking
+  (`out/spot-check.md`, see above), and below 90% agreement no accuracy or
+  fabrication number is published at all.
 - **A judge reply the parser cannot read costs the question, silently.** Both
   parsers scan for a label and refuse a reply that is ambiguous — one naming
   both labels, or negated in the clause before the label. A refused reply is
