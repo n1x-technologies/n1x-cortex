@@ -17,7 +17,7 @@
 import { countTokens } from './tokenizer.mjs';
 import { percentile } from './metrics.mjs';
 import { answer } from './answer.mjs';
-import { judge } from './judge.mjs';
+import { judge, judgeTrap } from './judge.mjs';
 
 /**
  * @param {object} p
@@ -53,13 +53,18 @@ export async function runStageB({ systems, questions, ctx, llm, judgeLlm, subsam
           isClosedBook: !!system.closedBook,
           systemName: system.name,
         });
-        const verdict = await judge(judgeLlm, {
-          question: q.question,
-          goldAnswer: q.goldAnswer,
-          candidate,
-        });
+        // Same default as dataset.mjs's loader, restated so a question object
+        // built inline is not misread as a trap.
+        const answerable = q.answerable !== false;
+        const verdict = answerable
+          ? await judge(judgeLlm, {
+              question: q.question,
+              goldAnswer: q.goldAnswer,
+              candidate,
+            })
+          : await judgeTrap(judgeLlm, { question: q.question, candidate });
         const questionTokens = countTokens(r.promptPayload) + r.retrievalTokens;
-        records.push({ id: q.id, verdict, candidate, tokens: questionTokens });
+        records.push({ id: q.id, answerable, verdict, candidate, tokens: questionTokens });
         tokens.push(questionTokens);
       } catch (e) {
         errors.push({ id: q.id, message: e.message });
@@ -69,15 +74,23 @@ export async function runStageB({ systems, questions, ctx, llm, judgeLlm, subsam
     perSystem[system.name] = { name: system.name, records, errors, tokens, asked: asked.length };
   }
 
-  // Contamination: questions the closed-book control answered correctly.
+  // Contamination: ANSWERABLE questions the closed-book control answered
+  // correctly. A trap is excluded by construction — it has no corpus answer the
+  // model could already have known, and knowing the fact from the world does
+  // not make the question answerable FROM THE CORPUS, which is the only thing
+  // being measured. Including traps would dilute the control without adding
+  // information.
   const control = perSystem['closed-book'];
   const contaminatedIds = control
-    ? control.records.filter(r => r.verdict === 'correct').map(r => r.id)
+    ? control.records.filter(r => r.answerable && r.verdict === 'correct').map(r => r.id)
     : [];
   const contaminated = new Set(contaminatedIds);
 
+  const answerableCount = questions.filter(q => q.answerable !== false).length;
+
   for (const s of Object.values(perSystem)) {
-    const all = s.records;
+    const all = s.records.filter(r => r.answerable);
+    const traps = s.records.filter(r => !r.answerable);
     const clean = all.filter(r => !contaminated.has(r.id));
 
     perSystem[s.name] = {
@@ -87,6 +100,13 @@ export async function runStageB({ systems, questions, ctx, llm, judgeLlm, subsam
       abstentionRate: rate(all, 'abstained'),
       fabricationRate: rate(all, 'incorrect'),
       fabricationRateUncontaminated: rate(clean, 'incorrect'),
+      // Trap questions only, and ALWAYS read next to abstentionRate. A system
+      // that answers "I don't know" to everything scores a perfect
+      // inventionRate and fails every answerable question; one that always
+      // asserts does the reverse. Either number alone is gameable — the pair
+      // is the measurement. null when the dataset had no traps: "no traps were
+      // asked" must never print as "invented nothing".
+      inventionRate: traps.length ? rate(traps, 'invented') : null,
       // percentile([]) already returns 0, not NaN (bench/lib/metrics.mjs), so
       // this guard isn't defusing a NaN that would otherwise appear. It exists
       // to stop a silent 0 from reading as "measured zero cost" when there was
@@ -97,7 +117,10 @@ export async function runStageB({ systems, questions, ctx, llm, judgeLlm, subsam
       errors: s.errors,
       scored: all.length,
       scoredUncontaminated: clean.length,
-      records: all,
+      trapScored: traps.length,
+      // The FULL record list, both kinds — the per-question audit trail must
+      // not lose the traps just because the rates above are split.
+      records: s.records,
     };
   }
 
@@ -105,7 +128,8 @@ export async function runStageB({ systems, questions, ctx, llm, judgeLlm, subsam
     perSystem,
     contaminatedIds,
     questionCount: questions.length,
-    uncontaminatedCount: questions.length - contaminatedIds.length,
+    answerableCount,
+    uncontaminatedCount: answerableCount - contaminatedIds.length,
   };
 }
 

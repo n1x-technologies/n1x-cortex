@@ -226,4 +226,109 @@ describe('runStageB', () => {
     expect(s.medianTokens).toBeNull();
     expect(JSON.parse(JSON.stringify(s)).medianTokens).toBeNull();
   });
+  // ---- trap questions (answerable: false) ----
+  // A trap is a question the corpus does not answer. The three judge labels
+  // invert meaning across the two kinds: on an answerable question abstaining
+  // is a failure, on a trap it is the correct response. So they are scored
+  // separately and never averaged together.
+  const trap = { id: 't1', question: 'TRAP', goldPaths: [], goldAnswer: null,
+    sourceUrl: null, answerable: false, nearMissPaths: ['b.md'] };
+  const ans = (id, gold) => ({ id, question: id.toUpperCase(), goldPaths: ['a.md'],
+    goldAnswer: gold, sourceUrl: null, answerable: true, nearMissPaths: [] });
+
+  // Covers both judge paths: the trap prompt asks ASSERTED/DECLINED, the
+  // gold-anchored prompt asks CORRECT/INCORRECT.
+  const bothJudge = {
+    async complete(system, user) {
+      if (/ASSERTED/.test(system)) {
+        return /I don't know/.test(user) ? 'DECLINED' : 'ASSERTED';
+      }
+      const gold = /Gold answer: (.*)/.exec(user)[1];
+      const cand = /Candidate answer: (.*)/.exec(user)[1];
+      return cand.includes(gold) ? 'CORRECT' : 'INCORRECT';
+    },
+  };
+
+  it('routes a trap to the trap judge and reports inventionRate', async () => {
+    const r = await runStageB({
+      systems: [sys('s', 'ALPHA')],
+      questions: [ans('q1', 'ALPHA'), trap],
+      ctx: {}, llm, judgeLlm: bothJudge,
+    });
+    const s = r.perSystem.s;
+    expect(s.inventionRate).toBe(1);   // payload 'ALPHA' is asserted on the trap
+    expect(s.trapScored).toBe(1);
+    expect(s.accuracy).toBe(1);        // answerable side unaffected
+    expect(s.scored).toBe(1);          // answerable denominator excludes the trap
+  });
+
+  it('reports inventionRate as null when the dataset has no traps', async () => {
+    const r = await runStageB({
+      systems: [sys('s', 'ALPHA')], questions: [ans('q1', 'ALPHA')],
+      ctx: {}, llm, judgeLlm: bothJudge,
+    });
+    expect(r.perSystem.s.inventionRate).toBeNull();
+    expect(r.perSystem.s.trapScored).toBe(0);
+  });
+
+  it('computes exact fractional rates over mixed answerable and trap outcomes', async () => {
+    // Three answerable: one correct, one incorrect, one abstained.
+    // Two traps: one declined, one invented. Homogeneous fixtures would give
+    // rates of exactly 0 or 1, under which rate() could be a boolean.
+    const qs = [ans('q1', 'ALPHA'), ans('q2', 'ZETA'), ans('q3', 'OMEGA'),
+      { ...trap, id: 't1' }, { ...trap, id: 't2' }];
+    const payloadFor = { Q1: 'ALPHA', Q2: 'GAMMA', Q3: "I don't know." };
+    let trapSeen = 0;
+    const mixed = {
+      name: 's',
+      async run(q) {
+        const p = q === 'TRAP' ? (trapSeen++ === 0 ? "I don't know." : 'ALPHA') : payloadFor[q];
+        return { promptPayload: p, citedPaths: ['a.md'], latencyMs: 1, retrievalTokens: 0 };
+      },
+    };
+    const r = await runStageB({ systems: [mixed], questions: qs, ctx: {}, llm, judgeLlm: bothJudge });
+    const s = r.perSystem.s;
+    expect(s.accuracy).toBe(0.3333);
+    expect(s.fabricationRate).toBe(0.3333);
+    expect(s.abstentionRate).toBe(0.3333);
+    expect(s.inventionRate).toBe(0.5);
+    expect(s.scored).toBe(3);
+    expect(s.trapScored).toBe(2);
+  });
+
+  it('never marks a trap as contaminated', async () => {
+    const closedBook = {
+      name: 'closed-book', closedBook: true,
+      async run() { return { promptPayload: '', citedPaths: [], latencyMs: 0, retrievalTokens: 0 }; },
+    };
+    // This answering model "knows" both the answerable question and the trap.
+    const knowing = { async complete(_s, user) {
+      if (!/Context:/.test(user)) return 'ALPHA';
+      return /Context:\n([\s\S]*?)\n\nQuestion/.exec(user)[1];
+    } };
+    const r = await runStageB({
+      systems: [closedBook], questions: [ans('q1', 'ALPHA'), trap],
+      ctx: {}, llm: knowing, judgeLlm: bothJudge,
+    });
+    expect(r.contaminatedIds).toEqual(['q1']);   // the trap is not in here
+    expect(r.answerableCount).toBe(1);
+    expect(r.uncontaminatedCount).toBe(0);
+  });
+
+  it('tags each record with whether its question was answerable', async () => {
+    const r = await runStageB({
+      systems: [sys('s', 'ALPHA')], questions: [ans('q1', 'ALPHA'), trap],
+      ctx: {}, llm, judgeLlm: bothJudge,
+    });
+    expect(r.perSystem.s.records.map(x => [x.id, x.answerable]))
+      .toEqual([['q1', true], ['t1', false]]);
+  });
+
+  it('treats a question with no `answerable` field as answerable, like loadDataset does', async () => {
+    // The module-level `questions` fixture omits the field entirely.
+    const r = await runStageB({ systems: [sys('s', 'ALPHA BETA')], questions, ctx: {}, llm, judgeLlm });
+    expect(r.perSystem.s.scored).toBe(2);
+    expect(r.perSystem.s.trapScored).toBe(0);
+    expect(r.perSystem.s.inventionRate).toBeNull();
+  });
 });
