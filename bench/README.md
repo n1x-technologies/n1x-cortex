@@ -196,19 +196,34 @@ otherwise, until that labelling happens and clears the bar.
   *lower* fabrication rate under this definition. This is the number the
   grounding claim rests on, and it has not been measured yet (see Stage B
   above).
-- **Abstention is detected by a fixed local pattern, not by the judge model**
-  (`ABSTENTION` in `lib/judge.mjs`): a closed list of phrasings anchored to
-  the start of the answer. A reply that abstains in different words — *"Based
-  on the provided context, I don't know."* or *"There is no information in
-  the notes about X."* — does not match, is sent to the judge, and is graded
-  `incorrect` rather than `abstained`. Because `incorrect` is exactly what
-  feeds the fabrication-rate numerator, this is a one-directional bias that
-  can only inflate fabrication rate, never deflate it. The intended control
-  is judge-human spot-checking (`out/spot-check.md`, see above) — a labeller
-  reviewing the sample would catch a paraphrased refusal scored as a
-  fabrication. The pattern is deliberately not widened to catch more phrasings
-  without that human check first; doing so unreviewed would risk the opposite
-  failure, an answer that isn't really a refusal being waved through as one.
+- **Abstention is decided by the judge model, not by a local pattern.** It
+  used to be a `^`-anchored regex over a closed list of phrasings, on the
+  argument that the answering prompt fixes those phrasings. An earlier version
+  of this section called the resulting error "a one-directional bias that can
+  only inflate fabrication rate, never deflate it". **That was false**, and it
+  is worth stating plainly because it was the load-bearing reassurance for the
+  headline metric.
+
+  Because the pattern was anchored to the *prefix*, a reply that declined and
+  then answered anyway — *"I don't know. It is 42."* — matched and was recorded
+  as a clean abstention with no model call, leaving the fabrication numerator
+  entirely. A system answering that way to every question fabricates on 100% of
+  them and publishes `fabricate 0.000`. The same short-circuit let a
+  `closed-book` answer that hedged before answering escape the contamination
+  control, so a question the model provably knew from pretraining counted as
+  uncontaminated and `accuracyUncontaminated` could read 1.000 over a fully
+  contaminated set.
+
+  The third label now lives in the judge prompt, with the mixed case named
+  explicitly: a candidate that declines and then supplies an answer is graded
+  on the answer it gave. This costs one model call per abstention that
+  previously short-circuited. It also fixes the *other* direction the old
+  paragraph described — a paraphrased refusal is now read as an abstention
+  rather than counted as a fabrication.
+
+  The remaining control is unchanged: judge-human spot-checking
+  (`out/spot-check.md`, see above), and below 90% agreement no accuracy or
+  fabrication number is published at all.
 - **Stage B is unmeasured.** No answer-quality table, no fabrication rate,
   no judge-human agreement figure exists yet. See Stage B above.
 - **Numbers are corpus-dependent.** Run it on your own vault; do not carry

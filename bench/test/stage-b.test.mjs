@@ -13,11 +13,20 @@ const sys = (label, payload) => ({
 
 // The answering model echoes the payload; the judge marks a candidate correct
 // when it contains the gold answer.
+//
+// The judge now decides abstention too — it is no longer short-circuited by a
+// local pattern before the call — so this stub has to model all three labels.
+// It declines only when the candidate is a BARE refusal: a decline followed by
+// a figure is graded on the figure, which is the behaviour the change exists
+// to produce.
 const llm = { async complete(_s, user) { return /Context:\n([\s\S]*?)\n\nQuestion/.exec(user)?.[1] ?? "I don't know."; } };
 const judgeLlm = {
   async complete(_s, user) {
     const gold = /Gold answer: (.*)/.exec(user)[1];
     const cand = /Candidate answer: (.*)/.exec(user)[1];
+    if (/^\s*(i don'?t know|unknown|the context does not contain[^.]*)\.?\s*$/i.test(cand)) {
+      return 'ABSTAINED';
+    }
     return cand.includes(gold) ? 'CORRECT' : 'INCORRECT';
   },
 };
@@ -52,6 +61,39 @@ describe('runStageB', () => {
     expect(r.perSystem.abstains.accuracy).toBe(0);
     expect(r.perSystem.abstains.abstentionRate).toBe(1);
     expect(r.perSystem.abstains.fabricationRate).toBe(0);
+  });
+
+  // The gameable system the prefix-anchored pattern could not see. It declines
+  // and then answers anyway, every time. Under the old local short-circuit it
+  // scored `abstain 1.000 / fabricate 0.000` — a perfect score on the metric
+  // the grounding claim rests on, while fabricating on 100% of questions.
+  it('does not let a decline-then-answer system publish a zero fabrication rate', async () => {
+    const mixedGamer = { async complete() { return "I don't know. It is 42."; } };
+    const r = await runStageB({
+      systems: [sys('mixed-gamer', 'ALPHA BETA')], questions, ctx: {}, llm: mixedGamer, judgeLlm,
+    });
+    const s = r.perSystem['mixed-gamer'];
+    expect(s.abstentionRate).toBe(0);
+    expect(s.fabricationRate).toBe(1);
+    expect(s.accuracy).toBe(0);
+  });
+
+  // Same short-circuit, second victim: closed-book is the contamination
+  // control, and a decline-shaped prefix meant it was never graded `correct`,
+  // so a question the model provably knew from pretraining counted as
+  // uncontaminated and accuracyUncontaminated read over a polluted set.
+  it('detects contamination even when the control hedges before answering', async () => {
+    const hedgingControl = { async complete(_s, user) {
+      return /Context:\n\n?\nQuestion/.test(user) || !/Context:/.test(user)
+        ? "I don't know. ALPHA." : 'ALPHA';
+    } };
+    const closedBook = { name: 'closed-book', closedBook: true,
+      async run() { return { promptPayload: '', citedPaths: [], latencyMs: 0, retrievalTokens: 0 }; } };
+    const r = await runStageB({
+      systems: [closedBook], questions: [questions[0]], ctx: {},
+      llm: hedgingControl, judgeLlm,
+    });
+    expect(r.contaminatedIds).toEqual(['q1']);
   });
 
   it('marks questions the closed-book control answers correctly as contaminated', async () => {
