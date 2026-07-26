@@ -1,20 +1,22 @@
 // Question sets are .jsonl so records stay diffable and appendable. Validation
 // is strict and fails the whole load: a stale gold path deflates recall for
 // every system simultaneously, which reads as a quality regression instead of
-// a broken dataset.
-import { readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+// a broken dataset. A trap question — one the corpus does not answer — is
+// declared with answerable: false and names the notes that make it a near
+// miss in nearMissPaths; it must not carry a goldAnswer or goldPaths.
+import { readFileSync, existsSync, statSync, realpathSync } from 'node:fs';
+import { join, normalize, isAbsolute, sep } from 'node:path';
 
 /**
  * @typedef {Object} Question
  * @property {string} id
  * @property {string} question
- * @property {string[]} goldPaths   vault-relative paths that answer it
- * @property {string} goldAnswer
+ * @property {string[]} goldPaths   vault-relative paths that answer it (answerable only)
+ * @property {string|null} goldAnswer   null for a trap question
  * @property {string|null} sourceUrl
+ * @property {boolean} answerable   false marks a trap the corpus cannot answer
+ * @property {string[]} nearMissPaths   vault-relative paths that make a trap a near miss
  */
-
-const REQUIRED = ['id', 'question', 'goldPaths', 'goldAnswer'];
 
 /**
  * @param {string} jsonlPath
@@ -37,36 +39,178 @@ export function loadDataset(jsonlPath, vaultDir) {
       throw new Error(`${jsonlPath} line ${i + 1}: malformed JSON — ${e.message}`);
     }
 
-    for (const field of REQUIRED) {
+    const where = `${jsonlPath} line ${i + 1} (${rec.id ?? 'no id'})`;
+
+    for (const field of ['id', 'question']) {
       if (rec[field] === undefined || rec[field] === null || rec[field] === '') {
         throw new Error(`${jsonlPath} line ${i + 1}: missing required field "${field}"`);
       }
+      if (typeof rec[field] !== 'string') {
+        // `id` doubles as a Map/Set key downstream (spot-check.mjs, the
+        // contamination filter). A numeric 1 and a string "1" are distinct
+        // members of the dedupe Set below but collide or diverge depending on
+        // which side builds the key, so the type is pinned here.
+        throw new Error(
+          `${where}: "${field}" must be a string, got ${typeof rec[field]}`,
+        );
+      }
     }
-    if (!Array.isArray(rec.goldPaths) || rec.goldPaths.length === 0) {
-      throw new Error(`${jsonlPath} line ${i + 1} (${rec.id}): "goldPaths" must be a non-empty array`);
+
+    // Trap membership is declared, never inferred, so the declaration has to
+    // survive a hand edit. `rec.answerable !== false` silently reads ANY
+    // non-false value as answerable — including the string "false", which is
+    // what a spreadsheet or CSV-to-JSONL export produces. The record then took
+    // the answerable branch and failed with `missing required field
+    // "goldAnswer"`, telling the author to invent a gold answer for a question
+    // the corpus cannot answer. Worse, a half-edited record carrying a leftover
+    // goldAnswer loaded clean and an explicitly-declared trap was scored as an
+    // answerable question.
+    if (rec.answerable !== undefined && typeof rec.answerable !== 'boolean') {
+      throw new Error(
+        `${where}: "answerable" must be a boolean, got ${typeof rec.answerable} ` +
+          `(${JSON.stringify(rec.answerable)}). A trap question is declared with ` +
+          'answerable: false, unquoted.',
+      );
     }
+    const answerable = rec.answerable !== false;
+
     if (seen.has(rec.id)) {
       throw new Error(`${jsonlPath} line ${i + 1}: duplicate id "${rec.id}"`);
     }
     seen.add(rec.id);
 
-    for (const p of rec.goldPaths) {
-      if (!existsSync(join(vaultDir, p))) {
+    if (answerable) {
+      if (rec.goldAnswer === undefined || rec.goldAnswer === null || rec.goldAnswer === '') {
+        throw new Error(`${where}: missing required field "goldAnswer"`);
+      }
+      if (!Array.isArray(rec.goldPaths) || rec.goldPaths.length === 0) {
+        throw new Error(`${where}: "goldPaths" must be a non-empty array`);
+      }
+      // Presence, not shape: `"nearMissPaths": "notes/a.md"` written as a bare
+      // string is the commonest hand-edit slip, and an Array.isArray guard
+      // waves it through to be silently discarded at the bottom of this
+      // function. Anything present that is not an empty array is a record
+      // whose author meant something the loader is about to throw away.
+      if (rec.nearMissPaths !== undefined && !isEmptyArray(rec.nearMissPaths)) {
         throw new Error(
-          `${jsonlPath} line ${i + 1} (${rec.id}): goldPath "${p}" does not exist in corpus ${vaultDir}`,
+          `${where}: "nearMissPaths" belongs to a trap question (answerable: false), ` +
+            'not to an answerable one',
         );
       }
+      checkPaths(rec.goldPaths, 'goldPath', where, vaultDir);
+    } else {
+      // A trap is a question the corpus does not answer. A leftover goldAnswer
+      // or goldPaths from a half-edited copy would make the record read as a
+      // trap while carrying an answer nothing consumes, and the next reader
+      // cannot tell which field governs. Reject rather than ignore.
+      if (rec.goldAnswer !== undefined && rec.goldAnswer !== null) {
+        throw new Error(`${where}: a trap question must not carry a "goldAnswer"`);
+      }
+      // Same presence-not-shape rule as nearMissPaths above: a goldPaths
+      // written as a bare string is exactly the half-edited state this guard
+      // exists to reject, and Array.isArray would let it through.
+      if (rec.goldPaths !== undefined && !isEmptyArray(rec.goldPaths)) {
+        throw new Error(`${where}: a trap question must not carry "goldPaths"`);
+      }
+      if (!Array.isArray(rec.nearMissPaths) || rec.nearMissPaths.length === 0) {
+        throw new Error(
+          `${where}: a trap question requires a non-empty "nearMissPaths" naming the notes ` +
+            'that make it a near miss',
+        );
+      }
+      checkPaths(rec.nearMissPaths, 'nearMissPath', where, vaultDir);
     }
 
     out.push({
       id: rec.id,
       question: rec.question,
-      goldPaths: rec.goldPaths,
-      goldAnswer: rec.goldAnswer,
+      goldPaths: answerable ? rec.goldPaths : [],
+      goldAnswer: answerable ? rec.goldAnswer : null,
       sourceUrl: rec.sourceUrl ?? null,
+      answerable,
+      nearMissPaths: answerable ? [] : rec.nearMissPaths,
     });
   });
 
   if (out.length === 0) throw new Error(`${jsonlPath}: no records`);
   return out;
+}
+
+const isEmptyArray = v => Array.isArray(v) && v.length === 0;
+
+/**
+ * Every path a question names must resolve to a real FILE in the corpus.
+ *
+ * Existence alone is not enough. `existsSync(join(vaultDir, ''))` tests the
+ * vault root, which exists, so an empty string — what you get by fixing a
+ * trailing comma with an empty element — passes as a path. It can then never
+ * match a cited path, so it contributes a permanent 0 to whichever metric
+ * consumes it and trips the gate as a retrieval regression the failure message
+ * cannot explain. A directory name behaves the same way.
+ *
+ * The type check exists so a non-string element fails with the file, line and
+ * question id every other error in this loader carries, instead of escaping as
+ * a bare `path.join` TypeError.
+ */
+function checkPaths(paths, label, where, vaultDir) {
+  for (const p of paths) {
+    if (typeof p !== 'string') {
+      throw new Error(`${where}: ${label} must be a string, got ${typeof p} (${JSON.stringify(p)})`);
+    }
+    if (p === '') {
+      throw new Error(`${where}: ${label} is an empty string`);
+    }
+    // Canonical form, not merely existent. Systems emit citedPaths as plain
+    // vault-relative POSIX strings and every metric matches them with exact
+    // string equality (`Set.has`), but `join(vaultDir, p)` normalises before
+    // the existence check — so `./notes/a.md`, `notes//a.md` and
+    // `notes/../notes/a.md` all pass validation and then match nothing.
+    //
+    // That produces exactly the failure this function exists to prevent: the
+    // question contributes a permanent 0, and CI reports it as a multi-system
+    // retrieval regression whose message cannot explain itself. Verified:
+    // rewriting one gold path as `./notes/...` fails the gate with
+    // "recall@5 fell 6.7 points" on four systems at once.
+    // `..` is a path SEGMENT test, not a string prefix. `p.startsWith('..')`
+    // rejected a real vault file named `..hidden.md` with the self-refuting
+    // message `expected "..hidden.md"` — the author told to write what they
+    // already wrote — while accepting `notes/..hidden.md`, so the rejection
+    // was position-dependent rather than principled.
+    const segments = p.split('/');
+    if (isAbsolute(p) || normalize(p) !== p || segments.includes('..')) {
+      throw new Error(
+        `${where}: ${label} "${p}" is not a canonical vault-relative path ` +
+          `(expected "${normalize(p)}") — citedPaths are matched by exact string equality, ` +
+          'so a non-canonical path validates and then never matches',
+      );
+    }
+    const full = join(vaultDir, p);
+    if (!existsSync(full)) {
+      throw new Error(`${where}: ${label} "${p}" does not exist in corpus ${vaultDir}`);
+    }
+    if (!statSync(full).isFile()) {
+      throw new Error(`${where}: ${label} "${p}" is not a file`);
+    }
+    // The checks above are pure string tests, and they run against a
+    // filesystem that is case- and unicode-normalisation-INSENSITIVE on macOS.
+    // So `notes/ROAST-PROFILE.MD` satisfies both `normalize(p) === p` and
+    // `existsSync`, and then never matches a citedPath — reproducing exactly
+    // the defect this function was extended to prevent. Verified: rewriting
+    // one gold path that way fails the gate with "recall@5 fell 6.7 points" on
+    // four systems at once. Linux CI would catch it at existsSync; the author
+    // hitting it locally on a Mac would not, and they are the audience here.
+    //
+    // realpath returns the on-disk spelling, so comparing against it catches
+    // both wrong case and NFD-vs-NFC.
+    const onDisk = realpathSync.native(full);
+    const expected = realpathSync.native(vaultDir) + sep + segments.join(sep);
+    if (onDisk !== expected) {
+      throw new Error(
+        `${where}: ${label} "${p}" does not match the file on disk ` +
+          `(it is "${onDisk.slice(realpathSync.native(vaultDir).length + 1)}"). ` +
+          'The filesystem is case-insensitive but citedPaths are matched by exact ' +
+          'string equality, so this would validate here and match nothing later',
+      );
+    }
+  }
 }
