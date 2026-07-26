@@ -67,13 +67,13 @@ This is the part that makes it feel alive. With `autonomy: auto-draft` (or `full
 Any agent (or you) queries the living graph:
 
 ```bash
-cortex query "how does auth token refresh work?"   # cited answer, ~1.3k tokens
+cortex query "how does auth token refresh work?"   # cited answer, not the whole repo
 ```
 
-Over MCP: `cortex_query` (hybrid, cited) + `cortex_get_note` (full note). Measured
-value: **~159× less context per question** and **fabrication driven toward zero**
-vs. dumping files into the model, see [`bench/`](../../bench/). Every answer is
-anchored to a source note: provenance by construction.
+Over MCP: `cortex_query` (hybrid, cited) + `cortex_get_note` (full note). Retrieves
+cited excerpts instead of dumping files into the model — see
+[`bench/README.md`](../../bench/README.md) for the method and current numbers.
+Every answer is anchored to a source note: provenance by construction.
 
 ### ⑤ Heal, it stays healthy, and you stay in control
 - **Curate:** `gaps` / `dupes` / `verify` surface thin, duplicate, or stale notes;

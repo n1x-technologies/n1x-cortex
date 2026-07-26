@@ -1,0 +1,9 @@
+# Cortex (generated cache — do not commit)
+# The embeddings store is the exception: it is force-tracked so CI runs
+# offline against a committed fixture. `.cortex/` alone would exclude the
+# directory itself, which git will not let a later `!` pattern re-include
+# (a parent-directory exclusion always wins) — so the base pattern excludes
+# only the directory's CONTENTS, letting the embeddings negation below work
+# for any new or renamed file under it, not just the one currently tracked.
+.cortex/*
+!.cortex/embeddings/

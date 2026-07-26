@@ -1,0 +1,16 @@
+{
+  "name": "@n1x-technologies/cortex-bench",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Evaluation engine for N1X Cortex. Not published.",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "vitest run",
+    "bench:ci": "node run.mjs --stage a --corpus fixtures"
+  },
+  "devDependencies": {
+    "gpt-tokenizer": "^3.4.0",
+    "vitest": "^4.1.10"
+  }
+}

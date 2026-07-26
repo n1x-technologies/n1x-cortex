@@ -1,0 +1,24 @@
+{
+  "perSystem": {
+    "cortex": {
+      "recallAt5": 1,
+      "medianTokens": 982
+    },
+    "cortex-lexical": {
+      "recallAt5": 1,
+      "medianTokens": 714
+    },
+    "cortex-semantic": {
+      "recallAt5": 1,
+      "medianTokens": 1077
+    },
+    "naive-rag": {
+      "recallAt5": 1,
+      "medianTokens": 1081
+    },
+    "full-context": {
+      "recallAt5": null,
+      "medianTokens": 1033
+    }
+  }
+}
