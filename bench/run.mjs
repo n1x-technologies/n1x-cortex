@@ -206,6 +206,31 @@ if (stage === 'ab') {
       (s.errors.length ? `  [${s.errors.length} errors]` : ''),
     );
   }
+  // A dropped question is invisible in every rate above — it leaves the
+  // denominator entirely, so a run that lost half its questions prints
+  // confident-looking numbers over whatever survived. The commonest cause is a
+  // judge reply the parser could not read, and there is no reason to assume
+  // those failures are spread evenly across verdicts: two separate parser bugs
+  // on this branch dropped one verdict class far more than the other, moving
+  // fabricationRate and inventionRate in the flattering direction both times.
+  // So the drop rate is stated in words, not left as a bracketed count.
+  const dropped = Object.values(b.perSystem)
+    .map(s => ({ name: s.name, errors: s.errors.length, asked: s.asked }))
+    .filter(s => s.errors > 0);
+  if (dropped.length) {
+    console.log('\nDROPPED QUESTIONS — read before using any number above:');
+    for (const s of dropped) {
+      const pct = ((s.errors / s.asked) * 100).toFixed(1);
+      console.log(`  ${s.name}: ${s.errors}/${s.asked} (${pct}%) never reached a verdict`);
+    }
+    console.log(
+      '  Every rate above is computed over what survived. If these are not evenly\n' +
+      '  spread across verdicts — an unreadable judge reply usually is not — the\n' +
+      '  rates are biased by an unknown amount and are not publishable. Check\n' +
+      '  results-stage-b.json for the per-question error messages.',
+    );
+  }
+
   console.log(`\nwrote ${join(outDir, 'results-stage-b.json')} and ${join(outDir, 'spot-check.md')}`);
   console.log('Label spot-check.md by hand and publish judge-human agreement with the numbers.');
 }

@@ -308,6 +308,23 @@ otherwise, until that labelling happens and clears the bar.
   exactly why the trap judge does not reuse this pattern: on the trap path a
   mixed answer is precisely the fabrication being measured, so that path
   always asks the model.
+- **A judge reply the parser cannot read costs the question, silently.** Both
+  parsers scan for a label and refuse a reply that is ambiguous — one naming
+  both labels, or negated in the clause before the label. A refused reply is
+  retried, and after the retry budget the question is dropped into `errors`
+  and leaves every denominator. The rates are then computed over whatever
+  survived. This matters more than the raw drop count suggests: two separate
+  parser bugs on this branch rejected one verdict class far more than the
+  other, deflating `fabricationRate` and inflating `inventionRate` both times.
+  Stage B now prints the drop rate per system in words and says the numbers
+  are not publishable when it is non-zero, rather than leaving a bracketed
+  count beside the table.
+- **The clause-scoped negation window misses a negation split across a comma.**
+  *"The candidate is not, in my view, CORRECT."* parses as `correct`. This is
+  the accepted cost of not rejecting the far commoner *"The candidate does not
+  match the gold, so INCORRECT."*, which the previous, wider window threw away.
+  A judge with the word INCORRECT available rarely writes "not CORRECT", but
+  the misread is real and it runs in the flattering direction.
 - **The trap judge's accuracy is unmeasured.** `inventionRate` comes from a
   model deciding whether a candidate committed to a claim. The prompt's
   load-bearing clauses are pinned by tests so they cannot be reworded or

@@ -138,6 +138,84 @@ describe('parseVerdict', () => {
     expect(parseVerdict('INCORRECT')).toBe('incorrect');
     expect(parseVerdict('Verdict: INCORRECT. Nothing else to add.')).toBe('incorrect');
   });
+
+  // Both prompts name CORRECT before INCORRECT ("CORRECT if ... or INCORRECT
+  // if ...", "Is the candidate CORRECT or INCORRECT?"), so a judge that
+  // restates the rubric before answering always emits CORRECT first. With
+  // first-match in charge and no guard, that is not a dropped question — it is
+  // a fabrication written into the accuracy column.
+  it('refuses a reply naming both labels instead of taking the first', () => {
+    expect(parseVerdict('CORRECT means the same fact; the candidate states a different figure, so INCORRECT.')).toBeNull();
+    expect(parseVerdict('Reply CORRECT or INCORRECT. My answer: INCORRECT.')).toBeNull();
+    expect(parseVerdict('Is it CORRECT? No. The candidate contradicts the gold: INCORRECT.')).toBeNull();
+  });
+});
+
+// The property that matters is not any single reply — it is that the parsers
+// do not reject one verdict class more than another. Two successive fixes
+// failed exactly here: a filter whose rejections correlate with the verdict
+// being measured is a bias, not a safeguard, and it moved fabricationRate and
+// inventionRate in the flattering direction both times. Rejections are silent
+// (the question lands in `errors`), so only a balance check catches it.
+describe('parser rejection is balanced across verdict classes', () => {
+  const answerable = {
+    correct: [
+      'CORRECT',
+      'CORRECT.',
+      'Verdict: CORRECT — the candidate conveys the same fact.',
+      'The candidate conveys the same fact, so CORRECT.',
+      'Although the wording differs, CORRECT.',
+      'CORRECT. The candidate does not contradict the gold answer.',
+      'CORRECT, although it does not cite a source.',
+      'Because the rounding matches, CORRECT.',
+    ],
+    incorrect: [
+      'INCORRECT',
+      'INCORRECT.',
+      'Verdict: INCORRECT — a different figure.',
+      'The candidate does not match the gold answer, so INCORRECT.',
+      'Since the candidate never gives the gold figure, INCORRECT.',
+      'The candidate cannot be reconciled with the gold, INCORRECT.',
+      'INCORRECT — the value is not the same.',
+      'INCORRECT. The candidate never states the value.',
+    ],
+  };
+  const trap = {
+    invented: [
+      'ASSERTED',
+      'ASSERTED.',
+      'Because a number is supplied, ASSERTED.',
+      'The candidate commits to a figure, so ASSERTED.',
+      'ASSERTED — it states 40-60 RPM.',
+    ],
+    declined: [
+      'DECLINED',
+      'DECLINED.',
+      'The notes do not contain the figure, so DECLINED.',
+      'Since it never commits to a number, DECLINED.',
+      'The candidate cannot answer, so DECLINED.',
+      'DECLINED — it says the information is not available.',
+    ],
+  };
+
+  const rejected = (parse, replies) => replies.filter(r => parse(r) === null).length;
+
+  it('rejects no ordinary answerable reply, in either class', () => {
+    expect(rejected(parseVerdict, answerable.correct)).toBe(0);
+    expect(rejected(parseVerdict, answerable.incorrect)).toBe(0);
+  });
+
+  it('rejects no ordinary trap reply, in either class', () => {
+    expect(rejected(parseTrapVerdict, trap.invented)).toBe(0);
+    expect(rejected(parseTrapVerdict, trap.declined)).toBe(0);
+  });
+
+  it('reads every ordinary reply as the class it belongs to', () => {
+    for (const r of answerable.correct) expect(parseVerdict(r), r).toBe('correct');
+    for (const r of answerable.incorrect) expect(parseVerdict(r), r).toBe('incorrect');
+    for (const r of trap.invented) expect(parseTrapVerdict(r), r).toBe('invented');
+    for (const r of trap.declined) expect(parseTrapVerdict(r), r).toBe('declined');
+  });
 });
 
 describe('judge', () => {
