@@ -34,7 +34,7 @@ Most knowledge lives in scattered markdown files (notes, docs, wikis), or in no 
 
 <p align="center"><img src="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/flow.png" alt="What Cortex does in three moves: your notes or a whole repo → Cortex builds a cited graph → you and your agents ask and get cited answers" width="100%"></p>
 
-## Why it's cheaper, and why it stops guessing
+## Why it's built to cost less, and to be verifiable
 
 Imagine your knowledge base is **300 pages**. To answer one question, most setups hand the AI *all 300 pages* and hope. Cortex hands it **the one cited paragraph** that actually answers it, and every answer points back to where it came from.
 
