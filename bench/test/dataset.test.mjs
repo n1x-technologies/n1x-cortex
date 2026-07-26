@@ -117,6 +117,97 @@ describe('loadDataset', () => {
     expect(() => loadDataset(jsonl, vault)).toThrow(/t3.*goldPaths/s);
   });
 
+  // Trap membership is DECLARED, never inferred, so the declaration has to
+  // survive a hand edit. `answerable !== false` read any non-false value as
+  // answerable: the string "false" — what a spreadsheet or CSV export produces
+  // — sent the record down the answerable branch, where it failed with
+  // `missing required field "goldAnswer"` and told the author to invent an
+  // answer for a question the corpus cannot answer.
+  it('rejects a non-boolean answerable, naming the right field', () => {
+    for (const bad of ['false', 'no', 0, null, 1]) {
+      writeFileSync(jsonl, rec({
+        id: 't1', question: 'T', answerable: bad, nearMissPaths: ['notes/a.md'],
+      }));
+      expect(() => loadDataset(jsonl, vault)).toThrow(/"answerable" must be a boolean/);
+    }
+  });
+
+  it('does not let a half-edited trap load as an answerable question', () => {
+    // The dangerous shape: answerable stringified AND a leftover goldAnswer, so
+    // every answerable-branch requirement is satisfied and the trap silently
+    // becomes a scored answerable question.
+    writeFileSync(jsonl, rec({
+      id: 't1', question: 'T', answerable: 'false',
+      goldAnswer: 'leftover', goldPaths: ['notes/a.md'],
+    }));
+    expect(() => loadDataset(jsonl, vault)).toThrow(/"answerable" must be a boolean/);
+  });
+
+  // These two are the commonest JSONL hand-edit slip: a single path written as
+  // a bare string instead of a one-element array. An Array.isArray guard reads
+  // it as "field absent" and the record loads clean with the field discarded —
+  // producing exactly the ambiguous state the guard exists to reject.
+  it('rejects a trap carrying goldPaths as a bare string', () => {
+    writeFileSync(jsonl, rec({
+      id: 't1', question: 'T', answerable: false,
+      goldPaths: 'notes/a.md', nearMissPaths: ['notes/a.md'],
+    }));
+    expect(() => loadDataset(jsonl, vault)).toThrow(/must not carry "goldPaths"/);
+  });
+
+  it('rejects an answerable question carrying nearMissPaths as a bare string', () => {
+    writeFileSync(jsonl, rec({
+      id: 'a1', question: 'Q', goldPaths: ['notes/a.md'], goldAnswer: 'A',
+      nearMissPaths: 'notes/b.md',
+    }));
+    expect(() => loadDataset(jsonl, vault)).toThrow(/"nearMissPaths" belongs to a trap question/);
+  });
+
+  it('accepts an explicitly empty array on the branch that must not carry it', () => {
+    // `"goldPaths": []` on a trap is not a half-edit — it is the field written
+    // out in its unused form, and rejecting it would fail records the loader
+    // itself emits.
+    writeFileSync(jsonl, rec({
+      id: 't1', question: 'T', answerable: false,
+      goldPaths: [], nearMissPaths: ['notes/a.md'],
+    }));
+    expect(loadDataset(jsonl, vault)).toHaveLength(1);
+  });
+
+  it('rejects a trap whose nearMissPaths is an empty array', () => {
+    // Distinct from the key being absent, and reachable only through this
+    // shape: metrics.mjs scores an empty target set as 0, so such a trap would
+    // contribute a hard zero for every system while still incrementing the
+    // denominator — a dataset error presenting as a retrieval regression.
+    writeFileSync(jsonl, rec({ id: 't1', question: 'T', answerable: false, nearMissPaths: [] }));
+    expect(() => loadDataset(jsonl, vault)).toThrow(/requires a non-empty "nearMissPaths"/);
+  });
+
+  it('rejects an empty string or a directory as a path', () => {
+    // existsSync(join(vault, '')) tests the vault root, which exists — so an
+    // empty element passes an existence-only check and then never matches a
+    // cited path.
+    writeFileSync(jsonl, rec({ id: 't1', question: 'T', answerable: false, nearMissPaths: [''] }));
+    expect(() => loadDataset(jsonl, vault)).toThrow(/nearMissPath is an empty string/);
+
+    writeFileSync(jsonl, rec({ id: 't2', question: 'T', answerable: false, nearMissPaths: ['notes'] }));
+    expect(() => loadDataset(jsonl, vault)).toThrow(/nearMissPath "notes" is not a file/);
+  });
+
+  it('reports a non-string path with the file, line and question id', () => {
+    writeFileSync(jsonl, rec({
+      id: 'a1', question: 'Q', goldPaths: ['notes/a.md', 123], goldAnswer: 'A',
+    }));
+    expect(() => loadDataset(jsonl, vault)).toThrow(/a1.*goldPath must be a string, got number/s);
+  });
+
+  it('rejects a non-string id rather than letting 1 and "1" both load', () => {
+    writeFileSync(jsonl, [
+      rec({ id: 1, question: 'Q', goldPaths: ['notes/a.md'], goldAnswer: 'A' }),
+    ].join('\n'));
+    expect(() => loadDataset(jsonl, vault)).toThrow(/"id" must be a string, got number/);
+  });
+
   it('rejects a trap with no nearMissPaths', () => {
     writeFileSync(jsonl, rec({ id: 't4', question: 'T', answerable: false }));
     expect(() => loadDataset(jsonl, vault)).toThrow(/t4.*nearMissPaths/s);
