@@ -3,3 +3,9 @@ dist/
 # generated copies of repo-root docs (produced by scripts/copy-meta.mjs at build/prepack time)
 /README.md
 /LICENSE
+
+# cloud-sync conflict copies of the two files above ("README 2.md", "LICENSE 3", ...).
+# A build overwrites them, and if the checkout lives in an iCloud/Dropbox/OneDrive
+# folder the sync daemon resolves that as a conflict and drops a numbered sibling.
+/README [0-9]*.md
+/LICENSE [0-9]*
