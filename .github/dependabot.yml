@@ -1,18 +1,16 @@
+# Scope: routine npm version updates are intentionally NOT configured here.
+#
+# Dependabot has two independent modes. Security updates come from a repository
+# setting and stay on regardless of this file — those are the PRs worth having,
+# since the toolkit's real CVEs arrive transitively through @modelcontextprotocol/sdk
+# and @huggingface/transformers. Version updates come from this file, and pointing
+# them at /toolkit produced ~10 PRs a month that never closed an advisory; every
+# advisory this repo has actually fixed was applied by hand.
+#
+# github-actions stays: low volume, low risk, and pinned action majors go stale
+# silently. Runtime deps are reviewed manually with `npm outdated` instead.
 version: 2
 updates:
-  - package-ecosystem: npm
-    directory: /toolkit
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
-    groups:
-      dev-dependencies:
-        dependency-type: development
-        update-types: [minor, patch]
-    commit-message:
-      prefix: chore
-      include: scope
-
   - package-ecosystem: github-actions
     directory: /
     schedule:
