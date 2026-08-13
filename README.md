@@ -156,11 +156,11 @@ It respects `.gitignore`, skips binaries and vendored folders, streams progress 
 | `cortex init` | Detect frontmatter fields, write `.cortex.json`, gitignore the `.cortex/` cache. |
 | `cortex new <type> <id>` | Scaffold a note from `_templates/<type>.md` (`init` seeds a starter `note` template) into the type's folder, the first note of a type needs `--dir`, then it's learned (`--title`/`--module`). |
 | `cortex status` / `orphans` | Notes by type/status; dangling links ranked "atomize-next". |
-| `cortex query "..."` | Cited answer from your notes (hybrid retrieval). `--json` (or the `/query` skill) for machine-readable output. |
+| `cortex query "..."` | Cited answer from your notes (hybrid retrieval). `--json` (or the `/query` skill) for machine-readable output, `--limit <n>` for how many hits, `--full` / `--max-content <n>` to get each note's body rather than a 200-character excerpt — which is what you want when the output is going to a model. |
 | `cortex viz` | Local web viewer in the N1X brand identity: interactive graph, search, color-by, animated focus, neighbor highlighting, a bidirectional (in/out) link panel, a tri-state group filter, a Graph/Tree view toggle, live force controls (d3-force), and a Mermaid architecture export. Click a node's **Open note** to read its rendered markdown in a new tab (`/note/<id>`). |
 | `cortex mcp install` | **One-command hookup** to Claude Code (`uninstall` to remove; `--write[=curate]` to register a writer). |
 | `cortex mcp` | **Run the MCP server** for agents (stdio). Read-only by default; `--write[=draft\|curate]` exposes reversible capture/curation tools. |
-| `cortex embed` | Build the local embedding store (enables semantic search). |
+| `cortex embed` | Build the embedding store (enables semantic search). On-device by default; `--base-url <url>` embeds through an OpenAI-compatible endpoint instead, so no model is downloaded and the optional peer is not needed. |
 | `cortex atomize <src>` | AI-distill a source into draft notes (dry-run; `--write`). `--model <provider:model>` runs distillation without an agent, BYO-key ([see above](#distill-or-bootstrap-without-an-agent-byo-key)). |
 | `cortex bootstrap [path]` | Distill an **entire undocumented repo**: every eligible file, code included, into connected draft notes, BYO-key ([see above](#distill-or-bootstrap-without-an-agent-byo-key)). |
 | `cortex gaps` / `dupes` / `verify` | Curation diagnostics. `dupes` compares within a type by default (`--cross-type` to widen); `verify --all` sweeps the whole vault for incomplete notes. |
