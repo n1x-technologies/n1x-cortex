@@ -9,7 +9,7 @@ import { runInit } from './commands/init.js';
 import { runStatus } from './commands/status.js';
 import { runOrphans } from './commands/orphans.js';
 import { runViz, openBrowser, resolveVizPort } from './commands/viz.js';
-import { runQuerySemantic, formatQuery, formatQueryJson } from './commands/query.js';
+import { runQuerySemantic, formatQuery, formatQueryJson, parseQueryArgs } from './commands/query.js';
 import { runAtomize, formatPlan, runEmit, runApply, formatDistilledPlan, runUndo, runDistillLlm } from './commands/atomize.js';
 import { runPromote, formatPromote, runSetStatus } from './commands/promote.js';
 import { runHookCommand } from './commands/hook.js';
@@ -53,7 +53,19 @@ const HELP: Record<string, string> = {
   status: 'Usage: cortex status   — note and orphan counts, broken down by type and status',
   orphans: 'Usage: cortex orphans   — dangling wikilink targets (atomize-next priority)',
   viz: 'Usage: cortex viz [--port <n>]   — start the local web viewer (port: --port > viz.port config > 4317)',
-  query: 'Usage: cortex query <question> [--json]   — cited hybrid (lexical + semantic) retrieval over your notes',
+  query: `Usage: cortex query <question> [--json] [--limit <n>] [--full | --max-content <n>]
+  — cited hybrid (lexical + semantic) retrieval over your notes
+
+Options:
+  --json                 Machine-readable output, for agents and pipelines
+  --limit <n>            Number of hits to return (default 12)
+  --full                 Include each note's full body as a "content" field
+  --max-content <n>      Include "content", capped at n characters
+  --                     Everything after this is question text, not options
+
+Without --full or --max-content each hit carries only "excerpt", capped at 200
+characters — enough to read in a terminal, not enough to ground a model on the
+passage it just cited.`,
   atomize: 'Usage: cortex atomize <source.md> [--emit-json | --write | --model <provider:model> [--base-url <url>]]\n       cortex atomize --apply <specs.json> [--write] [--force]\n  Dry-run by default; --write drafts to _inbox/. Reversible with `cortex undo`.',
   bootstrap: 'Usage: cortex bootstrap [path] --model <provider:model> [--base-url <url>] [--write] [--force]\n  Document a whole repo from zero. Dry-run by default (calls no model); reversible with `cortex undo`.',
   promote: 'Usage: cortex promote [--write]   — graduate status-advanced drafts out of _inbox/ into curated folders',
@@ -147,12 +159,18 @@ export async function main(argv: string[]): Promise<number> {
       }
     }
     case 'query': {
-      const rest = argv.slice(1);
-      const json = rest.includes('--json');
-      const question = rest.filter(a => a !== '--json').join(' ').trim();
-      if (!question) { console.log('Usage: cortex query <question> [--json]'); return 1; }
-      const result = await runQuerySemantic(cwd, question);
-      console.log(json ? formatQueryJson(result) : formatQuery(result));
+      let args;
+      try {
+        args = parseQueryArgs(argv.slice(1));
+      } catch (e) {
+        console.error((e as Error).message);
+        return 1;
+      }
+      const result = await runQuerySemantic(cwd, args.question, undefined, {
+        limit: args.limit,
+        content: args.content,
+      });
+      console.log(args.json ? formatQueryJson(result) : formatQuery(result));
       return 0;
     }
     case 'atomize': {
@@ -361,6 +379,49 @@ export function isEntrypoint(argv1: string | undefined, moduleUrl: string): bool
   }
 }
 
+/**
+ * Resolves once the stream has no buffered writes left.
+ *
+ * `process.exit()` discards whatever is still queued. On a TTY that is
+ * harmless — POSIX stdout writes are synchronous there — but on a PIPE they
+ * are asynchronous, so exiting straight after `console.log` truncates the
+ * output. `cortex query --json | consumer` delivered a JSON document cut off
+ * mid-structure; the consumer's parse failed and their application reported
+ * finding nothing, while retrieval had worked.
+ *
+ * An errored stream resolves rather than rejecting or hanging: if the reader
+ * closed the pipe first, the output is already unreachable, and the one
+ * outcome worse than losing it is never exiting.
+ */
+export function flushStream(stream: NodeJS.WritableStream): Promise<void> {
+  const s = stream as NodeJS.WritableStream & { writableLength?: number; writableEnded?: boolean };
+  if (!s.writableLength || s.writableEnded) return Promise.resolve();
+  return new Promise<void>(resolve => {
+    // A zero-length write's callback fires once everything queued before it has
+    // been handed to the OS — which is exactly the condition being waited on.
+    stream.write('', () => resolve());
+    stream.once('error', () => resolve());
+  });
+}
+
+/**
+ * Flushes every stream, then exits.
+ *
+ * `process.exitCode = code` with no explicit exit would also flush, but it
+ * makes the process linger until the event loop drains — so a single leaked
+ * handle turns a clean exit into a hang. Draining first and exiting explicitly
+ * keeps the old exit semantics and fixes only the truncation.
+ */
+export async function exitAfterFlush(
+  code: number,
+  deps: { exit?: (code: number) => void; streams?: NodeJS.WritableStream[] } = {},
+): Promise<void> {
+  const streams = deps.streams ?? [process.stdout, process.stderr];
+  const exit = deps.exit ?? ((c: number) => process.exit(c));
+  await Promise.all(streams.map(flushStream));
+  exit(code);
+}
+
 if (isEntrypoint(process.argv[1], import.meta.url)) {
-  main(process.argv.slice(2)).then(code => process.exit(code));
+  main(process.argv.slice(2)).then(code => exitAfterFlush(code));
 }
