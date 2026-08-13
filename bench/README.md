@@ -555,6 +555,47 @@ Three things about this batch that any number drawn from it has to carry:
 - **They are all answerable; the batch contains no traps.** Contamination is what
   it measures, and a trap has no corpus answer for `closed-book` to get right.
 
+### The pilot ran: 19 of 20 questions were already known
+
+**2026-08-13**, `--systems closed-book`, `claude-sonnet-5` answering and
+`claude-opus-5` judging, over the corpus at its pinned commit. 20 asked, 20
+scored, no errors.
+
+| | |
+|---|---|
+| contaminated | **19 / 20** |
+| uncontaminated subset | **1** |
+| accuracy (all) | 0.950 |
+| abstention rate | 0.000 |
+
+The clean subset is a single question, so `accuracyUncontaminated` and
+`fabricationRateUncontaminated` are noise computed over n=1. **Do not quote
+them.** They are reported by the harness because it cannot know the denominator
+collapsed; reading them as measurements is the error this paragraph exists to
+prevent.
+
+The one miss was `p11`, the default namespace — checked by hand rather than
+assumed, because a lone incorrect verdict on a fact that elementary is more
+often an over-specified gold answer than a real gap. It was real: the model
+answered "the empty/global namespace (no prefix)". Judge error does not
+threaten a result of this size either; 19/20 survives any plausible amount of
+disagreement.
+
+**What this licenses.** Not "the corpus is unusable" — it says *textbook
+concept questions about Kubernetes are essentially memorised*, and these were
+textbook by construction. The pessimistic bound did its job: it cost one cheap
+run to learn what 200 written questions would have cost the whole set to learn.
+
+Note `abstentionRate` 0.000 alongside it. Given no context the model never
+declined; it guessed, and guessed wrong once. That is the behaviour that makes
+fabrication measurable at all, and it confirms the control behaves as intended.
+
+**So the StackOverflow route is now measured rather than argued.** Real
+questions are about specific failures and configurations, not definitions, and
+are far less memorisable. But the gate moved rather than opened: **run this same
+pilot over ~20 real sourced questions before writing the rest.** That rate is
+the number that decides whether this corpus can carry a published claim.
+
 ### A corpus artifact worth knowing about
 
 24 of the corpus's 399 files open with a `{{< glossary_definition >}}` shortcode
