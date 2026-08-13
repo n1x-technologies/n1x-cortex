@@ -103,6 +103,14 @@ export interface QueryHit {
   excerpt: string;
   source: string | null;
   via: 'anchor' | 'link';
+  /**
+   * The note body without frontmatter, present only when the caller asked for
+   * it (`--full` / `--max-content`). Absent by default so the existing output
+   * shape is unchanged and nothing pays for a field it does not read: `excerpt`
+   * is capped at 200 characters, which is right for a terminal and nowhere near
+   * enough to ground a model on the passage it just cited.
+   */
+  content?: string;
 }
 
 export interface QueryResult {

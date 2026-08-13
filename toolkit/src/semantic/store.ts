@@ -3,7 +3,21 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 export interface EmbeddingRecord { path: string; hash: string; vector: number[]; }
-export interface EmbeddingStore { model: string; dim: number; records: EmbeddingRecord[]; }
+export interface EmbeddingStore {
+  /** Identity of the vector space — see embedStoreId(). Reuse turns on this. */
+  model: string;
+  dim: number;
+  records: EmbeddingRecord[];
+  /**
+   * The endpoint the vectors came from, when they came from one. `model`
+   * already encodes it for identity, but a query has to EMBED ITS QUESTION into
+   * the same space to compare against these vectors, and it cannot rebuild a
+   * URL from that label. Absent means the local on-device backend.
+   */
+  endpoint?: string;
+  /** The wire model name to send to that endpoint, unmangled. */
+  endpointModel?: string;
+}
 
 export function hashContent(text: string): string {
   return createHash('sha256').update(text).digest('hex');

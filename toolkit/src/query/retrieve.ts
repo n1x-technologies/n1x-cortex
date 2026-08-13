@@ -7,7 +7,15 @@ export function retrieve(
   notes: Note[],
   graph: Graph,
   question: string,
-  opts: { maxAnchors?: number; hops?: number; maxHits?: number; semanticRanking?: string[]; rrfK?: number } = {},
+  opts: {
+    maxAnchors?: number;
+    hops?: number;
+    maxHits?: number;
+    semanticRanking?: string[];
+    rrfK?: number;
+    /** Attach the note body to each returned hit: a character cap, or 'full'. */
+    content?: number | 'full';
+  } = {},
 ): QueryResult {
   const maxAnchors = opts.maxAnchors ?? 5;
   const hops = opts.hops ?? 2;
@@ -70,6 +78,16 @@ export function retrieve(
   }
   hits.sort((a, b) => b.score - a.score);
   const top = hits.slice(0, maxHits);
+
+  // Attached AFTER the slice, never before: `content` can be the entire note,
+  // and building it for every candidate only to discard all but `maxHits` of
+  // them would make `--full` cost the whole vault on a large one.
+  if (opts.content !== undefined) {
+    for (const h of top) {
+      const body = byId.get(h.id)?.body ?? '';
+      h.content = opts.content === 'full' ? body : body.slice(0, opts.content);
+    }
+  }
 
   const sources = [...new Set(top.flatMap(h => (h.source ? [h.path, h.source] : [h.path])))];
   return { question, anchors: anchorIds, hits: top, sources };
