@@ -524,3 +524,47 @@ The risk is writing 200 questions and having the control discard 120 — at whic
 point the uncontaminated subset may be too small to support any claim. A pilot
 costs one closed-book run over a draft batch; discovering it afterwards costs
 the whole question set.
+
+### The pilot batch
+
+`questions/pilot-k8s.jsonl` holds those 20 questions, written against the public
+corpus at its pinned commit. Every gold answer was taken from the passage that
+states it, and `test/pilot-questions.test.mjs` anchors each one to a phrase that
+must appear verbatim in its gold document — a wrong gold answer is otherwise
+invisible, since the judge treats it as truth and no metric can contradict it.
+
+It is a **local** set, not a CI one: the corpus is fetched rather than vendored,
+so the guard skips when the corpus is absent, and says so loudly rather than
+reporting a pass it did not earn. Fetch the corpus first, then:
+
+```bash
+node run.mjs --stage ab --corpus corpora/k8s-docs \
+  --questions questions/pilot-k8s.jsonl \
+  --systems closed-book --model anthropic:claude-sonnet-5
+```
+
+Three things about this batch that any number drawn from it has to carry:
+
+- **The questions were written from general Kubernetes knowledge, not by reading
+  the corpus.** That avoids calquing them onto note boundaries, but it skews
+  them toward well-known facts — so they are *more* contaminated than a set
+  sourced from real user questions would be. The pilot is a **pessimistic
+  bound**: tolerable here means better in practice, never the reverse.
+- **They carry no `sourceUrl`,** because they have no source to cite. The final
+  set does, and that is part of what makes it auditable.
+- **They are all answerable; the batch contains no traps.** Contamination is what
+  it measures, and a trap has no corpus answer for `closed-book` to get right.
+
+### A corpus artifact worth knowing about
+
+24 of the corpus's 399 files open with a `{{< glossary_definition >}}` shortcode
+instead of the definition itself — Hugo injects that text at build time from a
+glossary that lives outside the `concepts` + `tasks` slice. So for those topics
+the canonical one-line definition **is not in the corpus at all**;
+`concepts/configuration/configmap.md` never says what a ConfigMap is.
+
+This matters when reading any retrieval number: a "what is X" question on one of
+those topics looks like a retrieval failure and is really a hole in the corpus.
+It is not a reason to avoid those documents — they carry plenty of other prose —
+but a question whose only possible answer is the missing definition should not
+be written in the first place.
