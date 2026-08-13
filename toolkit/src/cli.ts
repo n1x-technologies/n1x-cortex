@@ -14,7 +14,7 @@ import { runAtomize, formatPlan, runEmit, runApply, formatDistilledPlan, runUndo
 import { runPromote, formatPromote, runSetStatus } from './commands/promote.js';
 import { runHookCommand } from './commands/hook.js';
 import { runPause, runResume } from './commands/pause.js';
-import { runEmbed, formatEmbed } from './commands/embed.js';
+import { runEmbed, formatEmbed, parseEmbedArgs } from './commands/embed.js';
 import { runGaps, formatGaps } from './commands/gaps.js';
 import { runDupes, formatDupes, formatDupesJson } from './commands/dupes.js';
 import { runMerge, formatMerge } from './commands/merge.js';
@@ -74,7 +74,22 @@ passage it just cited.`,
   hook: 'Usage: cortex hook <event>   — Claude Code lifecycle hook entry point',
   pause: 'Usage: cortex pause   — disable atomize autonomy for this vault',
   resume: 'Usage: cortex resume   — re-enable atomize autonomy for this vault',
-  embed: 'Usage: cortex embed [--force] [--model <provider:model>]   — build the local on-device embedding store',
+  embed: `Usage: cortex embed [--force] [--model <model>] [--base-url <url>]
+  — build the embedding store that makes query and dupes hybrid
+
+Options:
+  --force                Re-embed everything, ignoring the existing store
+  --model <model>        Embedding model (default: embedModel from .cortex.json)
+  --base-url <url>       Embed through an OpenAI-compatible /embeddings endpoint
+                         instead of the local on-device model. Key comes from
+                         OPENAI_API_KEY when the endpoint needs one.
+
+Without --base-url, embedding runs on-device and needs the optional
+@huggingface/transformers peer. With it, nothing is downloaded and nothing
+extra is installed — useful when the deployment cannot ship onnxruntime or
+fetch a model at runtime. A store built against an endpoint records it, and
+query embeds its question through the same one: vectors from two backends are
+not comparable, so switching re-embeds rather than mixing.`,
   mcp: MCP_HELP,
   gaps: 'Usage: cortex gaps   — thin, stale, or uncited notes worth capturing next',
   dupes: 'Usage: cortex dupes [--threshold <n>] [--cross-type] [--json]   — near-duplicate note pairs',
@@ -280,11 +295,21 @@ export async function main(argv: string[]): Promise<number> {
       return 0;
     }
     case 'embed': {
-      const rest = argv.slice(1);
-      const force = rest.includes('--force');
-      const mi = rest.indexOf('--model');
-      const model = mi >= 0 ? rest[mi + 1] : undefined;
-      console.log(formatEmbed(await runEmbed(cwd, { force, model })));
+      let a;
+      try {
+        a = parseEmbedArgs(argv.slice(1));
+      } catch (e) {
+        console.error((e as Error).message);
+        return 1;
+      }
+      console.log(formatEmbed(await runEmbed(cwd, {
+        force: a.force,
+        model: a.model,
+        baseUrl: a.baseUrl,
+        // Same env var and same "local servers often ignore it" leniency as the
+        // atomize client, so one configured endpoint works for both commands.
+        apiKey: process.env.OPENAI_API_KEY,
+      })));
       return 0;
     }
     case 'mcp': {
