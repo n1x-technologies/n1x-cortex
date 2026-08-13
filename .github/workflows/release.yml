@@ -34,10 +34,48 @@ jobs:
           TAG="${GITHUB_REF_NAME#v}"
           PKG="$(node -p "require('./package.json').version")"
           test "$TAG" = "$PKG" || { echo "tag $TAG != package version $PKG"; exit 1; }
-      - run: npm publish --access public
+      # Re-pushing a tag that already exists — moving it onto a rewritten
+      # history, say — replays this whole workflow against a version that is
+      # already out. npm refuses to republish, so the run went red for doing
+      # nothing wrong, and a release workflow that cries wolf is one nobody
+      # reads. Each publication step is skipped only when its OWN artifact
+      # already exists, so a tag whose npm version shipped but whose GitHub
+      # Release never got created still gets the missing half.
+      #
+      # Both probes exit non-zero for "does not exist" AND for a network or
+      # auth failure, so neither is read as proof of absence: only a clean
+      # success counts as already-there, and anything else falls through to the
+      # real command. The asymmetry is deliberate — a red run is recoverable,
+      # a release silently skipped because the registry blipped is not.
+      - name: Decide what this tag still needs
+        id: state
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NAME="$(node -p "require('./package.json').name")"
+          VER="$(node -p "require('./package.json').version")"
+
+          if OUT="$(npm view "$NAME@$VER" version 2>/dev/null)" && [ "$OUT" = "$VER" ]; then
+            echo 'npm_published=true' >> "$GITHUB_OUTPUT"
+            echo "npm: \`$NAME@$VER\` is already published — skipping \`npm publish\`." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'npm_published=false' >> "$GITHUB_OUTPUT"
+          fi
+
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo 'release_exists=true' >> "$GITHUB_OUTPUT"
+            echo "github: release \`$GITHUB_REF_NAME\` already exists — skipping release creation." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'release_exists=false' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Publish to npm
+        if: steps.state.outputs.npm_published != 'true'
+        run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Create GitHub Release with generated notes
+        if: steps.state.outputs.release_exists != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "$GITHUB_REF_NAME" --generate-notes --verify-tag
