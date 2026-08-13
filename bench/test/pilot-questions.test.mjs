@@ -54,17 +54,29 @@ const ANCHORS = {
 const corpusPresent = existsSync(CORPUS);
 
 if (!corpusPresent) {
-  console.warn(
+  // Written straight to stderr, not via console.warn: vitest intercepts console
+  // output and a module-scope warn is swallowed entirely, so the suite reported
+  // a bare "1 skipped" and the guard went quiet — which is the silently-skipped
+  // guard this file exists to avoid. Verified by hiding the corpus and running
+  // the suite; console.warn printed nothing, this does.
+  process.stderr.write(
     `\n[pilot-questions] SKIPPED — corpus absent at ${CORPUS}.\n` +
-      '  These gold answers are UNVERIFIED in this run. Fetch it with\n' +
-      '  `node bench/scripts/fetch-public-corpus.mjs` to exercise the guard.\n',
+      '  The pilot gold answers are UNVERIFIED in this run. Fetch the corpus with\n' +
+      '  `node bench/scripts/fetch-public-corpus.mjs` to exercise the guard.\n\n',
   );
 }
 
-describe.skipIf(!corpusPresent)('pilot question set', () => {
-  const questions = loadDataset(QUESTIONS, CORPUS);
+// Loaded inside each test, never in the describe body. `describe.skipIf` skips
+// the TESTS but still runs the factory to collect them, so a `loadDataset` call
+// out here executes even when the suite is skipped — and throws "goldPath does
+// not exist in corpus" on any machine without the corpus, which is every CI
+// runner. The skip guard read as sufficient locally, where the corpus is always
+// present, and only CI could see it fail.
+const loadPilot = () => loadDataset(QUESTIONS, CORPUS);
 
+describe.skipIf(!corpusPresent)('pilot question set', () => {
   it('anchors every gold answer in one of its gold documents', () => {
+    const questions = loadPilot();
     const unanchored = [];
     for (const q of questions) {
       const anchor = ANCHORS[q.id];
@@ -82,6 +94,6 @@ describe.skipIf(!corpusPresent)('pilot question set', () => {
   });
 
   it('declares an anchor for every question and no orphans', () => {
-    expect(Object.keys(ANCHORS).sort()).toEqual(questions.map(q => q.id).sort());
+    expect(Object.keys(ANCHORS).sort()).toEqual(loadPilot().map(q => q.id).sort());
   });
 });
