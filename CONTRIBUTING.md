@@ -55,6 +55,7 @@ git config commit.template .gitmessage
 
 ## Standards
 
+- **Language: English.** Code, comments, tests, documentation, commit messages, PR titles and PR bodies. This repository is public and MIT — English is what makes a contribution readable to whoever shows up.
 - **Branches:** `feat|fix|chore|docs|refactor/description-kebab`, short-lived.
 - **Commits:** Conventional Commits — `type(scope): summary in imperative`.
 - **README current on every push** (N1X Cortex convention): if the change touches structure or decisions, update the README in the same PR.

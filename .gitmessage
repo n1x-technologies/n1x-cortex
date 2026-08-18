@@ -1,5 +1,8 @@
 # <type>(<scope>): <summary in imperative, max ~50 chars>
 #
+# Write in English — commit messages, PR titles and PR bodies, like the
+# rest of the repository.
+#
 # Types: feat | fix | chore | docs | refactor | test | style
 # Example:  feat(methodology): collaboration chapter
 #
