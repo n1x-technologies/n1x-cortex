@@ -57,6 +57,7 @@ git config commit.template .gitmessage
 
 ## Standards
 
+- **Language: English.** Code, comments, tests, documentation, commit messages, PR titles and PR bodies. Pick one language and hold it: a repository that mixes two makes every contributor guess which one this file expects.
 - **Branches:** `feat|fix|chore|docs|refactor/description-kebab`, short-lived.
 - **Commits:** Conventional Commits — `type(scope): summary in imperative`.
 - Keep the README up to date in the same PR when structure or decisions change.
