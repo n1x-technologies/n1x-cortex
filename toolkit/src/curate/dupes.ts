@@ -2,7 +2,7 @@
 import { resolve } from 'node:path';
 import { scanVault } from '../vault.js';
 import { buildIndex } from '../search/index.js';
-import { loadStore, storeMap, hashContent } from '../semantic/store.js';
+import { loadStore, storeMap, hashContent, type Vector } from '../semantic/store.js';
 import { noteText } from '../semantic/text.js';
 import { cosineDense } from '../semantic/cosine.js';
 import type { CortexConfig } from '../types.js';
@@ -83,7 +83,7 @@ export function computeDupes(vaultDir: string, config: CortexConfig, threshold: 
   const store = loadStore(resolve(vaultDir, config.embedDir));
   if (store && store.model === config.embedModel && store.records.length) {
     const recMap = storeMap(store);
-    const dense: { path: string; vector: number[] }[] = [];
+    const dense: { path: string; vector: Vector }[] = [];
     for (const n of notes) {
       const rec = recMap.get(n.path);
       if (rec && rec.hash === hashContent(noteText(n))) dense.push({ path: n.path, vector: rec.vector });
