@@ -4,7 +4,7 @@ All notable changes to **N1X Cortex** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.2.0] - 2026-09-10
 
 ### Changed
 - **The embedding store is now two files, so a large vault can open at all.**
@@ -19,6 +19,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Existing stores migrate by themselves.** A store written by 1.1.0 or earlier
   is still read as it was, and the next `cortex embed` rewrites it in the new
   layout, reusing every vector. Nothing to run by hand.
+- **Going back to 1.1.0 or earlier needs `cortex embed --force` first.** Older
+  versions do not know the new layout: they read `index.json`, find no vectors
+  in it, and `cortex dupes` — and `cortex query`, when the semantic layer is
+  installed — exit with `TypeError: Cannot read properties of undefined
+  (reading 'length')`. A plain `cortex embed` on the older version makes it
+  worse: it counts every note as reused and writes a store with no vectors at
+  all. `cortex embed --force` rebuilds the store in the old layout. Upgrading
+  to 1.2.0 again afterwards needs nothing.
 - **For library consumers:** `EmbeddingRecord.vector` is now
   `Float32Array | number[]`, and loaded vectors are `Float32Array` views over one
   shared buffer. Code that serializes a vector with `JSON.stringify` must convert
