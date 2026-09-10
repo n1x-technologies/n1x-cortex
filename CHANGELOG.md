@@ -48,6 +48,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **`saveStore` refuses a vector whose length is not the store dimension**
   instead of padding it with zeros or cutting it.
 
+### Security
+- **Dependency advisories closed.** The runtime dependencies Cortex ships with
+  now resolve to patched versions of `fast-uri` (3.1.7), `hono` (4.13.7), `qs`
+  (6.16.0) and `js-yaml` (3.15.2) — all transitive, and all within the ranges
+  their parents already allowed, so a fresh install picked them up before; the
+  lockfile now pins them too. Development-only: `vitest` 4.1.11 (toolkit and
+  bench), `nanoid` 3.3.19, and — through the optional `@huggingface/transformers`
+  peer, via npm `overrides` because its latest release still pins the vulnerable
+  ones — `sharp` 0.35.4 and `adm-zip` 0.6.0. Embedding the CI fixture with the
+  real model under those overrides gives vectors identical to the committed
+  store. One advisory remains: an `adm-zip` issue with no patched version
+  released, reached only through that optional peer's install tooling and never
+  shipped in the package.
+
 ## [1.1.0] - 2026-08-13
 
 Everything here comes from one report by a consumer running Cortex as an npm
