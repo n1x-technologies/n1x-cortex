@@ -92,6 +92,11 @@ describe('runEmbed', () => {
     expect(Array.from(a.vector)).toEqual([1, 0, 0]);
   });
 
+  it('fails loudly when the embedder hands back empty vectors', async () => {
+    const empty: Embedder = { id: 'empty', dim: 0, async embed(texts) { return texts.map(() => new Float32Array(0)); } };
+    await expect(runEmbed(vault(), { embedder: empty, model: 'empty' })).rejects.toThrow(/no dimension/);
+  });
+
   it('says nothing about the store when it was fine', async () => {
     const dir = vault();
     await runEmbed(dir, { embedder: stub, model: 'stub' });

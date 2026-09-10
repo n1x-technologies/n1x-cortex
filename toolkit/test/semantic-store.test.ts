@@ -14,7 +14,7 @@
 // either with empty vectors or with each note wearing a neighbour's vector.
 
 import { describe, it, expect } from 'vitest';
-import { mkdtempSync, writeFileSync, existsSync, readFileSync, rmSync, copyFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync, rmSync, copyFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -51,6 +51,12 @@ function fakeStore(n: number, dim = 384, seed = 20260909): EmbeddingStore {
     return { path: `notes/n${i}.md`, hash: hashContent(`n${i}`), vector: v };
   });
   return { model: 'Xenova/multilingual-e5-small', dim, records };
+}
+
+/** Rewrites fields of a saved catalogue in place. */
+function editCatalogue(embedDir: string, fields: Record<string, unknown>): void {
+  const cat = JSON.parse(readFileSync(storePath(embedDir), 'utf8'));
+  writeFileSync(storePath(embedDir), JSON.stringify({ ...cat, ...fields }));
 }
 
 /** The store as the previous version wrote it: vectors inline, as JSON text. */
@@ -100,6 +106,22 @@ describe('embedding store', () => {
       records: [{ path: 'a', hash: 'h', vector: [1, 2, 3] }, { path: 'b', hash: 'h', vector: [9] }],
     };
     expect(() => saveStore(d, store)).toThrow(/b.*1.*3/);
+    expect(existsSync(storePath(d))).toBe(false);
+  });
+
+  it('refuses to save vectors that disagree with the dimension the store declares', () => {
+    const d = dir();
+    const store: EmbeddingStore = { model: 'm', dim: 3, records: [{ path: 'a', hash: 'h', vector: [1, 2] }] };
+    expect(() => saveStore(d, store)).toThrow(/a.*2.*3/);
+  });
+
+  it('refuses to save records whose vectors are empty', () => {
+    // An endpoint that answers with `embedding: []` produces exactly this. Saved,
+    // it is a store the reader refuses — so the embed that wrote it reported
+    // success and every query after it quietly lost its semantic half.
+    const d = dir();
+    const store: EmbeddingStore = { model: 'm', dim: 0, records: [{ path: 'a', hash: 'h', vector: [] }] };
+    expect(() => saveStore(d, store)).toThrow(/no dimension/);
     expect(existsSync(storePath(d))).toBe(false);
   });
 
@@ -206,6 +228,13 @@ describe('a vault written by the previous version', () => {
     for (let i = 0; i < 10; i++) expect(Array.from(back.records[i].vector)).toEqual(Array.from(store.records[i].vector));
   });
 
+  it('is refused when every vector is empty', () => {
+    const d = dir();
+    writeFileSync(storePath(d), JSON.stringify({ model: 'm', records: [{ path: 'a', hash: 'h', vector: [] }] }));
+    expect(readStore(d).problem).toMatch(/no usable dimension/);
+    expect(loadStoreMeta(d)).toBeNull();
+  });
+
   it('is refused when a record carries no vector', () => {
     const d = dir();
     writeFileSync(storePath(d), JSON.stringify({ model: 'm', dim: 2, records: [{ path: 'a', hash: 'h' }] }));
@@ -250,10 +279,25 @@ describe('a catalogue and a vectors file that do not belong together are refused
       copyFileSync(vectorsPath(other), vectorsPath(d));
     }, /different save/],
     ['the vectors file is not a vectors file', (d) => writeFileSync(vectorsPath(d), Buffer.alloc(40 * 384 * 4 + 16)), /not a cortex vectors file/],
-    ['the catalogue is from a newer format', (d) => {
-      const cat = JSON.parse(readFileSync(storePath(d), 'utf8'));
-      writeFileSync(storePath(d), JSON.stringify({ ...cat, format: 3 }));
-    }, /format 3/],
+    // The next two keep the generation and the size right, so only the header
+    // check itself can refuse them.
+    ['the header tag is wrong', (d) => {
+      const bin = readFileSync(vectorsPath(d));
+      bin.write('XXXX', 0, 'ascii');
+      writeFileSync(vectorsPath(d), bin);
+    }, /not a cortex vectors file/],
+    ['the header format is wrong', (d) => {
+      const bin = readFileSync(vectorsPath(d));
+      bin.writeUInt32LE(3, 4);
+      writeFileSync(vectorsPath(d), bin);
+    }, /not a cortex vectors file/],
+    ['the vectors file is shorter than its header', (d) => writeFileSync(vectorsPath(d), Buffer.from('CXVB\x02\x00', 'latin1')), /not a cortex vectors file/],
+    ['the vectors file is a directory', (d) => { rmSync(vectorsPath(d)); mkdirSync(vectorsPath(d)); }, /could not be read/],
+    ['the catalogue dimension is not an integer', (d) => editCatalogue(d, { dim: 3.5 }), /no usable dimension/],
+    ['the catalogue dimension is a string', (d) => editCatalogue(d, { dim: '384' }), /no usable dimension/],
+    ['the catalogue dimension is 0 with records in it', (d) => editCatalogue(d, { dim: 0 }), /no usable dimension/],
+    ['the catalogue is from a newer format', (d) => editCatalogue(d, { format: 3 }), /format 3/],
+    ['the catalogue format is not a number', (d) => editCatalogue(d, { format: '2' }), /format "2"/],
   ];
 
   for (const [name, corrupt, problem] of cases) {
@@ -268,6 +312,14 @@ describe('a catalogue and a vectors file that do not belong together are refused
       expect(loadStoreMeta(d)).toBeNull();
     });
   }
+
+  it('when an empty store has vectors after its header', () => {
+    const d = dir();
+    saveStore(d, { model: 'm', dim: 0, records: [] });
+    writeFileSync(vectorsPath(d), Buffer.concat([readFileSync(vectorsPath(d)), Buffer.alloc(384 * 4)]));
+    expect(readStore(d).problem).toMatch(/size/);
+    expect(loadStoreMeta(d)).toBeNull();
+  });
 
   it('returns null on a catalogue that is not a store', () => {
     const d = dir();

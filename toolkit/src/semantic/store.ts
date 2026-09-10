@@ -3,19 +3,17 @@
 // ── Why this is not one JSON file any more ─────────────────────────────────
 //
 // It was. Every vector for the whole vault sat in `index.json` and was read
-// with `JSON.parse(readFileSync(file, 'utf8'))`. Measured on a real vault, one
-// record costs 8,236 bytes of JSON — a 384-dimension vector written out as
-// decimal text, plus its path and hash. That gives a hard wall nobody put there
-// on purpose:
+// with `JSON.parse(readFileSync(file, 'utf8'))`. One record costs about 8,236
+// bytes of JSON — a 384-dimension vector written out as decimal text, plus its
+// path and hash. That gives a hard wall nobody put there on purpose:
 //
-//      583 notes ......    4.8 MB
+//   10,000 notes ......      82 MB
 //   50,000 notes ......     412 MB
 //   65,185 notes ......     537 MB  <- V8 cannot make a longer string
 //
 // Past that, `readFileSync(file, 'utf8')` throws `Cannot create a string longer
 // than 0x1fffffe8 characters`, and no flag raises it: it is the maximum length
-// of a string in the engine. A vault built from a large archive of scanned
-// documents reaches it. It does not get slow first — it stops opening.
+// of a string in the engine. It does not get slow first — it stops opening.
 //
 // So the vectors move out of the text. `vectors.bin` is the raw Float32 data,
 // back to back: 384 x 4 = 1,536 bytes per note against 8,236, five times less,
@@ -136,6 +134,9 @@ interface Catalogue {
   endpointModel?: string;
 }
 
+/** A dimension records can have: a positive integer. */
+const isDimension = (dim: unknown): dim is number => typeof dim === 'number' && Number.isInteger(dim) && dim > 0;
+
 type Checked<T> = { value: T; problem: null } | { value: null; problem: string };
 const refuse = (problem: string): { value: null; problem: string } => ({ value: null, problem });
 
@@ -152,7 +153,7 @@ function readCatalogue(embedDir: string): Checked<Catalogue> | null {
     return refuse('index.json is not a cortex embedding store');
   }
   if (s.format !== undefined && s.format !== FORMAT) {
-    return refuse(`index.json is format ${s.format}; this version of cortex reads format ${FORMAT}`);
+    return refuse(`index.json is format ${JSON.stringify(s.format)}; this version of cortex reads format ${FORMAT}`);
   }
   return { value: s, problem: null };
 }
@@ -160,6 +161,7 @@ function readCatalogue(embedDir: string): Checked<Catalogue> | null {
 /** The previous layout: every record carries its own vector, all the same length. */
 function checkLegacy(cat: Catalogue): Checked<number> {
   const dim = cat.dim ?? cat.records[0]?.vector?.length ?? 0;
+  if (cat.records.length > 0 && !isDimension(dim)) return refuse('index.json has no usable dimension');
   for (const r of cat.records) {
     if (!Array.isArray(r.vector)) return refuse(`index.json record "${r.path}" has no vector`);
     if (r.vector.length !== dim) {
@@ -176,9 +178,7 @@ function checkLegacy(cat: Catalogue): Checked<number> {
  */
 function checkPair(cat: Catalogue, header: Buffer, size: number): Checked<number> {
   const dim = cat.dim;
-  if (typeof dim !== 'number' || !Number.isInteger(dim) || dim < 0 || (dim === 0 && cat.records.length > 0)) {
-    return refuse('index.json has no usable dimension');
-  }
+  if (!(isDimension(dim) || (dim === 0 && cat.records.length === 0))) return refuse('index.json has no usable dimension');
   if (header.length < HEADER || !header.subarray(0, 4).equals(MAGIC) || header.readUInt32LE(4) !== FORMAT) {
     return refuse('vectors.bin is not a cortex vectors file');
   }
@@ -190,17 +190,20 @@ function checkPair(cat: Catalogue, header: Buffer, size: number): Checked<number
   return { value: dim, problem: null };
 }
 
-/** Header and size of `vectors.bin` without reading the rest. */
+/** Header and size of `vectors.bin` without reading the rest; null if it cannot be read. */
 function peekVectors(embedDir: string): { header: Buffer; size: number } | null {
   const file = vectorsPath(embedDir);
   if (!existsSync(file)) return null;
-  const fd = openSync(file, 'r');
+  let fd: number | undefined;
   try {
+    fd = openSync(file, 'r');
     const header = Buffer.alloc(HEADER);
     const n = readSync(fd, header, 0, HEADER, 0);
     return { header: header.subarray(0, n), size: fstatSync(fd).size };
+  } catch {
+    return null;
   } finally {
-    closeSync(fd);
+    if (fd !== undefined) closeSync(fd);
   }
 }
 
@@ -291,7 +294,12 @@ export function loadStore(embedDir: string): EmbeddingStore | null {
 export function saveStore(embedDir: string, store: EmbeddingStore): void {
   const dim = store.dim || store.records[0]?.vector.length || 0;
   // Refused up front, before anything is written: padding or cutting a vector
-  // stores one no model ever produced, and ranks it as if one had.
+  // stores one no model ever produced, and ranks it as if one had. Records with
+  // no dimension at all would be a store the reader refuses, written by an
+  // embed that reported success.
+  if (store.records.length > 0 && !isDimension(dim)) {
+    throw new Error(`cannot save ${store.records.length} vectors with no dimension — the embedder returned empty vectors`);
+  }
   for (const r of store.records) {
     if (r.vector.length !== dim) {
       throw new Error(`vector for "${r.path}" has ${r.vector.length} dimensions, expected ${dim}`);
