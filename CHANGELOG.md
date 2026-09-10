@@ -4,7 +4,7 @@ All notable changes to **N1X Cortex** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.2.1] - 2026-09-10
 
 ### Changed
 - **`cortex viz` follows the N1X website's visual system.** The viewer and its
