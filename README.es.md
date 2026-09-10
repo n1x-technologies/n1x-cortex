@@ -210,6 +210,8 @@ cortex embed                       # construye el almacén una vez (incremental 
 
 Luego `cortex query` y `cortex dupes` se vuelven híbridos (léxico + semántico), y el servidor MCP mantiene el modelo caliente.
 
+El almacén vive en `.cortex/embeddings/`: `index.json` (una ruta y un hash de contenido por nota) y `vectors.bin` (los vectores en Float32 crudo), lo que lo mantiene lo bastante compacto para vaults de cientos de miles de notas. Un almacén de una versión anterior se migra con el siguiente `cortex embed`. Si los dos archivos dejan de coincidir (por ejemplo, se copió uno sin el otro), Cortex rechaza el par en vez de leerlo a medias, y `cortex embed` lo reconstruye y te dice por qué.
+
 ## Hacia dónde va
 
 Cortex hoy es el **motor local y de código abierto**: gratis, tuyo, en tu máquina. Es el núcleo abierto de una idea más grande:
