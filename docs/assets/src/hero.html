@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>N1X Cortex, hero</title>
+<link rel="stylesheet" href="brand.css">
+<style>
+  :root { --w: 1280px; --h: 520px; }
+  .copy { position: absolute; left: 64px; top: 60px; width: 520px; height: 400px; display: flex; flex-direction: column; }
+  .copy .display { font-size: 108px; margin-top: 42px; }
+  .copy .lead { font-size: 23px; margin-top: 24px; max-width: 500px; }
+  .claims.mono { font-size: 13.5px; }
+  .claims { margin-top: auto; display: flex; flex-direction: column; gap: 13px; }
+  .claims div { display: flex; align-items: center; gap: 14px; }
+  #art { position: absolute; left: 616px; top: 40px; }
+</style>
+</head>
+<body>
+  <div class="copy">
+    <div class="logo" role="img" aria-label="N1X"></div>
+    <h1 class="display">N1X Cortex</h1>
+    <p class="lead">Turn any folder of markdown, or an undocumented repo, into a cited, <span style="white-space:nowrap">AI-queryable</span> knowledge graph.</p>
+    <div class="claims mono">
+      <div><i class="rhombus"></i>Runs on your machine, over your files</div>
+      <div><i class="rhombus"></i>Every answer cites its source</div>
+      <div><i class="rhombus"></i>Every write has a way back</div>
+    </div>
+  </div>
+  <svg id="art" width="620" height="440"></svg>
+
+<script src="graph.js"></script>
+<script>
+  const { ink, doc, line, agent, vault, walks, drawGraph } = N1X;
+  const H = 440;
+  const dw = 58, dh = 78, gap = 26;
+  const y0 = (H - (3 * dh + 2 * gap)) / 2;
+  const docAt = (d) => ({ x: 14, y: y0 + d * (dh + gap) });
+  const field = { x: 150, y: 20, w: 370, h: 400 };
+  const g = vault({ docs: 3, cols: 6, rows: 4, seed: 20260909, field, maxPx: 104 });
+
+  let svg = '';
+  // the documents stay: the source file survives every write
+  for (let d = 0; d < 3; d += 1) { const p = docAt(d); svg += doc(p.x, p.y, dw, dh, { solid: 0.6 }); }
+  // every note points at the document it came from
+  g.notes.forEach((n) => {
+    const p = docAt(n.doc);
+    svg += line(p.x + dw, p.y + dh / 2, n.x, n.y, ink(0.13), '1 4');
+  });
+  // agents on the far side, each walking the relations to its answer
+  const seats = [0, 1, 2].map((r) => ({ x: 590, y: y0 + r * (dh + gap) + dh / 2 }));
+  svg += drawGraph(g, { paths: walks(g, seats, 3) });
+  seats.forEach((s) => { svg += agent(s.x, s.y, 10); });
+  document.getElementById('art').innerHTML = svg;
+</script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+/*
+ * The N1X visual system, as the website implements it, for the README images.
+ *
+ * Paper is the default; ink is the same page read in the dark. Each image is
+ * rendered twice from one HTML file by switching `prefers-color-scheme`, so the
+ * two variants cannot drift apart.
+ *
+ * One colour besides the neutrals: `--live`, and only for what is live in the
+ * picture (a question walking the graph, the notes it lands on). Everything
+ * else is shape and weight. No radius anywhere.
+ *
+ * Fonts are vendored under fonts/ with their SIL OFL 1.1 licences.
+ */
+
+@font-face { font-family: 'Archivo'; src: url('fonts/archivo.woff2') format('woff2'); font-weight: 100 900; }
+@font-face { font-family: 'Plus Jakarta Sans'; src: url('fonts/plus-jakarta-sans.woff2') format('woff2'); font-weight: 200 800; }
+@font-face { font-family: 'Martian Mono'; src: url('fonts/martian-mono.woff2') format('woff2'); font-weight: 100 800; }
+
+:root {
+  --page: #f0f0ef;
+  --ground-lo: #dcdcdb;
+  --ground-hi: #f7f7f6;
+  --ink: #292929;
+  --ink-2: rgba(41, 41, 41, 0.70);
+  --ink-3: rgba(41, 41, 41, 0.44);
+  --line: rgba(41, 41, 41, 0.16);
+  --line-strong: rgba(41, 41, 41, 0.32);
+  --rgb: 41, 41, 41;
+  --live: 58, 132, 92;
+  --logo: url('logo/n1x-logo-black.png');
+  --grain: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #161615;
+    --ground-lo: #111110;
+    --ground-hi: #1e1d1c;
+    --ink: #f1efea;
+    --ink-2: rgba(241, 239, 234, 0.70);
+    --ink-3: rgba(241, 239, 234, 0.44);
+    --line: rgba(241, 239, 234, 0.14);
+    --line-strong: rgba(241, 239, 234, 0.30);
+    --rgb: 241, 239, 234;
+    --live: 122, 184, 148;
+    --logo: url('logo/n1x-logo-white.png');
+    --grain: 0;
+  }
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { width: var(--w); height: var(--h); overflow: hidden; }
+
+body {
+  position: relative;
+  background: radial-gradient(130% 150% at 28% 18%, var(--ground-hi), var(--page) 52%, var(--ground-lo));
+  color: var(--ink);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Texture, not colour: the fractal grain the website lays over the page. It is
+   off (--grain: 0) for the README images: at README size it cannot be seen,
+   and noise is what makes a PNG heavy, about five times heavier here. Raise
+   --grain for anything shown large. */
+body::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--grain);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='0.30'/%3E%3C/svg%3E");
+}
+
+.logo { height: 22px; aspect-ratio: 919 / 263; background: var(--logo) no-repeat left center / contain; opacity: 0.92; }
+
+.mono {
+  font-family: 'Martian Mono', monospace;
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.display { font-family: 'Archivo', sans-serif; font-weight: 300; letter-spacing: -0.04em; line-height: 0.98; }
+.title { font-family: 'Archivo', sans-serif; font-weight: 400; letter-spacing: -0.018em; }
+.h2 { font-weight: 300; letter-spacing: -0.026em; line-height: 1.16; }
+.lead { font-weight: 300; color: var(--ink-2); line-height: 1.55; }
+.rule { border-top: 1px solid var(--line); }
+
+/* the rhombus is the brand's glyph: bullets, markers, joints */
+.rhombus { display: inline-block; width: 7px; height: 7px; transform: rotate(45deg); border: 1px solid var(--ink-3); }
+.rhombus.solid { background: var(--ink-3); }
+.rhombus.live { border-color: rgb(var(--live)); background: rgb(var(--live)); }
+
+svg { display: block; overflow: visible; }
