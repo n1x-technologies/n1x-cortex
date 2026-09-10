@@ -1,7 +1,10 @@
 <p align="right"><a href="README.md">English</a> · <b>Español</b></p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/hero.png" alt="N1X Cortex, el grafo de conocimiento citado, para ti y para tus agentes" width="100%">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/hero-dark.png">
+    <img src="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/hero.png" alt="N1X Cortex: convierte cualquier carpeta de markdown, o un repositorio sin documentar, en un grafo de conocimiento citado y consultable por IA" width="100%">
+  </picture>
 </p>
 
 > **Nota:** el inglés (`README.md`) es la fuente de verdad. Si esta traducción queda desactualizada, prevalece el inglés.
@@ -29,12 +32,28 @@ npm i -g @n1x-technologies/cortex
 
 La mayor parte del conocimiento vive disperso en archivos markdown (notas, documentación, wikis), o en ningún documento, solo en un repositorio de código. Los humanos pueden leerlo; **los agentes de IA no pueden confiar en él** (sin estructura, sin procedencia). Cortex resuelve eso: lee cualquier vault de markdown, o un repositorio entero sin documentar, y lo convierte en un **grafo de notas citado**, para que tanto una persona como un agente sepan *de dónde viene cada respuesta*.
 
-- 🧩 **Atómico y conectado**: las notas forman un grafo de notas enlazadas y tipadas (wikilinks, frontmatter).
-- 📌 **Citado por diseño**: cada respuesta apunta a sus notas fuente, así siempre sabes de dónde salió.
-- 🔒 **Local-first y privado**: corre en tu máquina, sobre tus archivos. Nada sale a menos que tú lo decidas.
-- 🤖 **Nativo para agentes (MCP)**: incluye un servidor MCP, para que cualquier agente pueda consultar y escribir de vuelta en tu vault como herramienta.
+- **Atómico y conectado.** Las notas forman un grafo de notas enlazadas y tipadas (wikilinks, frontmatter).
+- **Citado por diseño.** Cada respuesta apunta a sus notas fuente, así siempre sabes de dónde salió.
+- **Local-first y privado.** Corre en tu máquina, sobre tus archivos. Nada sale a menos que tú lo decidas.
+- **Reversible.** Cada escritura queda respaldada y `cortex undo` la revierte; las fuentes bajo `Markdown/` nunca se modifican.
+- **Nativo para agentes (MCP).** Incluye un servidor MCP, para que cualquier agente pueda consultar y escribir de vuelta en tu vault como herramienta.
 
-<p align="center"><img src="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/flow.png" alt="Qué hace Cortex en tres pasos: tus notas o un repo → Cortex arma un grafo citado → tú y tus agentes preguntan y reciben respuestas citadas" width="100%"></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/flow-dark.png">
+    <img src="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/flow.png" alt="Qué hace Cortex en tres pasos: tus archivos, un grafo de notas citado, respuestas que nombran su fuente" width="100%">
+  </picture>
+</p>
+
+## Versiones recientes
+
+| Versión | Fecha | Qué cambió |
+|---------|-------|------------|
+| **1.2.0** | 2026-09-10 | El almacén de embeddings se divide en dos archivos, así que un vault de decenas de miles de notas por fin abre: 70.000 notas cargan en unos 50 ms donde el formato anterior fallaba. Los almacenes existentes se migran solos y los rankings son idénticos bit a bit. Un almacén cuyos dos archivos no coinciden se rechaza en vez de leerse a medias, y las alertas de dependencias abiertas quedan cerradas. |
+| 1.1.0 | 2026-08-13 | `cortex query` rechaza las opciones que no conoce en vez de buscarlas en silencio, la salida leída a través de un pipe ya no se corta, y `cortex embed --base-url` embebe a través de cualquier endpoint compatible con OpenAI. |
+| 1.0.1 | 2026-07-13 | La capa semántica opcional dejó una dependencia obsoleta. Los almacenes de embeddings existentes siguen funcionando, sin volver a embeber. |
+
+Cortex sigue versionado semántico. Cada arreglo, y cómo se midió, está en el [CHANGELOG](CHANGELOG.md), incluido qué hacer antes de volver a una versión anterior.
 
 ## Por qué está construido para costar menos, y para ser verificable
 
@@ -67,10 +86,10 @@ Lee cada archivo, código incluido, y destila los conceptos del proyecto en nota
 ## Casos de uso
 
 - **[Adopta un repo legacy o sin documentar](docs/use-cases/onboard-a-repo.md)**: apúntale Cortex y pregunta *"¿cómo funciona el auth?"* en vez de hacer grep. Cada respuesta cita el archivo exacto.
-- **[Dale memoria real a tu agente de IA](docs/use-cases/agent-memory.md)**: un cerebro de largo plazo local, citado y reversible que cualquier agente MCP (Claude Code, Copilot, Cursor…) puede leer y al que escribe de vuelta.
+- **[Dale memoria real a tu agente de IA](docs/use-cases/agent-memory.md)**: un cerebro de largo plazo local, citado y reversible que cualquier agente MCP (Claude Code, Copilot, Cursor y otros) puede leer y al que escribe de vuelta.
 - **[La fuente de verdad de un equipo](docs/use-cases/team-knowledge-base.md)**: una base de conocimiento verificable que comparten muchas personas y agentes, en vez de docs dispersos en los que nadie confía.
 - **[Un codebase que se documenta solo](docs/use-cases/self-documenting-codebase.md)**: docs vivos que se regeneran a medida que el código cambia, para que nunca queden desactualizados.
-- **[Un agente ambiental siempre activo → Symbiont](docs/use-cases/symbiont.md)**: Cortex se instala en un repo, escanea el código y mantiene un cerebro citado sincronizado mientras trabajas.
+- **[Un agente ambiental siempre activo: Symbiont](docs/use-cases/symbiont.md)**: Cortex se instala en un repo, escanea el código y mantiene un cerebro citado sincronizado mientras trabajas.
 
 Cada uno enlaza a una guía corta, mira todos los [casos de uso](docs/use-cases/).
 
@@ -83,7 +102,7 @@ cd mi-vault                            # cualquier carpeta de notas .md
 cortex init                            # detecta tu frontmatter, escribe .cortex.json (+ ignora la caché en git)
 cortex status                          # notas por tipo/estado + huérfanas
 cortex query "¿cómo funciona X?"       # una respuesta citada desde tus propias notas
-cortex viz                             # 🌐 visor web local, tu grafo de conocimiento
+cortex viz                             # visor web local, tu grafo de conocimiento
 ```
 
 Eso es todo, sin cuenta, sin servidor, sin nube.
@@ -106,7 +125,7 @@ Cortex habla el **[Model Context Protocol](https://modelcontextprotocol.io)**, a
 # solo lectura (por defecto), los agentes consultan y leen tu vault:
 cortex mcp
 
-# ⭐ recomendado, deja que los agentes capturen conocimiento como borradores (reversible):
+# recomendado, deja que los agentes capturen conocimiento como borradores (reversible):
 cortex mcp --write
 
 # curador completo, borradores + promote + merge (estructural, igual reversible):
@@ -118,7 +137,7 @@ La escritura es **opt-in en el arranque**: un agente no puede autohabilitarse ni
 | Modo | Flag | Qué puede hacer el agente |
 |------|------|------------------------|
 | **Solo lectura** | *(ninguno)* | Consultar y leer notas. |
-| **Borrador (Draft)** ⭐ | `--write` | Lectura **+** captura: destila fuentes en `draft`s dentro de `_inbox/`, cambia el estado, deshace. |
+| **Borrador (Draft)** (recomendado) | `--write` | Lectura **+** captura: destila fuentes en `draft`s dentro de `_inbox/`, cambia el estado, deshace. |
 | **Curación (Curate)** | `--write=curate` | Draft **+** promueve borradores fuera de `_inbox/` y fusiona duplicados. |
 
 Cada escritura queda respaldada y es reversible (`cortex_undo`), las fuentes bajo `Markdown/` nunca se tocan, y una traza de auditoría queda en `.cortex/mcp-writes.log`.
@@ -158,7 +177,7 @@ Respeta `.gitignore`, salta binarios y carpetas de dependencias externas, muestr
 | `cortex init` | Detecta los campos de frontmatter, escribe `.cortex.json`, agrega `.cortex/` al gitignore. |
 | `cortex new <type> <id>` | Crea una nota a partir de `_templates/<type>.md` (`init` siembra una plantilla `note` inicial) en la carpeta del tipo, la primera nota de un tipo necesita `--dir`, luego se aprende (`--title`/`--module`). |
 | `cortex status` / `orphans` | Notas por tipo/estado; enlaces rotos ordenados como "siguiente a atomizar". |
-| `cortex query "..."` | Respuesta citada a partir de tus notas (recuperación híbrida). `--json` (o la skill `/query`) para salida legible por máquina, `--limit <n>` para cuántos resultados, y `--full` / `--max-content <n>` para obtener el cuerpo de cada nota en vez de un extracto de 200 caracteres — que es lo que hace falta cuando la salida alimenta a un modelo. |
+| `cortex query "..."` | Respuesta citada a partir de tus notas (recuperación híbrida). `--json` (o la skill `/query`) para salida legible por máquina, `--limit <n>` para cuántos resultados, y `--full` / `--max-content <n>` para obtener el cuerpo de cada nota en vez de un extracto de 200 caracteres, que es lo que hace falta cuando la salida alimenta a un modelo. |
 | `cortex viz` | Visor web local con la identidad de marca de N1X: grafo interactivo, búsqueda, color por categoría, foco animado, resaltado de vecinos, un panel de enlaces bidireccional (entrantes/salientes), un filtro de grupo tri-estado, un selector de vista Grafo/Árbol, controles de fuerza en vivo (d3-force), y exportación de arquitectura en Mermaid. Haz clic en **Open note** de un nodo para leer su markdown renderizado en una nueva pestaña (`/note/<id>`). |
 | `cortex mcp install` | **Conexión con un solo comando** a Claude Code (`uninstall` para quitarla; `--write[=curate]` para registrar un escritor). |
 | `cortex mcp` | **Ejecuta el servidor MCP** para agentes (stdio). Solo lectura por defecto; `--write[=draft\|curate]` expone herramientas reversibles de captura/curación. |
@@ -175,24 +194,14 @@ Respeta `.gitignore`, salta binarios y carpetas de dependencias externas, muestr
 
 ## Cómo funciona
 
-Cortex está construido sobre cuatro pilares, **Atomizar · Conectar · Curar · Capa de IA**: sobre un único motor que alimenta tres superficies (una CLI, un visor local y el servidor MCP):
+Cortex se organiza en cuatro partes, **Atomizar · Conectar · Curar · Capa de IA**, sobre un único motor que alimenta tres superficies (una CLI, un visor local y el servidor MCP):
 
-```mermaid
-flowchart TB
-  V[("📁 Markdown vault<br/>notes · wikilinks · frontmatter")] --> ENG["⚙️ Cortex engine<br/>scan · graph · index · embed"]
-  ENG --> G["🕸️ note graph"]
-  ENG --> I["🔎 lexical index (TF-IDF)"]
-  ENG --> EM["🧠 embeddings<br/>(optional, local)"]
-  G --> S{{surfaces}}
-  I --> S
-  EM --> S
-  S --> CLI["⌨️ CLI"]
-  S --> VIZ["🌐 local viewer"]
-  S --> MCP["🤖 MCP server"]
-  CLI --> U["👤 you + 🤖 agents"]
-  VIZ --> U
-  MCP --> U
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/engine-dark.png">
+    <img src="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/engine.png" alt="Un motor, tres superficies: el vault de markdown pasa por el motor (escanear, grafo, índice, embeddings), que construye un grafo de notas, un índice léxico y embeddings opcionales; la CLI, el visor local y el servidor MCP responden desde ellos, para ti y tus agentes" width="100%">
+  </picture>
+</p>
 
 - **Atomizar**: destila fuentes (markdown o código) en notas pequeñas de una sola idea, asistido por IA, dry-run por defecto, cada escritura reversible.
 - **Conectar**: los wikilinks + el frontmatter forman un grafo tipado; las notas huérfanas y los vacíos salen a la luz automáticamente. Las fuentes crudas (`Markdown/`) y las plantillas de notas (`_templates/`) quedan excluidas, así que nunca aparecen como nodos.
@@ -223,13 +232,16 @@ El camino es incremental, así que nada se descarta en el trayecto.
 
 ## Roadmap
 
-- ✅ **Motor + CLI**: grafo, estado, huérfanas, consulta citada, visor local.
-- ✅ **Atomización con IA**: notas destiladas por IA, escrituras reversibles, promoción condicionada por estado.
-- ✅ **Curación y salidas**: gaps/dupes/verify, notas MOC, PDFs con marca propia.
-- ✅ **Capa semántica**: embeddings locales, `query`/`dupes` híbridos.
-- ✅ **Servidor MCP (lectura)**: `cortex_query` + `cortex_get_note` para agentes.
-- ✅ **Captura autónoma (hooks)**: el hook Stop destila las fuentes modificadas hacia el grafo en segundo plano (`auto-draft`/`full`), reversible; más `merge` de duplicados reversible.
-- ✅ **MCP write/curate**: `cortex mcp --write[=draft|curate]` expone captura y curación como herramientas MCP para que *cualquier* agente escriba de vuelta, solo lectura por defecto, cada escritura reversible.
+Ya disponible:
+
+- **Motor + CLI**: grafo, estado, huérfanas, consulta citada, visor local.
+- **Atomización con IA**: notas destiladas por IA, escrituras reversibles, promoción condicionada por estado.
+- **Curación y salidas**: gaps/dupes/verify, notas MOC, PDFs con marca propia.
+- **Capa semántica**: embeddings locales, `query`/`dupes` híbridos.
+- **Servidor MCP (lectura)**: `cortex_query` + `cortex_get_note` para agentes.
+- **Captura autónoma (hooks)**: el hook Stop destila las fuentes modificadas hacia el grafo en segundo plano (`auto-draft`/`full`), reversible; más `merge` de duplicados reversible.
+- **MCP write/curate**: `cortex mcp --write[=draft|curate]` expone captura y curación como herramientas MCP para que *cualquier* agente escriba de vuelta, solo lectura por defecto, cada escritura reversible.
+- **Vaults grandes** (1.2.0): un almacén de embeddings en dos archivos que abre con decenas de miles de notas y rechaza un par que no coincide en vez de leerlo a medias.
 
 ## Desde el código (colaboradores)
 
@@ -240,6 +252,8 @@ npm test
 ```
 
 El motor vive en [`toolkit/`](toolkit/). Las contribuciones pasan por PRs, ver [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+Las imágenes de este README se generan, no se dibujan a mano: edita las fuentes HTML en [`docs/assets/src/`](docs/assets/src/) y ejecuta `bash docs/assets/src/render.sh`, que renderiza cada una en claro y oscuro.
 
 ## Licencia
 

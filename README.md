@@ -1,7 +1,10 @@
 <p align="right"><b>English</b> · <a href="README.es.md">Español</a></p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/hero.png" alt="N1X Cortex, the cited knowledge graph, for you and your agents" width="100%">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/hero-dark.png">
+    <img src="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/hero.png" alt="N1X Cortex: turn any folder of markdown, or an undocumented repo, into a cited, AI-queryable knowledge graph" width="100%">
+  </picture>
 </p>
 
 <p align="center">
@@ -27,12 +30,28 @@ npm i -g @n1x-technologies/cortex
 
 Most knowledge lives in scattered markdown files (notes, docs, wikis), or in no docs at all, just a codebase. Humans can read it; **AI agents can't trust it** (no structure, no provenance). Cortex fixes that: it reads any markdown vault, or an entire undocumented repo, into a **cited note graph**, so a person and an agent both know *where every answer came from*.
 
-- 🧩 **Atomic & connected**: notes become a graph of linked, typed notes (wikilinks, frontmatter).
-- 📌 **Cited by design**: every answer points back to its source notes, so you always know where it came from.
-- 🔒 **Local-first & private**: runs on your machine, on your files. Nothing leaves unless you say so.
-- 🤖 **Agent-native (MCP)**: ships an MCP server, so any agent can query and write back to your vault as a tool.
+- **Atomic and connected.** Notes become a graph of linked, typed notes (wikilinks, frontmatter).
+- **Cited by design.** Every answer points back to its source notes, so you always know where it came from.
+- **Local-first and private.** Runs on your machine, on your files. Nothing leaves unless you say so.
+- **Reversible.** Every write is backed up and `cortex undo` reverses it; the sources under `Markdown/` are never modified.
+- **Agent-native (MCP).** Ships an MCP server, so any agent can query and write back to your vault as a tool.
 
-<p align="center"><img src="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/flow.png" alt="What Cortex does in three moves: your notes or a whole repo → Cortex builds a cited graph → you and your agents ask and get cited answers" width="100%"></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/flow-dark.png">
+    <img src="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/flow.png" alt="What Cortex does in three steps: your files, a cited note graph, answers that name their source" width="100%">
+  </picture>
+</p>
+
+## Recent releases
+
+| Version | Date | What changed |
+|---------|------|--------------|
+| **1.2.0** | 2026-09-10 | The embedding store is split into two files, so a vault of tens of thousands of notes opens at all: 70,000 notes load in about 50 ms where the old format failed. Existing stores migrate by themselves and rankings are bit-for-bit identical. A store whose two files do not match is refused instead of half-read, and the open dependency advisories are closed. |
+| 1.1.0 | 2026-08-13 | `cortex query` rejects options it does not know instead of quietly searching for them, output read through a pipe is no longer cut off, and `cortex embed --base-url` embeds through any OpenAI-compatible endpoint. |
+| 1.0.1 | 2026-07-13 | The optional semantic layer moved off a deprecated dependency. Existing embedding stores keep working, with no re-embed. |
+
+Cortex follows semantic versioning. Every fix, and how it was measured, is in the [CHANGELOG](CHANGELOG.md), including what to do before going back to an earlier version.
 
 ## Why it's built to cost less, and to be verifiable
 
@@ -40,7 +59,7 @@ Imagine your knowledge base is **300 pages**. To answer one question, most setup
 
 - **Retrieval instead of a full dump.** Answers are built from cited, retrieved excerpts, not the whole vault, so per-question cost doesn't scale with corpus size the way "read everything" does.
 - **Cited, not paraphrased.** Every answer points to the exact source note it came from, quoted word-for-word.
-- **Measured, not asserted.** A reproducible benchmark suite compares Cortex against baselines built to be hard to beat (whole-context, a grep-based agent, a cost-matched fixed-chunk RAG), using a real BPE tokenizer instead of a character-count estimate. Both stages now run end to end — retrieval cost offline, and judged answer quality against a live model whose judge was validated at 94.7% agreement with a human labeller. It still reports on a small CI regression fixture, which saturates: every system scores identically there, so it compares nothing and no cross-system claim is drawn from it. The public corpus that could is fetchable, but its question set is not written: a 20-question pilot measured 19 of 20 already answerable with no context at all, so that batch was retired rather than extended and the sourcing strategy is being reworked. See [`bench/README.md`](bench/README.md) for the method, the current numbers, and exactly what they do and don't show.
+- **Measured, not asserted.** A reproducible benchmark suite compares Cortex against baselines built to be hard to beat (whole-context, a grep-based agent, a cost-matched fixed-chunk RAG), using a real BPE tokenizer instead of a character-count estimate. Both stages now run end to end: retrieval cost offline, and judged answer quality against a live model whose judge was validated at 94.7% agreement with a human labeller. It still reports on a small CI regression fixture, which saturates: every system scores identically there, so it compares nothing and no cross-system claim is drawn from it. The public corpus that could is fetchable, but its question set is not written: a 20-question pilot measured 19 of 20 already answerable with no context at all, so that batch was retired rather than extended and the sourcing strategy is being reworked. See [`bench/README.md`](bench/README.md) for the method, the current numbers, and exactly what they do and don't show.
 
 ## Why it clicks
 
@@ -65,10 +84,10 @@ Reads every file, code included, and distills the project's concepts into connec
 ## Use cases
 
 - **[Onboard a legacy or undocumented repo](docs/use-cases/onboard-a-repo.md)**: point Cortex at it and ask *"how does auth work?"* instead of grepping. Every answer cites the exact file.
-- **[Give your AI agent real memory](docs/use-cases/agent-memory.md)**: a local, cited, reversible long-term brain any MCP agent (Claude Code, Copilot, Cursor…) can read from and write back to.
+- **[Give your AI agent real memory](docs/use-cases/agent-memory.md)**: a local, cited, reversible long-term brain any MCP agent (Claude Code, Copilot, Cursor and others) can read from and write back to.
 - **[A team's single source of truth](docs/use-cases/team-knowledge-base.md)**: one verifiable knowledge base many people and agents share, instead of scattered docs nobody trusts.
 - **[A codebase that documents itself](docs/use-cases/self-documenting-codebase.md)**: living docs that regenerate as the code moves, so they never drift out of date.
-- **[An always-on ambient agent → Symbiont](docs/use-cases/symbiont.md)**: Cortex installs into a repo, scans the code, and keeps a cited brain of it in sync as you work.
+- **[An always-on ambient agent: Symbiont](docs/use-cases/symbiont.md)**: Cortex installs into a repo, scans the code, and keeps a cited brain of it in sync as you work.
 
 Each links to a short walkthrough, see all [use cases](docs/use-cases/).
 
@@ -81,7 +100,7 @@ cd my-vault                            # any folder of .md notes
 cortex init                            # detect your frontmatter, write .cortex.json (+ gitignore the cache)
 cortex status                          # notes by type/status + orphans
 cortex query "how does X work?"        # a cited answer from your own notes
-cortex viz                             # 🌐 local web viewer, your knowledge graph
+cortex viz                             # local web viewer, your knowledge graph
 ```
 
 That's it, no account, no server, no cloud.
@@ -104,7 +123,7 @@ Cortex speaks the **[Model Context Protocol](https://modelcontextprotocol.io)**,
 # read-only (default), agents can query and read your vault:
 cortex mcp
 
-# ⭐ recommended, also let agents capture knowledge back as drafts (reversible):
+# recommended, also let agents capture knowledge back as drafts (reversible):
 cortex mcp --write
 
 # full curator, drafts + promote + merge (structural, still reversible):
@@ -116,7 +135,7 @@ Write is **opt-in at launch**: an agent can't self-enable or escalate its own sc
 | Mode | Flag | What the agent can do |
 |------|------|------------------------|
 | **Read-only** | *(none)* | Query & read notes. |
-| **Draft** ⭐ | `--write` | Read **+** capture: distill sources into `draft`s in `_inbox/`, set status, undo. |
+| **Draft** (recommended) | `--write` | Read **+** capture: distill sources into `draft`s in `_inbox/`, set status, undo. |
 | **Curate** | `--write=curate` | Draft **+** promote drafts out of `_inbox/` and merge duplicates. |
 
 Every write is backed up and reversible (`cortex_undo`), sources under `Markdown/` are never touched, and an audit trail lands in `.cortex/mcp-writes.log`.
@@ -156,7 +175,7 @@ It respects `.gitignore`, skips binaries and vendored folders, streams progress 
 | `cortex init` | Detect frontmatter fields, write `.cortex.json`, gitignore the `.cortex/` cache. |
 | `cortex new <type> <id>` | Scaffold a note from `_templates/<type>.md` (`init` seeds a starter `note` template) into the type's folder, the first note of a type needs `--dir`, then it's learned (`--title`/`--module`). |
 | `cortex status` / `orphans` | Notes by type/status; dangling links ranked "atomize-next". |
-| `cortex query "..."` | Cited answer from your notes (hybrid retrieval). `--json` (or the `/query` skill) for machine-readable output, `--limit <n>` for how many hits, `--full` / `--max-content <n>` to get each note's body rather than a 200-character excerpt — which is what you want when the output is going to a model. |
+| `cortex query "..."` | Cited answer from your notes (hybrid retrieval). `--json` (or the `/query` skill) for machine-readable output, `--limit <n>` for how many hits, `--full` / `--max-content <n>` to get each note's body rather than a 200-character excerpt, which is what you want when the output is going to a model. |
 | `cortex viz` | Local web viewer in the N1X brand identity: interactive graph, search, color-by, animated focus, neighbor highlighting, a bidirectional (in/out) link panel, a tri-state group filter, a Graph/Tree view toggle, live force controls (d3-force), and a Mermaid architecture export. Click a node's **Open note** to read its rendered markdown in a new tab (`/note/<id>`). |
 | `cortex mcp install` | **One-command hookup** to Claude Code (`uninstall` to remove; `--write[=curate]` to register a writer). |
 | `cortex mcp` | **Run the MCP server** for agents (stdio). Read-only by default; `--write[=draft\|curate]` exposes reversible capture/curation tools. |
@@ -173,24 +192,14 @@ It respects `.gitignore`, skips binaries and vendored folders, streams progress 
 
 ## How it works
 
-Cortex is built on four pillars, **Atomize · Connect · Curate · AI Layer**: over one engine that feeds three surfaces (a CLI, a local viewer, and the MCP server):
+Cortex is organised in four parts, **Atomize · Connect · Curate · AI Layer**, over one engine that feeds three surfaces (a CLI, a local viewer, and the MCP server):
 
-```mermaid
-flowchart TB
-  V[("📁 Markdown vault<br/>notes · wikilinks · frontmatter")] --> ENG["⚙️ Cortex engine<br/>scan · graph · index · embed"]
-  ENG --> G["🕸️ note graph"]
-  ENG --> I["🔎 lexical index (TF-IDF)"]
-  ENG --> EM["🧠 embeddings<br/>(optional, local)"]
-  G --> S{{surfaces}}
-  I --> S
-  EM --> S
-  S --> CLI["⌨️ CLI"]
-  S --> VIZ["🌐 local viewer"]
-  S --> MCP["🤖 MCP server"]
-  CLI --> U["👤 you + 🤖 agents"]
-  VIZ --> U
-  MCP --> U
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/engine-dark.png">
+    <img src="https://raw.githubusercontent.com/n1x-technologies/n1x-cortex/main/docs/assets/engine.png" alt="One engine, three surfaces: the markdown vault goes through the engine (scan, graph, index, embed), which builds a note graph, a lexical index and optional embeddings; the CLI, the local viewer and the MCP server answer from them, for you and your agents" width="100%">
+  </picture>
+</p>
 
 - **Atomize**: distill sources (markdown or code) into small, single-idea notes, AI-assisted, dry-run by default, every write reversible.
 - **Connect**: wikilinks + frontmatter become a typed graph; orphans and gaps surface automatically. Raw sources (`Markdown/`) and note templates (`_templates/`) are excluded, so they never appear as nodes.
@@ -221,13 +230,16 @@ The path is incremental, so nothing gets thrown away on the way there.
 
 ## Roadmap
 
-- ✅ **Engine + CLI**: graph, status, orphans, cited query, local viewer.
-- ✅ **AI atomization**: AI-distilled notes, reversible writes, status-gated promotion.
-- ✅ **Curation & outputs**: gaps/dupes/verify, MOC notes, branded PDFs.
-- ✅ **Semantic layer**: local embeddings, hybrid query/dupes.
-- ✅ **MCP server (read)**: `cortex_query` + `cortex_get_note` for agents.
-- ✅ **Autonomous capture (hooks)**: the Stop hook distills changed sources into the graph in the background (`auto-draft`/`full`), reversible; plus reversible duplicate `merge`.
-- ✅ **MCP write/curate**: `cortex mcp --write[=draft|curate]` exposes capture & curation as MCP tools so *any* agent writes back, read-only by default, every write reversible.
+Shipped:
+
+- **Engine + CLI**: graph, status, orphans, cited query, local viewer.
+- **AI atomization**: AI-distilled notes, reversible writes, status-gated promotion.
+- **Curation & outputs**: gaps/dupes/verify, MOC notes, branded PDFs.
+- **Semantic layer**: local embeddings, hybrid query/dupes.
+- **MCP server (read)**: `cortex_query` + `cortex_get_note` for agents.
+- **Autonomous capture (hooks)**: the Stop hook distills changed sources into the graph in the background (`auto-draft`/`full`), reversible; plus reversible duplicate `merge`.
+- **MCP write/curate**: `cortex mcp --write[=draft|curate]` exposes capture & curation as MCP tools so *any* agent writes back, read-only by default, every write reversible.
+- **Large vaults** (1.2.0): a two-file embedding store that opens at tens of thousands of notes and refuses a mismatched pair instead of reading it half.
 
 ## From source (contributors)
 
@@ -238,6 +250,8 @@ npm test
 ```
 
 The engine lives in [`toolkit/`](toolkit/). Contributions go through PRs, see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+The images in this README are generated, not drawn by hand: edit the HTML sources in [`docs/assets/src/`](docs/assets/src/) and run `bash docs/assets/src/render.sh`, which renders each one in light and dark.
 
 ## License
 

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>N1X Cortex, what it does</title>
+<link rel="stylesheet" href="brand.css">
+<style>
+  :root { --w: 1280px; --h: 580px; }
+  .mono { font-size: 12.5px; }
+  header { position: absolute; left: 64px; right: 64px; top: 52px; display: grid; grid-template-columns: 1fr 470px; column-gap: 80px; align-items: end; padding-bottom: 26px; border-bottom: 1px solid var(--line); }
+  header .h2 { font-size: 38px; margin-top: 14px; max-width: 620px; }
+  header .lead { font-size: 18px; }
+  .cols { position: absolute; left: 64px; right: 64px; top: 236px; display: grid; grid-template-columns: repeat(3, 1fr); column-gap: 40px; }
+  .col { border-top: 1px solid var(--line-strong); padding-top: 14px; }
+  .col svg { margin: 12px 0 18px; }
+  .col .title { font-size: 23px; }
+  .col .lead { font-size: 17px; margin-top: 8px; max-width: 350px; }
+</style>
+</head>
+<body>
+  <header>
+    <div>
+      <div class="mono">N1X Cortex &middot; what it does</div>
+      <h2 class="h2">From a folder of files to answers that cite their source.</h2>
+    </div>
+    <p class="lead">Cortex reads what you already have, turns it into small linked notes that each point at their source, and answers from those notes, for you and for your agents.</p>
+  </header>
+
+  <div class="cols">
+    <div class="col">
+      <div class="mono">01</div>
+      <svg id="c1" width="357" height="150"></svg>
+      <div class="title">Your files</div>
+      <p class="lead">A folder of markdown, or a repository with no docs at all. The originals are never modified.</p>
+    </div>
+    <div class="col">
+      <div class="mono">02</div>
+      <svg id="c2" width="357" height="150"></svg>
+      <div class="title">A cited note graph</div>
+      <p class="lead">One idea per note, linked by wikilinks and typed by frontmatter. Every note points at the document it came from.</p>
+    </div>
+    <div class="col">
+      <div class="mono">03</div>
+      <svg id="c3" width="357" height="150"></svg>
+      <div class="title">Answers that name their source</div>
+      <p class="lead">You and your agents ask in plain language. Every answer comes back with the notes it stands on.</p>
+    </div>
+  </div>
+
+<script src="graph.js"></script>
+<script>
+  const { ink, doc, line, agent, vault, walks, drawGraph } = N1X;
+
+  // 01: what you have today, markdown and code side by side
+  document.getElementById('c1').innerHTML =
+    doc(8, 22, 66, 90, { solid: 0.9 }) +
+    doc(92, 10, 66, 90, { solid: 0.9 }) +
+    doc(176, 30, 66, 90, { solid: 0.9, code: true }) +
+    doc(260, 16, 66, 90, { solid: 0.9, code: true });
+
+  // 02: the same knowledge as notes, each tied back to where it came from
+  const g2 = vault({ docs: 3, cols: 5, rows: 3, seed: 20260910, field: { x: 104, y: 4, w: 246, h: 122 }, maxPx: 70 });
+  let s2 = doc(8, 26, 56, 78, { solid: 0.5 });
+  g2.notes.filter((n) => n.doc === 0).forEach((n) => { s2 += line(64, 65, n.x, n.y, ink(0.2), '1 4'); });
+  s2 += drawGraph(g2);
+  document.getElementById('c2').innerHTML = s2;
+
+  // 03: a question walks the relations and lands on the notes that answer it
+  const g3 = vault({ docs: 3, cols: 5, rows: 3, seed: 20260910, field: { x: 4, y: 4, w: 262, h: 122 }, maxPx: 72 });
+  const seat = { x: 334, y: 62 };
+  const paths = walks(g3, [seat], 3, 7);
+  let s3 = drawGraph(g3, { paths }) + agent(seat.x, seat.y, 10);
+  // the citation hangs below the drawing on a dotted leader, clear of the graph
+  const last = g3.notes[paths[0].walk[paths[0].walk.length - 1]];
+  const tagX = Math.max(4, Math.min(last.x - 24, 357 - 232));
+  s3 += line(last.x, last.y + 7, last.x, 134, ink(0.3), '1 3');
+  s3 += `<text x="${tagX}" y="148" style="font-family:'Martian Mono';font-size:11px;letter-spacing:.06em;fill:${ink(0.55)}">SOURCE: notes/auth-flow.md</text>`;
+  document.getElementById('c3').innerHTML = s3;
+</script>
+</body>
+</html>
