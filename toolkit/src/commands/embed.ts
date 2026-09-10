@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { loadConfig } from '../config.js';
 import { scanVault, collectFrontmatterKeys } from '../vault.js';
-import { loadStore, saveStore, storeMap, hashContent, type EmbeddingStore, type EmbeddingRecord } from '../semantic/store.js';
+import { readStore, saveStore, storeMap, hashContent, type EmbeddingStore, type EmbeddingRecord } from '../semantic/store.js';
 import { noteText, passageText } from '../semantic/text.js';
 import { createTransformersEmbedder, createRemoteEmbedder, embedStoreId, type Embedder } from '../semantic/embedder.js';
 import { ensureCortexIgnored } from '../gitignore.js';
@@ -14,6 +14,8 @@ export interface EmbedResult {
   reused: number;
   total: number;
   gitignoreUpdated: boolean;
+  /** Why the existing store was not trusted, when it was not. Every note was re-embedded. */
+  storeProblem?: string;
 }
 
 export const EMBED_USAGE =
@@ -80,7 +82,9 @@ export async function runEmbed(
   // instead of quietly mixing vectors from two different spaces.
   const storeId = embedStoreId({ model, baseUrl: opts.baseUrl });
 
-  const prev = loadStore(embedDir);
+  // A store that cannot be trusted is not reused — its notes are re-embedded,
+  // and the result says so instead of reporting them as "reused".
+  const { store: prev, problem: storeProblem } = readStore(embedDir);
   const usable = !opts.force && prev && prev.model === storeId ? prev : null;
   const prevMap = usable ? storeMap(usable) : new Map<string, EmbeddingRecord>();
 
@@ -150,10 +154,15 @@ export async function runEmbed(
     ...(opts.baseUrl ? { endpoint: opts.baseUrl, endpointModel: model } : {}),
   };
   saveStore(embedDir, store);
-  return { model: storeId, added, changed, removed, reused, total: records.length, gitignoreUpdated };
+  return {
+    model: storeId, added, changed, removed, reused, total: records.length, gitignoreUpdated,
+    ...(storeProblem ? { storeProblem } : {}),
+  };
 }
 
 export function formatEmbed(r: EmbedResult): string {
-  const main = `Embedded with ${r.model}: +${r.added} new, ~${r.changed} changed, -${r.removed} removed, ${r.reused} reused (store: ${r.total} notes).`;
-  return r.gitignoreUpdated ? `${main}\nAdded .cortex/ to .gitignore (generated cache — not committed).` : main;
+  const lines = [`Embedded with ${r.model}: +${r.added} new, ~${r.changed} changed, -${r.removed} removed, ${r.reused} reused (store: ${r.total} notes).`];
+  if (r.storeProblem) lines.push(`The existing store was unreadable (${r.storeProblem}), so every note was re-embedded.`);
+  if (r.gitignoreUpdated) lines.push('Added .cortex/ to .gitignore (generated cache — not committed).');
+  return lines.join('\n');
 }

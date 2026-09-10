@@ -7,14 +7,19 @@
 // document they know is there. So the tests here are mostly about sameness:
 // same values, same rankings, same behaviour on a vault written by the old
 // version.
+//
+// The second half is about the two files disagreeing. A store split across a
+// catalogue and a binary can be half-copied, half-synced or cut by a crash
+// between two renames, and every one of those used to load without a word —
+// either with empty vectors or with each note wearing a neighbour's vector.
 
 import { describe, it, expect } from 'vitest';
-import { mkdtempSync, writeFileSync, existsSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, existsSync, readFileSync, rmSync, copyFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import {
-  hashContent, loadStore, loadStoreMeta, saveStore, storeMap, storePath, vectorsPath,
+  hashContent, loadStore, loadStoreMeta, readStore, saveStore, storeMap, storePath, vectorsPath,
   type EmbeddingStore,
 } from '../src/semantic/store.js';
 import { cosineDense } from '../src/semantic/cosine.js';
@@ -73,6 +78,31 @@ describe('embedding store', () => {
     expect(Array.from(storeMap(back!).get('N/a.md')!.vector)).toEqual([1, 2]);
   });
 
+  it('reports no problem for a directory that simply has no store yet', () => {
+    expect(readStore(dir())).toEqual({ store: null, problem: null });
+  });
+
+  it('round-trips an empty store as empty, not as absent', () => {
+    const d = dir();
+    saveStore(d, { model: 'm', dim: 0, records: [] });
+    const back = readStore(d);
+    expect(back.problem).toBeNull();
+    expect(back.store).not.toBeNull();
+    expect(back.store!.records).toEqual([]);
+  });
+
+  it('refuses to save a vector whose length is not the store dimension', () => {
+    // Padding it with zeros, or truncating it, writes a vector that was never
+    // produced by any model and ranks it as if it had been.
+    const d = dir();
+    const store: EmbeddingStore = {
+      model: 'm', dim: 3,
+      records: [{ path: 'a', hash: 'h', vector: [1, 2, 3] }, { path: 'b', hash: 'h', vector: [9] }],
+    };
+    expect(() => saveStore(d, store)).toThrow(/b.*1.*3/);
+    expect(existsSync(storePath(d))).toBe(false);
+  });
+
   it('builds note/passage/query text with e5 prefixes', () => {
     expect(noteText(note())).toBe('Alpha\nhello world');
     expect(passageText(note())).toBe('passage: Alpha\nhello world');
@@ -90,10 +120,10 @@ describe('the vectors survive the new format exactly', () => {
     for (let i = 0; i < store.records.length; i++) {
       expect(back.records[i].path).toBe(store.records[i].path);
       expect(back.records[i].hash).toBe(store.records[i].hash);
-      const antes = store.records[i].vector;
-      const ahora = back.records[i].vector;
-      expect(ahora.length).toBe(antes.length);
-      for (let j = 0; j < antes.length; j++) expect(ahora[j]).toBe(antes[j]);
+      const before = store.records[i].vector;
+      const after = back.records[i].vector;
+      expect(after.length).toBe(before.length);
+      for (let j = 0; j < before.length; j++) expect(after[j]).toBe(before[j]);
     }
   });
 
@@ -102,23 +132,34 @@ describe('the vectors survive the new format exactly', () => {
     // the old way and one the new; every note is scored against every other and
     // the two orderings have to be the same list, not a similar one.
     const store = fakeStore(120);
-    const viejo = dir();
-    const nuevo = dir();
-    writeLegacy(viejo, store);
-    saveStore(nuevo, store);
+    const legacyDir = dir();
+    const currentDir = dir();
+    writeLegacy(legacyDir, store);
+    saveStore(currentDir, store);
 
-    const a = loadStore(viejo)!;
-    const b = loadStore(nuevo)!;
-    const consulta = a.records[0].vector;
+    const a = loadStore(legacyDir)!;
+    const b = loadStore(currentDir)!;
+    const probe = a.records[0].vector;
 
-    const orden = (s: typeof a): Array<[string, number]> => s.records
-      .map((r) => [r.path, cosineDense(consulta as number[], r.vector as number[])] as [string, number])
+    const ranking = (s: EmbeddingStore): Array<[string, number]> => s.records
+      .map((r) => [r.path, cosineDense(probe, r.vector)] as [string, number])
       .sort((x, y) => y[1] - x[1]);
 
-    const oa = orden(a);
-    const ob = orden(b);
-    expect(ob.map(([p]) => p)).toEqual(oa.map(([p]) => p));
-    for (let i = 0; i < oa.length; i++) expect(ob[i][1]).toBe(oa[i][1]);
+    const ra = ranking(a);
+    const rb = ranking(b);
+    expect(rb.map(([p]) => p)).toEqual(ra.map(([p]) => p));
+    for (let i = 0; i < ra.length; i++) expect(rb[i][1]).toBe(ra[i][1]);
+  });
+
+  it('can be saved again over itself, from the vectors it just loaded', () => {
+    // `embed` does exactly this: the reused vectors are views over the buffer
+    // read from vectors.bin, and they are written back into the same path.
+    const d = dir();
+    const store = fakeStore(20);
+    saveStore(d, store);
+    saveStore(d, loadStore(d)!);
+    const back = loadStore(d)!;
+    for (let i = 0; i < 20; i++) expect(Array.from(back.records[i].vector)).toEqual(Array.from(store.records[i].vector));
   });
 });
 
@@ -138,28 +179,47 @@ describe('a vault written by the previous version', () => {
     const d = dir();
     const store = fakeStore(30);
     writeLegacy(d, store);
-    const antes = loadStore(d)!;
-    saveStore(d, antes);
+    const before = loadStore(d)!;
+    saveStore(d, before);
     expect(existsSync(vectorsPath(d))).toBe(true);
     // And the catalogue stopped carrying the vectors: that is the whole point.
     const cat = JSON.parse(readFileSync(storePath(d), 'utf8'));
     expect(cat.records[0].vector).toBeUndefined();
     expect(cat.format).toBe(2);
-    const despues = loadStore(d)!;
+    const after = loadStore(d)!;
     for (let i = 0; i < 30; i++) {
-      for (let j = 0; j < 384; j++) expect(despues.records[i].vector[j]).toBe(store.records[i].vector[j]);
+      for (let j = 0; j < 384; j++) expect(after.records[i].vector[j]).toBe(store.records[i].vector[j]);
     }
+  });
+
+  it('uses its own inline vectors even when a stray vectors.bin sits beside it', () => {
+    // A migration cut between the two renames leaves the new vectors.bin next
+    // to the old catalogue. The old catalogue is self-contained — it carries
+    // its own vectors — so those are the ones that are right.
+    const d = dir();
+    const store = fakeStore(10);
+    writeLegacy(d, store);
+    const other = dir();
+    saveStore(other, fakeStore(10, 384, 1));
+    copyFileSync(vectorsPath(other), vectorsPath(d));
+    const back = loadStore(d)!;
+    for (let i = 0; i < 10; i++) expect(Array.from(back.records[i].vector)).toEqual(Array.from(store.records[i].vector));
+  });
+
+  it('is refused when a record carries no vector', () => {
+    const d = dir();
+    writeFileSync(storePath(d), JSON.stringify({ model: 'm', dim: 2, records: [{ path: 'a', hash: 'h' }] }));
+    const r = readStore(d);
+    expect(r.store).toBeNull();
+    expect(r.problem).toMatch(/vector/);
   });
 });
 
 describe('the catalogue on its own', () => {
-  it('reads path and hash without touching the vectors', () => {
+  it('reads path and hash without reading the vectors', () => {
     const d = dir();
     const store = fakeStore(50);
     saveStore(d, store);
-    // Deleting the vectors proves the meta read never opens them: on a large
-    // vault that file is 76 MB nobody needs in order to answer "what changed?".
-    rmSync(vectorsPath(d));
     const meta = loadStoreMeta(d)!;
     expect(meta.records).toHaveLength(50);
     expect(meta.dim).toBe(384);
@@ -167,43 +227,73 @@ describe('the catalogue on its own', () => {
   });
 });
 
-describe('a half-written store is refused, not half-read', () => {
-  it('returns null when there are fewer vectors than records', () => {
-    // Somebody wrote the catalogue and not the vectors — a crash between the
-    // two renames, a copy that missed a file. Reading it anyway would give each
-    // record a neighbour's vector and rank against it, silently.
-    const d = dir();
-    const store = fakeStore(40);
-    saveStore(d, store);
-    const bin = readFileSync(vectorsPath(d));
-    writeFileSync(vectorsPath(d), bin.subarray(0, Math.floor(bin.length / 2)));
-    expect(loadStore(d)).toBeNull();
-  });
+describe('a catalogue and a vectors file that do not belong together are refused', () => {
+  // Each of these used to load. Every case is checked through both entry
+  // points: `loadStoreMeta` is what decides "these notes are up to date", and if
+  // it vouches for a store `loadStore` rejects, the notes are never re-embedded.
+  const cases: Array<[string, (d: string) => void, RegExp]> = [
+    ['the vectors file is missing', (d) => rmSync(vectorsPath(d)), /vectors\.bin/],
+    ['the vectors file is cut short', (d) => {
+      const bin = readFileSync(vectorsPath(d));
+      writeFileSync(vectorsPath(d), bin.subarray(0, Math.floor(bin.length / 2)));
+    }, /size/],
+    ['the vectors file has bytes past the last record', (d) => {
+      const bin = readFileSync(vectorsPath(d));
+      writeFileSync(vectorsPath(d), Buffer.concat([bin, Buffer.alloc(384 * 4)]));
+    }, /size/],
+    ['the vectors file is from another save of the same size', (d) => {
+      // Same record count, same dimension, different order: the length check
+      // alone passes this, and every note would take another note's vector.
+      const other = dir();
+      const s = fakeStore(40);
+      saveStore(other, { ...s, records: [...s.records].reverse() });
+      copyFileSync(vectorsPath(other), vectorsPath(d));
+    }, /different save/],
+    ['the vectors file is not a vectors file', (d) => writeFileSync(vectorsPath(d), Buffer.alloc(40 * 384 * 4 + 16)), /not a cortex vectors file/],
+    ['the catalogue is from a newer format', (d) => {
+      const cat = JSON.parse(readFileSync(storePath(d), 'utf8'));
+      writeFileSync(storePath(d), JSON.stringify({ ...cat, format: 3 }));
+    }, /format 3/],
+  ];
+
+  for (const [name, corrupt, problem] of cases) {
+    it(`when ${name}`, () => {
+      const d = dir();
+      saveStore(d, fakeStore(40));
+      corrupt(d);
+      const r = readStore(d);
+      expect(r.store).toBeNull();
+      expect(r.problem).toMatch(problem);
+      expect(loadStore(d)).toBeNull();
+      expect(loadStoreMeta(d)).toBeNull();
+    });
+  }
 
   it('returns null on a catalogue that is not a store', () => {
     const d = dir();
     writeFileSync(storePath(d), '{"nope":1}');
     expect(loadStore(d)).toBeNull();
     expect(loadStoreMeta(d)).toBeNull();
+    expect(readStore(d).problem).toMatch(/index\.json/);
   });
 });
 
 describe('the size that started all this', () => {
   it('costs about five times less on disk than the JSON did', () => {
-    // 8,236 bytes a note measured on a real vault, against 1,536 of vector plus
-    // a short path and a hash. The wall this removes is at 65,185 notes, where
-    // the JSON passes the longest string V8 can make.
+    // 384 float32 values are 1,536 bytes as binary against roughly 8 KB as
+    // decimal JSON. The wall this removes is the longest string V8 can make,
+    // which the JSON store passed at about 65,000 notes.
     const d = dir();
     const store = fakeStore(500);
-    const viejo = dir();
-    writeLegacy(viejo, store);
+    const legacyDir = dir();
+    writeLegacy(legacyDir, store);
     saveStore(d, store);
 
-    const antes = readFileSync(storePath(viejo)).length;
-    const ahora = readFileSync(storePath(d)).length + readFileSync(vectorsPath(d)).length;
-    expect(ahora).toBeLessThan(antes / 3);
+    const before = readFileSync(storePath(legacyDir)).length;
+    const after = readFileSync(storePath(d)).length + readFileSync(vectorsPath(d)).length;
+    expect(after).toBeLessThan(before / 3);
     // And what still has to be read AS TEXT — the part with the string limit —
     // is now a small fraction of it.
-    expect(readFileSync(storePath(d)).length).toBeLessThan(antes / 20);
+    expect(readFileSync(storePath(d)).length).toBeLessThan(before / 20);
   });
 });
