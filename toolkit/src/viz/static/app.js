@@ -1,6 +1,8 @@
 /* Cortex Viewer — fetches /api/graph and renders it with Cytoscape. */
-/* Node fills use a refined, dark-friendly categorical palette (the graph is functional
-   data-viz — the only place color is allowed; all UI chrome stays monochrome N1X). */
+/* Node fills use a dark-friendly categorical palette: the graph is functional data-viz,
+   the one place colour carries data. The chrome follows the N1X ink palette, nodes take
+   the brand's rhombus, and the single live green marks the node in focus. */
+const INK = { label: '#d6d4cf', edge: '#393837', rule: '#585755', plane: '#232220', text: '#f1efea', live: '#7ab894' };
 const TYPE_PALETTE = ['#6ea8fe', '#5fd0ac', '#f4c15d', '#e8785a', '#a98fe0', '#5fc4e0', '#f0946a', '#d987c0'];
 const FRESH = { gap: '#6e6e80', stale: '#e8785a', draft: '#f4c15d', verified: '#5fd08a', fresh: '#57c9c0' };
 const STATUS_FALLBACK = ['#8a8aa0', '#6ea8fe', '#5fd08a', '#f4c15d'];
@@ -254,25 +256,34 @@ function render() {
     elements: [],
     style: [
       { selector: 'node', style: {
+        'shape': 'diamond',
         'background-color': (n) => nodeColor(n.data()),
-        'width': (n) => 8 + Math.min(28, (n.data('degree') || 0) * 1.4),
-        'height': (n) => 8 + Math.min(28, (n.data('degree') || 0) * 1.4),
-        'label': 'data(label)', 'font-size': 6, 'color': '#c8c8c8',
+        // a rhombus fills less of its box than a circle did, so it gets a little more box
+        'width': (n) => 10 + Math.min(30, (n.data('degree') || 0) * 1.5),
+        'height': (n) => 10 + Math.min(30, (n.data('degree') || 0) * 1.5),
+        'label': 'data(label)', 'font-size': 6, 'color': INK.label,
+        'font-family': 'Plus Jakarta Sans, sans-serif',
         'text-opacity': 0, 'min-zoomed-font-size': 8,
-        'border-width': (n) => n.data('exists') ? 1 : 2,
-        'border-style': (n) => n.data('exists') ? 'solid' : 'dashed', 'border-color': '#565656',
+        'border-width': (n) => n.data('exists') ? 1 : 1.5,
+        'border-style': (n) => n.data('exists') ? 'solid' : 'dashed', 'border-color': INK.rule,
         'background-opacity': (n) => n.data('exists') ? 1 : 0.25,
       }},
-      { selector: 'node:selected', style: { 'border-width': 3, 'border-color': '#e5e5e5', 'border-style': 'solid', 'text-opacity': 1 } },
-      { selector: 'edge', style: { 'width': 0.6, 'line-color': '#404040', 'curve-style': 'haystack', 'opacity': 0.6 } },
-      { selector: 'edge[?dangling]', style: { 'line-color': '#565656', 'line-style': 'dashed' } },
+      // the focus ring sits OUTSIDE the fill: a green border alone disappeared on the
+      // green-ish category fills, and the ring has to read on every one of them
+      { selector: 'node:selected', style: {
+        'border-width': 1.5, 'border-color': INK.text, 'border-style': 'solid',
+        'outline-width': 2.5, 'outline-color': INK.live, 'outline-offset': 3, 'outline-opacity': 1,
+        'text-opacity': 1, 'color': INK.text, 'text-margin-y': -6 } },
+      { selector: 'edge', style: { 'width': 0.6, 'line-color': INK.edge, 'curve-style': 'haystack', 'opacity': 0.8 } },
+      { selector: 'edge[?dangling]', style: { 'line-color': INK.rule, 'line-style': 'dashed' } },
       { selector: 'node[?isFolder]', style: {
-        'shape': 'round-rectangle', 'background-color': '#333333', 'background-opacity': 1,
-        'border-width': 1, 'border-color': '#565656', 'border-style': 'solid',
+        'shape': 'rectangle', 'background-color': INK.plane, 'background-opacity': 1,
+        'border-width': 1, 'border-color': INK.rule, 'border-style': 'solid',
         'width': 'label', 'height': 16, 'padding': '4px',
-        'label': 'data(label)', 'font-size': 8, 'color': '#e5e5e5', 'text-opacity': 1, 'text-valign': 'center',
+        'label': 'data(label)', 'font-size': 8, 'color': INK.text, 'text-opacity': 1, 'text-valign': 'center',
+        'font-family': 'Martian Mono, monospace',
       }},
-      { selector: 'edge[?tree]', style: { 'width': 1, 'line-color': '#404040', 'curve-style': 'bezier', 'opacity': 0.7, 'target-arrow-shape': 'none' } },
+      { selector: 'edge[?tree]', style: { 'width': 1, 'line-color': INK.edge, 'curve-style': 'bezier', 'opacity': 0.9, 'target-arrow-shape': 'none' } },
       { selector: '.faded', style: { 'opacity': 0.12, 'text-opacity': 0 } },
       { selector: '.spotlight', style: { 'text-opacity': 1 } },
       { selector: '.hidden', style: { 'display': 'none' } },
