@@ -4,6 +4,17 @@ All notable changes to **N1X Cortex** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **`cortex viz` follows the N1X website's visual system.** The viewer and its
+  note pages move to the ink palette (`#161615` / `#f1efea`), Archivo, Plus
+  Jakarta Sans and Martian Mono (SIL OFL, replacing Space Grotesk and Inter),
+  square buttons and inputs, and mono uppercase labels. Nodes take the brand's
+  rhombus, and the node in focus is ringed in the single live green. The
+  categorical node colours are unchanged, and so is everything the viewer
+  does: only its look changed.
+
 ## [1.2.0] - 2026-09-10
 
 ### Changed
