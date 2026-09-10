@@ -4,6 +4,42 @@ All notable changes to **N1X Cortex** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **The embedding store is now two files, so a large vault can open at all.**
+  Every vector used to live in `.cortex/embeddings/index.json` as decimal text,
+  about 8 KB a note. Past roughly 65,000 notes that file is longer than the
+  longest string V8 can build, and reading it threw `Invalid string length`: the
+  vault did not get slow, it stopped opening. Vectors now go to `vectors.bin` as
+  raw Float32 (1.5 KB a note) and `index.json` keeps only the path and content
+  hash of each note. Measured at 70,000 notes: saved in ~150 ms, loaded in
+  ~50 ms, where the previous format failed. Rankings are bit-for-bit identical —
+  the values were already float32; the old format only wrote them as text. (#140)
+- **Existing stores migrate by themselves.** A store written by 1.1.0 or earlier
+  is still read as it was, and the next `cortex embed` rewrites it in the new
+  layout, reusing every vector. Nothing to run by hand.
+- **For library consumers:** `EmbeddingRecord.vector` is now
+  `Float32Array | number[]`, and loaded vectors are `Float32Array` views over one
+  shared buffer. Code that serializes a vector with `JSON.stringify` must convert
+  it with `Array.from()` first — a `Float32Array` serializes as an object keyed
+  by index. `cosineDense` accepts any `ArrayLike<number>`. New:
+  `loadStoreMeta()` (paths and hashes without reading the vectors) and
+  `readStore()` (the store, or the reason it could not be trusted).
+
+### Fixed
+- **A store whose two files do not belong together is refused, not half-read.**
+  With the store split in two, a copy or sync that carries one file and not the
+  other, or a process killed between the two writes, could otherwise load
+  silently wrong: a missing `vectors.bin` gave every note an empty vector — and
+  the next `cortex embed` "reused" them and wrote zeros — while a `vectors.bin`
+  from another save gave every note a neighbour's vector. `vectors.bin` now
+  carries a header with a generation id that `index.json` also records, and its
+  size must match exactly. A mismatched pair is treated as no store for queries,
+  and `cortex embed` re-embeds every note and prints why. (#140)
+- **`saveStore` refuses a vector whose length is not the store dimension**
+  instead of padding it with zeros or cutting it.
+
 ## [1.1.0] - 2026-08-13
 
 Everything here comes from one report by a consumer running Cortex as an npm
