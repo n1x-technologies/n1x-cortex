@@ -208,6 +208,8 @@ cortex embed                       # build the store once (incremental after tha
 
 Then `cortex query` and `cortex dupes` become hybrid (lexical + semantic), and the MCP server keeps the model warm.
 
+The store lives in `.cortex/embeddings/`: `index.json` (one path and content hash per note) and `vectors.bin` (the vectors as raw Float32), which keeps it compact enough for vaults of hundreds of thousands of notes. A store from an earlier version is migrated by the next `cortex embed`. If the two files ever stop matching (say, one was copied without the other), Cortex refuses the pair instead of reading it half, and `cortex embed` rebuilds it and tells you why.
+
 ## Where this is going
 
 Cortex today is the **open-source, local engine**: free, yours, on your machine. It's the open core of a bigger idea:

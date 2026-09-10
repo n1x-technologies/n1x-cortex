@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import { loadStore, storeMap, hashContent } from './store.js';
+import { loadStore, storeMap, hashContent, type Vector } from './store.js';
 import { noteText, queryText } from './text.js';
 import { cosineDense } from './cosine.js';
 import { createTransformersEmbedder, createRemoteEmbedder, embedStoreId, type Embedder } from './embedder.js';
@@ -25,7 +25,7 @@ export async function semanticQueryRanking(
   if (!store || store.model !== expected || !store.records.length) return [];
 
   const recMap = storeMap(store);
-  const fresh: { id: string; vector: number[] }[] = [];
+  const fresh: { id: string; vector: Vector }[] = [];
   for (const note of notes) {
     const rec = recMap.get(note.path);
     if (!rec || rec.hash !== hashContent(noteText(note))) continue; // missing or stale → skip

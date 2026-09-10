@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { runEmbed } from '../src/commands/embed.js';
-import { loadStore } from '../src/semantic/store.js';
+import { runEmbed, formatEmbed } from '../src/commands/embed.js';
+import { loadStore, storeMap, vectorsPath } from '../src/semantic/store.js';
 import type { Embedder } from '../src/semantic/embedder.js';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -73,5 +73,35 @@ describe('runEmbed', () => {
     const r = await runEmbed(dir, { embedder: stub, model: 'stub' });
     expect(r.removed).toBe(1);
     expect(r.total).toBe(1);
+  });
+
+  it('re-embeds every note, and says so, when the stored vectors are gone', async () => {
+    // The catalogue alone still matches every note's hash. Trusting it would
+    // "reuse" vectors that no longer exist and write zeros in their place.
+    const dir = vault();
+    await runEmbed(dir, { embedder: stub, model: 'stub' });
+    const { rmSync } = await import('node:fs');
+    rmSync(vectorsPath(resolve(dir, '.cortex/embeddings')));
+    const r = await runEmbed(dir, { embedder: stub, model: 'stub' });
+    expect(r.reused).toBe(0);
+    expect(r.added).toBe(2);
+    expect(r.storeProblem).toMatch(/vectors\.bin/);
+    expect(formatEmbed(r)).toMatch(/unreadable \(vectors\.bin is missing\), so every note was re-embedded/);
+    const store = loadStore(resolve(dir, '.cortex/embeddings'))!;
+    const a = storeMap(store).get('N/a.md')!;
+    expect(Array.from(a.vector)).toEqual([1, 0, 0]);
+  });
+
+  it('fails loudly when the embedder hands back empty vectors', async () => {
+    const empty: Embedder = { id: 'empty', dim: 0, async embed(texts) { return texts.map(() => new Float32Array(0)); } };
+    await expect(runEmbed(vault(), { embedder: empty, model: 'empty' })).rejects.toThrow(/no dimension/);
+  });
+
+  it('says nothing about the store when it was fine', async () => {
+    const dir = vault();
+    await runEmbed(dir, { embedder: stub, model: 'stub' });
+    const r = await runEmbed(dir, { embedder: stub, model: 'stub' });
+    expect(r.storeProblem).toBeUndefined();
+    expect(formatEmbed(r)).not.toMatch(/unreadable/);
   });
 });
