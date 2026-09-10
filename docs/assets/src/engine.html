@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>N1X Cortex, how it works</title>
+<link rel="stylesheet" href="brand.css">
+<style>
+  :root { --w: 1280px; --h: 540px; }
+  .mono { font-size: 12.5px; }
+  header { position: absolute; left: 64px; right: 64px; top: 52px; display: grid; grid-template-columns: 1fr 470px; column-gap: 80px; align-items: end; padding-bottom: 26px; border-bottom: 1px solid var(--line); }
+  header .h2 { font-size: 38px; margin-top: 14px; }
+  header .lead { font-size: 18px; }
+
+  .stage { position: absolute; top: 200px; height: 290px; display: flex; flex-direction: column; justify-content: center; gap: 16px; }
+  .box { border: 1px solid var(--line-strong); padding: 12px 14px; }
+  .box .title { font-size: 19px; }
+  .box .mono { font-size: 11px; margin-top: 6px; }
+  .sub { font-size: 15px; color: var(--ink-2); }
+
+  #vault { left: 64px; width: 150px; align-items: flex-start; }
+  #engine { left: 284px; width: 236px; }
+  #engine .box { padding: 14px 16px 6px; }
+  #engine .row { display: flex; align-items: baseline; gap: 14px; padding: 11px 0; border-top: 1px solid var(--line); }
+  #engine .row .title { font-size: 21px; }
+  #engine .row:first-of-type { border-top: 0; }
+  #builds { left: 584px; width: 236px; }
+  #surfaces { left: 876px; width: 196px; }
+  #you { left: 1116px; width: 104px; align-items: center; text-align: center; }
+  #wires { position: absolute; left: 0; top: 0; }
+</style>
+</head>
+<body>
+  <header>
+    <div>
+      <div class="mono">N1X Cortex &middot; how it works</div>
+      <h2 class="h2">One engine, three surfaces.</h2>
+    </div>
+    <p class="lead">The engine reads the vault and builds a graph, an index and, if you want it, embeddings. Every surface answers from those same three.</p>
+  </header>
+
+  <svg id="wires" width="1280" height="560"></svg>
+
+  <div class="stage" id="vault">
+    <svg id="vaultdoc" width="74" height="98" data-port="out"></svg>
+    <div class="mono" style="color:var(--ink)">Markdown vault</div>
+    <div class="sub">notes, wikilinks, frontmatter</div>
+  </div>
+
+  <div class="stage" id="engine">
+    <div class="box" data-port="both">
+      <div class="mono">Engine</div>
+      <div class="row"><span class="mono">01</span><span class="title">scan</span></div>
+      <div class="row"><span class="mono">02</span><span class="title">graph</span></div>
+      <div class="row"><span class="mono">03</span><span class="title">index</span></div>
+      <div class="row"><span class="mono">04</span><span class="title">embed</span></div>
+    </div>
+  </div>
+
+  <div class="stage" id="builds">
+    <div class="box" data-port="both"><div class="title">Note graph</div><div class="mono">typed, linked, cited</div></div>
+    <div class="box" data-port="both"><div class="title">Lexical index</div><div class="mono">TF-IDF</div></div>
+    <div class="box" data-port="both"><div class="title">Embeddings</div><div class="mono">optional, on device</div></div>
+  </div>
+
+  <div class="stage" id="surfaces">
+    <div class="box" data-port="both"><div class="title">CLI</div><div class="mono">cortex query</div></div>
+    <div class="box" data-port="both"><div class="title">Local viewer</div><div class="mono">cortex viz</div></div>
+    <div class="box" data-port="both"><div class="title">MCP server</div><div class="mono">any MCP agent</div></div>
+  </div>
+
+  <div class="stage" id="you">
+    <svg id="agentglyph" width="40" height="42" data-port="in"></svg>
+    <div class="mono" style="color:var(--ink)">You and your agents</div>
+  </div>
+
+<script src="graph.js"></script>
+<script>
+  const { ink, doc, agent, diamond, path } = N1X;
+  document.getElementById('vaultdoc').innerHTML = doc(1, 1, 72, 96, { solid: 0.9 });
+  document.getElementById('agentglyph').innerHTML = agent(20, 21, 12);
+
+  // Wires are measured from the laid-out boxes, so moving a box never leaves
+  // a line pointing at where it used to be.
+  document.fonts.ready.then(() => {
+    const port = (el, side) => {
+      const r = el.getBoundingClientRect();
+      return [side === 'out' ? r.right : r.left, r.top + r.height / 2];
+    };
+    const q = (sel) => [...document.querySelectorAll(sel)];
+    const vault = document.getElementById('vaultdoc');
+    const engine = q('#engine .box')[0];
+    const builds = q('#builds .box');
+    const surfaces = q('#surfaces .box');
+    const you = document.getElementById('agentglyph');
+
+    const stroke = ink(0.34);
+    let svg = '';
+    const joint = (p) => diamond(p[0], p[1], 3, ink(0.55));
+
+    // one to one
+    const a = port(vault, 'out');
+    const b = port(engine, 'in');
+    svg += path([a, [b[0], a[1]]], stroke) + joint([b[0], a[1]]);
+
+    // fan out and fan in through a vertical bus between two columns
+    function bus(froms, tos) {
+      const x = (Math.max(...froms.map((p) => p[0])) + Math.min(...tos.map((p) => p[0]))) / 2;
+      const ys = [...froms, ...tos].map((p) => p[1]);
+      let s = path([[x, Math.min(...ys)], [x, Math.max(...ys)]], stroke);
+      froms.forEach((p) => { s += path([p, [x, p[1]]], stroke); });
+      tos.forEach((p) => { s += path([[x, p[1]], p], stroke) + joint(p); });
+      return s;
+    }
+    svg += bus([port(engine, 'out')], builds.map((el) => port(el, 'in')));
+    svg += bus(builds.map((el) => port(el, 'out')), surfaces.map((el) => port(el, 'in')));
+    svg += bus(surfaces.map((el) => port(el, 'out')), [port(you, 'in')]);
+    document.getElementById('wires').innerHTML = svg;
+  });
+</script>
+</body>
+</html>
