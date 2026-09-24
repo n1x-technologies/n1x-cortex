@@ -172,3 +172,29 @@ describe('parseEmbedArgs', () => {
     expect(() => parseEmbedArgs(['--model', '--force'])).toThrow(/--model needs a value/i);
   });
 });
+
+describe('createRemoteEmbedder input length', () => {
+  it('truncates each input so one long note cannot fail the whole batch', async () => {
+    // A real vault note over the endpoint's context made OpenAI reject the
+    // batch ("maximum input length is 8192 tokens") and stopped the embed.
+    const { fn, calls } = stubFetch((_, init) => {
+      const n = JSON.parse(String(init.body)).input.length;
+      return jsonResponse({ data: Array.from({ length: n }, (_, i) => ({ embedding: vec(3, 1), index: i })) });
+    });
+    const e = createRemoteEmbedder({ baseUrl: 'http://x/v1', model: 'm', fetchImpl: fn, maxInputChars: 10 });
+    await e.embed(['short', 'a'.repeat(50)]);
+    expect(calls[0].body.input).toEqual(['short', 'a'.repeat(10)]);
+  });
+
+  it('keeps inputs under the default limit intact', async () => {
+    const { fn, calls } = stubFetch((_, init) => {
+      const n = JSON.parse(String(init.body)).input.length;
+      return jsonResponse({ data: Array.from({ length: n }, (_, i) => ({ embedding: vec(3, 1), index: i })) });
+    });
+    const e = createRemoteEmbedder({ baseUrl: 'http://x/v1', model: 'm', fetchImpl: fn });
+    const text = 'b'.repeat(15000);
+    await e.embed([text, 'c'.repeat(40000)]);
+    expect(calls[0].body.input[0]).toBe(text);
+    expect(calls[0].body.input[1].length).toBe(16000);
+  });
+});

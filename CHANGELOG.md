@@ -4,6 +4,17 @@ All notable changes to **N1X Cortex** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **`cortex embed --base-url` no longer stops on one long note.** The remote
+  embedder sent every note whole, and an endpoint rejects any input over its
+  context (OpenAI: 8192 tokens) by failing the entire batch, so a single long
+  note stopped the embed for the whole vault. Each input is now cut to 16000
+  characters before it is sent, as the local model already truncates to its own
+  window. On the 584-document public corpus the embed through OpenAI failed at
+  the 19th note and now completes.
+
 ## [1.2.1] - 2026-09-10
 
 ### Changed
