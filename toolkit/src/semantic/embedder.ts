@@ -26,6 +26,13 @@ export interface RemoteEmbedderOptions {
   apiKey?: string;
   /** Inputs per request. The wire format takes an array; unbounded is a footgun. */
   batchSize?: number;
+  /**
+   * Longest input sent, in characters. Endpoints reject an input over their
+   * context (OpenAI: 8192 tokens) and fail the whole batch, so one long note
+   * stopped `cortex embed` for the entire vault. The local model truncates to
+   * its own window silently; this does the same for the remote one.
+   */
+  maxInputChars?: number;
   /** Injectable for tests. */
   fetchImpl?: typeof fetch;
 }
@@ -41,6 +48,9 @@ export interface RemoteEmbedderOptions {
 export function createRemoteEmbedder(opts: RemoteEmbedderOptions): Embedder {
   const url = `${opts.baseUrl.replace(/\/+$/, '')}/embeddings`;
   const batchSize = opts.batchSize ?? 64;
+  // ~4 characters per token in English prose, fewer in code and other scripts:
+  // 16000 stays under an 8192-token context with room to spare.
+  const maxInputChars = opts.maxInputChars ?? 16000;
   const doFetch = opts.fetchImpl ?? fetch;
   let dim = 0;
 
@@ -53,7 +63,7 @@ export function createRemoteEmbedder(opts: RemoteEmbedderOptions): Embedder {
     const res = await doFetch(url, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ model: opts.model, input: texts }),
+      body: JSON.stringify({ model: opts.model, input: texts.map((t) => t.slice(0, maxInputChars)) }),
     });
     if (!res.ok) {
       throw new Error(`embeddings request failed: ${res.status} ${res.statusText}\n${await res.text()}`);
