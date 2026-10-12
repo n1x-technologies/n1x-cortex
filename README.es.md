@@ -49,7 +49,8 @@ La mayor parte del conocimiento vive disperso en archivos markdown (notas, docum
 
 | Versión | Fecha | Qué cambió |
 |---------|-------|------------|
-| **1.2.0** | 2026-09-10 | El almacén de embeddings se divide en dos archivos, así que un vault de decenas de miles de notas por fin abre: 70.000 notas cargan en unos 50 ms donde el formato anterior fallaba. Los almacenes existentes se migran solos y los rankings son idénticos bit a bit. Un almacén cuyos dos archivos no coinciden se rechaza en vez de leerse a medias, y las alertas de dependencias abiertas quedan cerradas. |
+| **1.3.0** | 2026-10-11 | Una nota larga se puede consultar entera: se embebe por pasajes, no como un vector que describe su primera página. En un vault de 146 notas, 98 excedían la ventana del modelo. El ranking léxico pasa a BM25, así que un documento importado ya no le gana a la nota corta que sí trata del tema, y una cita nunca es un enlace suelto ni un pie de fuente. |
+| 1.2.0 | 2026-09-10 | El almacén de embeddings se divide en dos archivos, así que un vault de decenas de miles de notas por fin abre: 70.000 notas cargan en unos 50 ms donde el formato anterior fallaba. Los almacenes existentes se migran solos y los rankings son idénticos bit a bit. Un almacén cuyos dos archivos no coinciden se rechaza en vez de leerse a medias, y las alertas de dependencias abiertas quedan cerradas. |
 | 1.1.0 | 2026-08-13 | `cortex query` rechaza las opciones que no conoce en vez de buscarlas en silencio, la salida leída a través de un pipe ya no se corta, y `cortex embed --base-url` embebe a través de cualquier endpoint compatible con OpenAI. |
 | 1.0.1 | 2026-07-13 | La capa semántica opcional dejó una dependencia obsoleta. Los almacenes de embeddings existentes siguen funcionando, sin volver a embeber. |
 
@@ -181,7 +182,7 @@ Respeta `.gitignore`, salta binarios y carpetas de dependencias externas, muestr
 | `cortex viz` | Visor web local con la identidad de marca de N1X: grafo interactivo, búsqueda, color por categoría, foco animado, resaltado de vecinos, un panel de enlaces bidireccional (entrantes/salientes), un filtro de grupo tri-estado, un selector de vista Grafo/Árbol, controles de fuerza en vivo (d3-force), y exportación de arquitectura en Mermaid. Haz clic en **Open note** de un nodo para leer su markdown renderizado en una nueva pestaña (`/note/<id>`). |
 | `cortex mcp install` | **Conexión con un solo comando** a Claude Code (`uninstall` para quitarla; `--write[=curate]` para registrar un escritor). |
 | `cortex mcp` | **Ejecuta el servidor MCP** para agentes (stdio). Solo lectura por defecto; `--write[=draft\|curate]` expone herramientas reversibles de captura/curación. |
-| `cortex embed` | Construye el almacén de embeddings (habilita la búsqueda semántica). En el dispositivo por defecto; con `--base-url <url>` embebe a través de un endpoint compatible con OpenAI, sin descargar ningún modelo ni necesitar el peer opcional. Cada nota se corta a 16000 caracteres antes de enviarse, para que una nota larga entre en el contexto del endpoint. |
+| `cortex embed` | Construye el almacén de embeddings (habilita la búsqueda semántica). En el dispositivo por defecto; con `--base-url <url>` embebe a través de un endpoint compatible con OpenAI, sin descargar ningún modelo ni necesitar el peer opcional. Cada nota se corta a 16000 caracteres antes de enviarse, para que una nota larga entre en el contexto del endpoint. Una nota más larga que la ventana del modelo se embebe además por pasajes, así se puede buscar en todo su contenido y no sólo en su primera página. |
 | `cortex atomize <src>` | Destila una fuente con IA en notas borrador (dry-run; `--write`). `--model <provider:model>` corre la destilación sin agente, BYO-key ([ver arriba](#distila-o-haz-bootstrap-sin-agente-byo-key)). |
 | `cortex bootstrap [path]` | Destila un **repositorio entero sin documentar**: cada archivo elegible, código incluido, en notas borrador conectadas, BYO-key ([ver arriba](#distila-o-haz-bootstrap-sin-agente-byo-key)). |
 | `cortex gaps` / `dupes` / `verify` | Diagnósticos de curación. `dupes` compara dentro de un mismo tipo por defecto (`--cross-type` para ampliar); `verify --all` recorre todo el vault en busca de notas incompletas. |
@@ -219,7 +220,7 @@ cortex embed                       # construye el almacén una vez (incremental 
 
 Luego `cortex query` y `cortex dupes` se vuelven híbridos (léxico + semántico), y el servidor MCP mantiene el modelo caliente.
 
-El almacén vive en `.cortex/embeddings/`: `index.json` (una ruta y un hash de contenido por nota) y `vectors.bin` (los vectores en Float32 crudo), lo que lo mantiene lo bastante compacto para vaults de cientos de miles de notas. Un almacén de una versión anterior se migra con el siguiente `cortex embed`. Si los dos archivos dejan de coincidir (por ejemplo, se copió uno sin el otro), Cortex rechaza el par en vez de leerlo a medias, y `cortex embed` lo reconstruye y te dice por qué.
+El almacén vive en `.cortex/embeddings/`: `index.json` (una ruta y un hash de contenido por nota, más los límites de cada pasaje) y `vectors.bin` (los vectores en Float32 crudo — uno por nota, y después uno por pasaje), lo que lo mantiene lo bastante compacto para vaults de cientos de miles de notas. Un almacén de una versión anterior se migra con el siguiente `cortex embed`. Si los dos archivos dejan de coincidir (por ejemplo, se copió uno sin el otro), Cortex rechaza el par en vez de leerlo a medias, y `cortex embed` lo reconstruye y te dice por qué.
 
 ## Hacia dónde va
 
@@ -242,6 +243,7 @@ Ya disponible:
 - **Captura autónoma (hooks)**: el hook Stop destila las fuentes modificadas hacia el grafo en segundo plano (`auto-draft`/`full`), reversible; más `merge` de duplicados reversible.
 - **MCP write/curate**: `cortex mcp --write[=draft|curate]` expone captura y curación como herramientas MCP para que *cualquier* agente escriba de vuelta, solo lectura por defecto, cada escritura reversible.
 - **Vaults grandes** (1.2.0): un almacén de embeddings en dos archivos que abre con decenas de miles de notas y rechaza un par que no coincide en vez de leerlo a medias.
+- **Documentos largos** (1.3.0): se embeben por pasajes en vez de como un vector, así un documento importado se puede buscar más allá de su primera página, y se ordenan por BM25 para que el largo por sí solo no gane.
 
 ## Desde el código (colaboradores)
 

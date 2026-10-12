@@ -44,6 +44,16 @@
 // with the reason, never read in part: to a query it is a store that is not
 // there, and `embed` re-embeds every note and says why.
 //
+// ── Passages are more vectors, in the same file ───────────────────────────
+//
+// A note too long for the model's window also stores one vector per passage.
+// They go in this same `vectors.bin`, after every note vector, and `index.json`
+// records each one's path, index and bounds. They could have had their own pair
+// of files; putting them here is what makes the check above cover them for
+// free. A separate passages file would be a third thing that can arrive from a
+// different save, and the whole point of the header and the size check is that
+// nothing in a store can silently belong to another one.
+//
 // ── Reading an old vault ──────────────────────────────────────────────────
 //
 // A catalogue with no `format` is the previous layout, with the vectors inside
@@ -66,11 +76,41 @@ import { join } from 'node:path';
 export type Vector = Float32Array | number[];
 
 export interface EmbeddingRecord { path: string; hash: string; vector: Vector; }
+
+/**
+ * One passage of one note, with its own vector.
+ *
+ * A long note cannot be represented by a single vector: the model attends about
+ * 512 tokens, so everything past the first page of a long document was not
+ * ranked low, it was absent. `start` and `end` are offsets into the note body,
+ * stored rather than recomputed on read so a citation can come from the passage
+ * that won without splitting the note again on the query path, which is the one
+ * that has to be fast.
+ */
+export interface PassageRecord {
+  path: string;
+  idx: number;
+  start: number;
+  end: number;
+  hash: string;
+  vector: Vector;
+}
+
 export interface EmbeddingStore {
   /** Identity of the vector space — see embedStoreId(). Reuse turns on this. */
   model: string;
   dim: number;
   records: EmbeddingRecord[];
+  /**
+   * Passage vectors, for the notes that did not fit the model's window.
+   *
+   * Optional, and `records` is unchanged: a store written before passages
+   * existed still reads, and the consumers that compare whole notes — the
+   * duplicate finder, the viewer — never learn that this is here. A note that
+   * fits the window contributes none: its note vector already covers it, and
+   * storing the same vector twice only makes the file bigger.
+   */
+  passages?: PassageRecord[];
   /**
    * The endpoint the vectors came from, when they came from one. `model`
    * already encodes it for identity, but a query has to EMBED ITS QUESTION into
@@ -84,10 +124,17 @@ export interface EmbeddingStore {
 
 /** Path and hash, with no vectors read. See `loadStoreMeta`. */
 export interface EmbeddingMeta { path: string; hash: string; }
+/** A passage's identity and bounds, with no vector read. */
+export interface PassageMeta { path: string; idx: number; start: number; end: number; hash: string; }
 export interface EmbeddingStoreMeta {
   model: string;
   dim: number;
   records: EmbeddingMeta[];
+  /**
+   * Deciding what to re-embed needs a passage's hash and bounds, never its
+   * vector — the same reason the note records are read without theirs.
+   */
+  passages: PassageMeta[];
   endpoint?: string;
   endpointModel?: string;
 }
@@ -99,8 +146,25 @@ export interface EmbeddingStoreMeta {
  */
 export interface StoreRead { store: EmbeddingStore | null; problem: string | null; }
 
-/** Marks a directory as written by this layout. Bumped if the layout changes. */
+/**
+ * Marks a directory as written by this layout. Bumped if the layout changes.
+ *
+ * Two are live, and which one gets written depends on the content:
+ *
+ *   2  notes only — what every version since the binary split writes
+ *   3  the same, plus passage vectors in the same `vectors.bin`
+ *
+ * Both are read here, and a vault with no long notes keeps being written as 2,
+ * so upgrading costs no re-embed and an older cortex still reads it. Only a
+ * store that actually HAS passages is marked 3, because an older cortex cannot
+ * read that one: it would compute a smaller expected size and refuse the pair.
+ * Writing 3 unconditionally would have forced every existing vault to re-embed
+ * to say something untrue of most of them; marking only what changed means the
+ * refusal, when it happens, names the real reason.
+ */
 const FORMAT = 2;
+const FORMAT_PASSAGES = 3;
+const READABLE: readonly number[] = [FORMAT, FORMAT_PASSAGES];
 
 /** `vectors.bin` header: magic (4) + format, uint32 LE (4) + generation (8). */
 const MAGIC = Buffer.from('CXVB', 'ascii');
@@ -127,6 +191,13 @@ interface Catalogue {
   /** Hex of the 8 generation bytes in the matching `vectors.bin` header. */
   generation?: string;
   records: Array<{ path: string; hash: string; vector?: number[] }>;
+  /**
+   * Passage identities, in the order their vectors sit in `vectors.bin` — after
+   * every note vector. Keeping them in one file is what makes the pair check
+   * cover them too: passages cannot be from a different save than the notes
+   * they belong to, because there is nothing separate to be out of step.
+   */
+  passages?: Array<{ path: string; idx: number; start: number; end: number; hash: string }>;
   // Carried through untouched. A query has to embed its question into the same
   // space, and it cannot rebuild the URL from the model label alone: losing
   // these turns a vault embedded through an endpoint into one nobody can ask.
@@ -136,6 +207,9 @@ interface Catalogue {
 
 /** A dimension records can have: a positive integer. */
 const isDimension = (dim: unknown): dim is number => typeof dim === 'number' && Number.isInteger(dim) && dim > 0;
+
+/** How many vectors `vectors.bin` holds: one per note, then one per passage. */
+const vectorCount = (cat: Catalogue): number => cat.records.length + (cat.passages?.length ?? 0);
 
 type Checked<T> = { value: T; problem: null } | { value: null; problem: string };
 const refuse = (problem: string): { value: null; problem: string } => ({ value: null, problem });
@@ -152,8 +226,8 @@ function readCatalogue(embedDir: string): Checked<Catalogue> | null {
   if (!s || typeof s.model !== 'string' || !Array.isArray(s.records)) {
     return refuse('index.json is not a cortex embedding store');
   }
-  if (s.format !== undefined && s.format !== FORMAT) {
-    return refuse(`index.json is format ${JSON.stringify(s.format)}; this version of cortex reads format ${FORMAT}`);
+  if (s.format !== undefined && !READABLE.includes(s.format)) {
+    return refuse(`index.json is format ${JSON.stringify(s.format)}; this version of cortex reads format ${READABLE.join(' and ')}`);
   }
   return { value: s, problem: null };
 }
@@ -179,13 +253,16 @@ function checkLegacy(cat: Catalogue): Checked<number> {
 function checkPair(cat: Catalogue, header: Buffer, size: number): Checked<number> {
   const dim = cat.dim;
   if (!(isDimension(dim) || (dim === 0 && cat.records.length === 0))) return refuse('index.json has no usable dimension');
-  if (header.length < HEADER || !header.subarray(0, 4).equals(MAGIC) || header.readUInt32LE(4) !== FORMAT) {
+  // The header's format has to be the catalogue's own, not merely one this
+  // version can read: a format-3 catalogue beside a format-2 bin is a finished
+  // write of one file and an unfinished write of the other.
+  if (header.length < HEADER || !header.subarray(0, 4).equals(MAGIC) || header.readUInt32LE(4) !== cat.format) {
     return refuse('vectors.bin is not a cortex vectors file');
   }
   if (header.subarray(8, HEADER).toString('hex') !== cat.generation) {
     return refuse('vectors.bin is from a different save than index.json');
   }
-  const expected = HEADER + cat.records.length * dim * 4;
+  const expected = HEADER + vectorCount(cat) * dim * 4;
   if (size !== expected) return refuse(`vectors.bin is the wrong size: ${size} bytes, expected ${expected}`);
   return { value: dim, problem: null };
 }
@@ -236,9 +313,25 @@ export function loadStoreMeta(embedDir: string): EmbeddingStoreMeta | null {
     model: cat.model,
     dim,
     records: cat.records.map((r) => ({ path: r.path, hash: r.hash })),
+    passages: passagesOf(cat),
     endpoint: cat.endpoint,
     endpointModel: cat.endpointModel,
   };
+}
+
+/**
+ * The catalogue's passage entries, or none for the previous layout.
+ *
+ * A pre-binary catalogue is read exactly as it always was. Should one carry a
+ * `passages` key anyway, it is ignored rather than half-trusted: its vectors
+ * would have lived inside the JSON, there is nowhere in that layout for the
+ * reader to find them, and reporting the passages as present while handing back
+ * no vectors would make `embed` reuse entries it cannot load. One embed run
+ * rebuilds them, which is what the migration already costs.
+ */
+function passagesOf(cat: Catalogue): PassageMeta[] {
+  if (cat.format === undefined || !Array.isArray(cat.passages)) return [];
+  return cat.passages.map((p) => ({ path: p.path, idx: p.idx, start: p.start, end: p.end, hash: p.hash }));
 }
 
 /** The store, or the reason it could not be trusted. */
@@ -273,7 +366,7 @@ export function readStore(embedDir: string): StoreRead {
   // A view, not a copy, whenever the bytes are 4-aligned. `readFileSync` can
   // hand back a slice of a larger pooled buffer, so the byte offset matters.
   const start = buf.byteOffset + HEADER;
-  const count = cat.records.length * dim;
+  const count = vectorCount(cat) * dim;
   const all = start % 4 === 0
     ? new Float32Array(buf.buffer, start, count)
     : new Float32Array(buf.buffer.slice(start, start + count * 4));
@@ -283,7 +376,13 @@ export function readStore(embedDir: string): StoreRead {
     hash: r.hash,
     vector: all.subarray(i * dim, (i + 1) * dim),
   }));
-  return { store: { ...meta, dim, records }, problem: null };
+  // Passage vectors follow every note vector, in catalogue order.
+  const base = cat.records.length;
+  const passages: PassageRecord[] = passagesOf(cat).map((p, i) => ({
+    ...p,
+    vector: all.subarray((base + i) * dim, (base + i + 1) * dim),
+  }));
+  return { store: { ...meta, dim, records, ...(passages.length ? { passages } : {}) }, problem: null };
 }
 
 /** The store, or null when there is none or it could not be trusted. */
@@ -305,21 +404,36 @@ export function saveStore(embedDir: string, store: EmbeddingStore): void {
       throw new Error(`vector for "${r.path}" has ${r.vector.length} dimensions, expected ${dim}`);
     }
   }
+  const passages = store.passages ?? [];
+  for (const p of passages) {
+    if (p.vector.length !== dim) {
+      throw new Error(`vector for passage ${p.idx} of "${p.path}" has ${p.vector.length} dimensions, expected ${dim}`);
+    }
+  }
 
+  // Only a store that has passages is marked as the format that holds them, so
+  // a vault of short notes keeps being written in the format every earlier
+  // version reads. See FORMAT.
+  const format = passages.length ? FORMAT_PASSAGES : FORMAT;
+  const total = store.records.length + passages.length;
   const generation = randomBytes(8);
-  const out = Buffer.alloc(HEADER + store.records.length * dim * 4);
+  const out = Buffer.alloc(HEADER + total * dim * 4);
   MAGIC.copy(out, 0);
-  out.writeUInt32LE(FORMAT, 4);
+  out.writeUInt32LE(format, 4);
   generation.copy(out, 8);
-  const flat = new Float32Array(out.buffer, out.byteOffset + HEADER, store.records.length * dim);
+  const flat = new Float32Array(out.buffer, out.byteOffset + HEADER, total * dim);
   store.records.forEach((r, i) => flat.set(r.vector, i * dim));
+  passages.forEach((p, i) => flat.set(p.vector, (store.records.length + i) * dim));
 
   const catalogue: Catalogue = {
-    format: FORMAT,
+    format,
     model: store.model,
     dim,
     generation: generation.toString('hex'),
     records: store.records.map((r) => ({ path: r.path, hash: r.hash })),
+    ...(passages.length
+      ? { passages: passages.map((p) => ({ path: p.path, idx: p.idx, start: p.start, end: p.end, hash: p.hash })) }
+      : {}),
     endpoint: store.endpoint,
     endpointModel: store.endpointModel,
   };
@@ -340,5 +454,16 @@ export function saveStore(embedDir: string, store: EmbeddingStore): void {
 export function storeMap(store: EmbeddingStore): Map<string, EmbeddingRecord> {
   const m = new Map<string, EmbeddingRecord>();
   for (const r of store.records) m.set(r.path, r);
+  return m;
+}
+
+/** Every note's passages, by path, in passage order. */
+export function passageMap(store: EmbeddingStore): Map<string, PassageRecord[]> {
+  const m = new Map<string, PassageRecord[]>();
+  for (const p of store.passages ?? []) {
+    const list = m.get(p.path);
+    if (list) list.push(p); else m.set(p.path, [p]);
+  }
+  for (const list of m.values()) list.sort((a, b) => a.idx - b.idx);
   return m;
 }

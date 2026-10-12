@@ -3,7 +3,7 @@
     "cortex": {
       "recallAt5": 1,
       "nearMissHitRateAt5": 1,
-      "medianTokens": 809,
+      "medianTokens": 982,
       "questionMix": {
         "ranking": 15,
         "nearMiss": 4,

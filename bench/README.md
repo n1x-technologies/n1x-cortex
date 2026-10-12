@@ -112,7 +112,7 @@ latency, error counts), reproduced by running the commands above.
 
 | System | recall@5 | MRR | nDCG@10 | near-miss | tokens/query (median) | latency (median) | errors |
 |---|---|---|---|---|---|---|---|
-| `cortex` | 1.000 | 1.000 | 1.000 | 1.000 | 809 | 2ms | 0/19 |
+| `cortex` | 1.000 | 1.000 | 1.000 | 1.000 | 982 | 2ms | 0/19 |
 | `cortex-lexical` | 1.000 | 1.000 | 1.000 | 1.000 | 714 | 1ms | 0/19 |
 | `cortex-semantic` | 1.000 | 0.967 | 0.975 | 1.000 | 1077 | 1ms | 0/19 |
 | `naive-rag` | 1.000 | 0.967 | 0.975 | 1.000 | 1081 | 0ms | 0/19 |
@@ -168,9 +168,11 @@ Three more caveats specific to this fixture:
   cutoff behaviour — retrieving a bounded top-k out of many more chunks —
   only shows up on a larger corpus.
 - **The cost column saturates for the same reason recall does.** The whole
-  12-note corpus is 1033 tokens, and `cortex`'s median payload of 809 tokens
-  is 78.3% of that — it is citing most of the corpus per question, because a
-  12-note corpus barely gives a retriever room to leave anything out. Two
+  12-note corpus is 1033 tokens, and `cortex`'s median payload of 982 tokens
+  is 95.1% of that — it is citing nearly the whole corpus per question, because
+  a 12-note corpus barely gives a retriever room to leave anything out. On a
+  146-note vault the same engine cites 11.3% of the corpus per question; the
+  gap between those two figures is the fixture, not the retriever. Two
   systems (`cortex-semantic` at 1077, `naive-rag` at 1081) cost MORE than
   `full-context`'s 1033. No cost comparison — "cortex is cheaper than
   full-context", "cortex is cheaper than naive-rag" — can be drawn from this
@@ -179,7 +181,10 @@ Three more caveats specific to this fixture:
 - **The median cost figure moves with the question set, not only with the
   system.** It is a median over all 19 questions, traps included, so adding
   or removing questions shifts it on its own: adding the four traps moved
-  `cortex` from 982 to 809 with no code change at all. The baseline therefore
+  `cortex` from 982 to 809 with no code change at all. (It reads 982 again
+  today for an unrelated reason — BM25 reordered the lexical ranking, so RRF
+  seeds the graph walk from different anchors and reaches more of a corpus
+  this small. Same number, different cause.) The baseline therefore
   records the three denominators alongside the metrics, and the gate reports
   a changed question set as a dataset change rather than as a cost regression.
 - Error counts are 0/19 for every system on this run. Stage A's per-system
@@ -311,8 +316,8 @@ would put this at 89.5%, below the bar. The figure must be published with its
   recall@5 = 1.000 on its 12-note corpus. It detects regressions; it cannot
   and does not show a difference between systems.
 - **The cost column saturates too, for the same reason.** The whole 12-note
-  corpus is 1033 tokens; `cortex`'s median payload is 809 tokens — 78.3% of
-  the entire corpus, most of it cited per question. Two systems
+  corpus is 1033 tokens; `cortex`'s median payload is 982 tokens — 95.1% of
+  the entire corpus, nearly all of it cited per question. Two systems
   (`cortex-semantic`, `naive-rag`) cost MORE than `full-context` on this
   fixture. No cost claim ("cortex costs less than full-context or than
   naive-rag") can be drawn from this fixture either; a corpus large enough
@@ -320,12 +325,13 @@ would put this at 89.5%, below the bar. The figure must be published with its
 - **`naive-rag`'s `TOP_K` is calibrated to 12** on this fixture, which happens
   to have exactly 12 single-chunk notes, so cost-matching drives it to
   retrieve the whole corpus here. Real cutoff behaviour only appears on a
-  larger corpus. **The calibration is also stale:** it was fixed against a
-  cortex median of 982 tokens, which was the pre-traps figure. The current run
-  is cortex 809 vs `naive-rag` 1081 — a 34% gap, not a match. It is not
-  re-tuned here, because tuning against a fixture that saturates would be
-  tuning to noise; but "cost-matched" should not be read as a present-tense
-  claim about these numbers.
+  larger corpus. The calibration was fixed against a cortex median of 982
+  tokens, and the current run is cortex 982 vs `naive-rag` 1081 — a 10% gap,
+  so the match happens to hold again. It held, then it did not (cortex sat at
+  809 for a while, a 34% gap), and now it does: that is a coincidence of two
+  numbers drifting, not evidence that either is right. Nothing is re-tuned
+  here, because tuning against a fixture that saturates would be tuning to
+  noise, and "cost-matched" should not be read as a standing claim.
 - **`grep-agent` credits recall for every path its `GREP` action matched**,
   whether or not the agent ever issued a `READ` on that path. That is
   generous to this baseline relative to an agent judged only on what it

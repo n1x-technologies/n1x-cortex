@@ -2,7 +2,7 @@ import { loadConfig } from '../config.js';
 import { scanVault, collectFrontmatterKeys } from '../vault.js';
 import { buildGraph } from '../graph.js';
 import { retrieve } from '../query/retrieve.js';
-import { semanticQueryRanking } from '../semantic/queryRank.js';
+import { semanticRanking } from '../semantic/queryRank.js';
 import type { QueryResult } from '../types.js';
 import type { Embedder } from '../semantic/embedder.js';
 
@@ -129,9 +129,10 @@ export async function runQuerySemantic(
   const config = loadConfig(vaultDir, collectFrontmatterKeys(vaultDir));
   const notes = scanVault(vaultDir, config);
   const graph = buildGraph(notes);
-  const semanticRanking = await semanticQueryRanking(vaultDir, config, notes, question, embedder);
+  const { order, windows } = await semanticRanking(vaultDir, config, notes, question, embedder);
   return retrieve(notes, graph, question, {
-    semanticRanking,
+    semanticRanking: order,
+    windows,
     rrfK: config.rrfK,
     // Undefined leaves the engine default in place rather than overriding it
     // with a value the caller never supplied.
