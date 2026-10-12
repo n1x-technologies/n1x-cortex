@@ -296,7 +296,9 @@ describe('a catalogue and a vectors file that do not belong together are refused
     ['the catalogue dimension is not an integer', (d) => editCatalogue(d, { dim: 3.5 }), /no usable dimension/],
     ['the catalogue dimension is a string', (d) => editCatalogue(d, { dim: '384' }), /no usable dimension/],
     ['the catalogue dimension is 0 with records in it', (d) => editCatalogue(d, { dim: 0 }), /no usable dimension/],
-    ['the catalogue is from a newer format', (d) => editCatalogue(d, { format: 3 }), /format 3/],
+    // 3 is a format this version reads (notes plus passage vectors), so a
+    // newer one has to be a number past both.
+    ['the catalogue is from a newer format', (d) => editCatalogue(d, { format: 4 }), /format 4/],
     ['the catalogue format is not a number', (d) => editCatalogue(d, { format: '2' }), /format "2"/],
   ];
 

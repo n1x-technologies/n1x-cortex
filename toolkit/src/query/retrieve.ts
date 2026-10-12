@@ -1,7 +1,33 @@
 import { buildIndex, searchIndex } from '../search/index.js';
-import { excerpt } from './excerpt.js';
+import { excerpt, bestLine } from './excerpt.js';
 import { rrfOrder } from '../semantic/fuse.js';
 import type { Note, Graph, QueryResult, QueryHit } from '../types.js';
+
+/**
+ * The line shown for a hit.
+ *
+ * A line that shares words with the question wins over the passage the model
+ * picked, and the window is used only when no line shares any. That order comes
+ * from measuring it the other way round first: on a long document the model
+ * scores every passage within about two hundredths of the top one, so which one
+ * "won" is close to arbitrary, and citing inside that window threw away a line
+ * elsewhere in the document that actually contained the question's words.
+ *
+ * The window still earns its place for the case `bestLine` cannot serve: when
+ * nothing in the note shares a word with the question, the alternative is the
+ * document's first line, which in a long import is its cover page.
+ */
+function cite(note: Note, question: string, window?: { start: number; end: number }): string {
+  const direct = bestLine(note.body, question);
+  if (direct !== null) return direct;
+  if (!window) return excerpt(note.body, question);
+  const { start, end } = window;
+  // A window from a stale store could point outside the body it was measured
+  // on. Citing the whole note is worse than ideal; citing out of bounds is a
+  // crash or a lie.
+  if (!(end > start) || start < 0 || start >= note.body.length) return excerpt(note.body, question);
+  return excerpt(note.body.slice(start, Math.min(end, note.body.length)), question);
+}
 
 export function retrieve(
   notes: Note[],
@@ -15,6 +41,15 @@ export function retrieve(
     rrfK?: number;
     /** Attach the note body to each returned hit: a character cap, or 'full'. */
     content?: number | 'full';
+    /**
+     * For the notes that ranked on a passage, where that passage sits.
+     *
+     * Used only as a fallback for the citation. Without it, a two-hundred
+     * thousand character document is cited from wherever the first matching
+     * line happens to be, which in a document that long may be another section
+     * mentioning the same word.
+     */
+    windows?: Map<string, { start: number; end: number }>;
   } = {},
 ): QueryResult {
   const maxAnchors = opts.maxAnchors ?? 5;
@@ -71,7 +106,7 @@ export function retrieve(
       title: note.title,
       type: note.type,
       score: fts + proximity,
-      excerpt: excerpt(note.body, question),
+      excerpt: cite(note, question, opts.windows?.get(id)),
       source: note.source,
       via: anchorSet.has(id) ? 'anchor' : 'link',
     });
