@@ -6,7 +6,42 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-11
+
 ### Fixed
+- **A long note can be queried whole, not just its first page.** A note was
+  embedded as one vector over `title + body`, and the model attends about 512
+  tokens — roughly two thousand characters. For an atomic note that is room to
+  spare; for an imported document of two hundred thousand characters it meant
+  the vector described the first page and the rest was not indexed: it did not
+  rank low, it was absent. Long notes are now also embedded per passage, split
+  on paragraph and heading boundaries, with the heading trail prefixed so a
+  paragraph that cannot stand alone still says what it is about. A note's score
+  is the best of its passages, never the average — averaging sinks the one
+  passage that answers underneath every one that does not. Measured on a vault
+  of 146 notes, **98 exceeded the model's window**: two thirds of it had been
+  indexed by its first page alone. (#151)
+- **The lexical ranking no longer rewards length.** The score was
+  `frequency × idf` with no normalisation, so a long import that repeats any
+  ordinary term dozens of times beat the three-sentence note that is exactly
+  about it — measured on one index, 1933 against 107, an 18× gap that says
+  nothing about relevance and everything about size. It is now BM25: frequency
+  saturates (k1 = 1.2) and length is normalised against the corpus average
+  (b = 0.75). The `idf` becomes `ln(1 + (N − df + 0.5)/(df + 0.5))`, whose
+  leading `+1` keeps a term present in more than half the corpus from yielding a
+  negative idf and *subtracting* score. Long documents still appear — they are
+  ordered differently, not hidden.
+- **A citation is no longer a link or a source footer.** Both share words with
+  the question while saying nothing: a wikilink's slug repeats the title it
+  points at, and the `*Source: [[…]]*` footer cortex writes on every generated
+  note repeats the source's. On a real vault a question about a policy returned
+  those two as its first citations with the content third. A note that is only
+  links — a map of content — still gets cited rather than left blank.
+- **A citation counts the question's words, not their repetitions.** The same
+  disease as the ranking, one level down: a line repeating one term five times
+  beat a line covering five distinct terms. On a long document this decides
+  which of thousands of lines is displayed, and the citation is all anyone reads
+  before deciding whether to open the note.
 - **`cortex embed --base-url` no longer stops on one long note.** The remote
   embedder sent every note whole, and an endpoint rejects any input over its
   context (OpenAI: 8192 tokens) by failing the entire batch, so a single long
@@ -14,6 +49,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   characters before it is sent, as the local model already truncates to its own
   window. On the 584-document public corpus the embed through OpenAI failed at
   the 19th note and now completes.
+
+### Changed
+- **Passage vectors live in the same `vectors.bin` as the note vectors**, after
+  them, with `index.json` recording each passage's path, index and bounds. They
+  could have had their own pair of files; keeping them here is what makes the
+  header and the exact size check that prove a catalogue and a binary belong
+  together cover the passages for free. A separate file would be a third thing
+  that can arrive from a different save.
+- **A store is marked format 3 only when it actually holds passages.** A vault
+  of short notes keeps being written as format 2, so upgrading costs no
+  re-embed and an older cortex still reads it. A vault with passages is marked
+  3, which an older cortex refuses by name instead of computing a smaller
+  expected size and blaming the file's length.
 
 ## [1.2.1] - 2026-09-10
 

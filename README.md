@@ -47,7 +47,8 @@ Most knowledge lives in scattered markdown files (notes, docs, wikis), or in no 
 
 | Version | Date | What changed |
 |---------|------|--------------|
-| **1.2.0** | 2026-09-10 | The embedding store is split into two files, so a vault of tens of thousands of notes opens at all: 70,000 notes load in about 50 ms where the old format failed. Existing stores migrate by themselves and rankings are bit-for-bit identical. A store whose two files do not match is refused instead of half-read, and the open dependency advisories are closed. |
+| **1.3.0** | 2026-10-11 | A long note can be queried whole: it is embedded per passage, not as one vector describing its first page. On a 146-note vault, 98 notes exceeded the model's window. The lexical ranking moves to BM25, so a long import no longer outranks the short note that is actually about the topic, and a citation is never a bare link or a source footer. |
+| 1.2.0 | 2026-09-10 | The embedding store is split into two files, so a vault of tens of thousands of notes opens at all: 70,000 notes load in about 50 ms where the old format failed. Existing stores migrate by themselves and rankings are bit-for-bit identical. A store whose two files do not match is refused instead of half-read, and the open dependency advisories are closed. |
 | 1.1.0 | 2026-08-13 | `cortex query` rejects options it does not know instead of quietly searching for them, output read through a pipe is no longer cut off, and `cortex embed --base-url` embeds through any OpenAI-compatible endpoint. |
 | 1.0.1 | 2026-07-13 | The optional semantic layer moved off a deprecated dependency. Existing embedding stores keep working, with no re-embed. |
 
@@ -179,7 +180,7 @@ It respects `.gitignore`, skips binaries and vendored folders, streams progress 
 | `cortex viz` | Local web viewer in the N1X brand identity: interactive graph, search, color-by, animated focus, neighbor highlighting, a bidirectional (in/out) link panel, a tri-state group filter, a Graph/Tree view toggle, live force controls (d3-force), and a Mermaid architecture export. Click a node's **Open note** to read its rendered markdown in a new tab (`/note/<id>`). |
 | `cortex mcp install` | **One-command hookup** to Claude Code (`uninstall` to remove; `--write[=curate]` to register a writer). |
 | `cortex mcp` | **Run the MCP server** for agents (stdio). Read-only by default; `--write[=draft\|curate]` exposes reversible capture/curation tools. |
-| `cortex embed` | Build the embedding store (enables semantic search). On-device by default; `--base-url <url>` embeds through an OpenAI-compatible endpoint instead, so no model is downloaded and the optional peer is not needed. Each note is cut to 16000 characters before it is sent, so a long note fits the endpoint's context. |
+| `cortex embed` | Build the embedding store (enables semantic search). On-device by default; `--base-url <url>` embeds through an OpenAI-compatible endpoint instead, so no model is downloaded and the optional peer is not needed. Each note is cut to 16000 characters before it is sent, so a long note fits the endpoint's context. A note longer than the model's window is also embedded per passage, so all of it is searchable and not just its first page. |
 | `cortex atomize <src>` | AI-distill a source into draft notes (dry-run; `--write`). `--model <provider:model>` runs distillation without an agent, BYO-key ([see above](#distill-or-bootstrap-without-an-agent-byo-key)). |
 | `cortex bootstrap [path]` | Distill an **entire undocumented repo**: every eligible file, code included, into connected draft notes, BYO-key ([see above](#distill-or-bootstrap-without-an-agent-byo-key)). |
 | `cortex gaps` / `dupes` / `verify` | Curation diagnostics. `dupes` compares within a type by default (`--cross-type` to widen); `verify --all` sweeps the whole vault for incomplete notes. |
@@ -217,7 +218,7 @@ cortex embed                       # build the store once (incremental after tha
 
 Then `cortex query` and `cortex dupes` become hybrid (lexical + semantic), and the MCP server keeps the model warm.
 
-The store lives in `.cortex/embeddings/`: `index.json` (one path and content hash per note) and `vectors.bin` (the vectors as raw Float32), which keeps it compact enough for vaults of hundreds of thousands of notes. A store from an earlier version is migrated by the next `cortex embed`. If the two files ever stop matching (say, one was copied without the other), Cortex refuses the pair instead of reading it half, and `cortex embed` rebuilds it and tells you why.
+The store lives in `.cortex/embeddings/`: `index.json` (one path and content hash per note, plus the bounds of each passage) and `vectors.bin` (the vectors as raw Float32 — one per note, then one per passage), which keeps it compact enough for vaults of hundreds of thousands of notes. A store from an earlier version is migrated by the next `cortex embed`. If the two files ever stop matching (say, one was copied without the other), Cortex refuses the pair instead of reading it half, and `cortex embed` rebuilds it and tells you why.
 
 ## Where this is going
 
@@ -240,6 +241,7 @@ Shipped:
 - **Autonomous capture (hooks)**: the Stop hook distills changed sources into the graph in the background (`auto-draft`/`full`), reversible; plus reversible duplicate `merge`.
 - **MCP write/curate**: `cortex mcp --write[=draft|curate]` exposes capture & curation as MCP tools so *any* agent writes back, read-only by default, every write reversible.
 - **Large vaults** (1.2.0): a two-file embedding store that opens at tens of thousands of notes and refuses a mismatched pair instead of reading it half.
+- **Long documents** (1.3.0): embedded per passage rather than as one vector, so an imported document is searchable past its first page, and ranked by BM25 so length alone does not win.
 
 ## From source (contributors)
 
